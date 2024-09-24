@@ -50,7 +50,7 @@ const LiveStream: React.FC<LiveStreamProps> = ({ streamId }) => {
   }
 
   return (
-    <Player.Root src={getSrc(vodSource)}>
+    <Player.Root src={vodSource}>
       <Player.Container className="h-full w-full overflow-hidden bg-gray-950">
         <Player.Video title="Live stream" className="h-full w-full" />
 
