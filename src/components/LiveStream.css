@@ -1,0 +1,17 @@
+/* src/components/LiveStream.css */
+.live-stream {
+  margin-top: 20px;
+}
+
+.live-stream h2 {
+  margin-bottom: 10px;
+  color: #61dafb;
+}
+
+.loading,
+.error,
+.no-stream {
+  font-size: 1.5rem;
+  margin-top: 20px;
+  color: #ff6b6b;
+}
