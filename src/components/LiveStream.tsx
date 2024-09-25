@@ -22,7 +22,7 @@ export async function getSourceForPlaybackId(playbackId: string) {
 }
 
 const LiveStream: React.FC<LiveStreamProps> = ({ streamId }) => {
-  const [vodSource, setVodSource] = useState<string | null>(null);
+  const [vodSource, setVodSource] = useState<Src[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch the source for the playback ID on component mount
