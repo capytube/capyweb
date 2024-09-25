@@ -40,3 +40,5 @@ build/
 *.tmp
 *.swp
 
+# amplify
+.amplify/*
