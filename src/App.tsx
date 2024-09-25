@@ -1,8 +1,11 @@
 // src/App.tsx
+
 import React from "react";
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import LiveStream from "./components/LiveStream";
 import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsOfService from "./components/TermsOfService";
+import DeletionInstructions from "./components/DeletionInstructions"; // Import the Deletion component
 import { Authenticator } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 import "./App.css";
@@ -34,10 +37,23 @@ const App: React.FC = () => {
                   </Link>
                   <Link
                     to="/privacy-policy"
-                    className="text-blue-300 hover:text-blue-500"
+                    className="mr-5 text-blue-300 hover:text-blue-500"
                   >
                     Privacy Policy
                   </Link>
+                  <Link
+                    to="/terms-of-service"
+                    className="mr-5 text-blue-300 hover:text-blue-500"
+                  >
+                    Terms of Service
+                  </Link>
+                  <Link
+                    to="/deletion"
+                    className="text-blue-300 hover:text-blue-500"
+                  >
+                    Account Deletion
+                  </Link>{" "}
+                  {/* Add deletion link */}
                 </nav>
 
                 {/* Define Routes */}
@@ -47,6 +63,12 @@ const App: React.FC = () => {
                     element={<LiveStream streamId={streamId} />}
                   />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route
+                    path="/terms-of-service"
+                    element={<TermsOfService />}
+                  />
+                  <Route path="/deletion" element={<DeletionInstructions />} />{" "}
+                  {/* Add route for deletion */}
                 </Routes>
               </header>
             </div>
