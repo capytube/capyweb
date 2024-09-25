@@ -1,6 +1,6 @@
 // src/components/LiveStream.tsx
 import { PauseIcon, PlayIcon } from "@livepeer/react/assets";
-import { getSrc } from "@livepeer/react/external";
+import { getSrc, Src } from "@livepeer/react/external";
 import * as Player from "@livepeer/react/player";
 import { Livepeer } from "livepeer";
 import "./LiveStream.css"; // Optional: Create this file for component-specific styles
