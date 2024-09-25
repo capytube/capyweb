@@ -9,7 +9,7 @@ export default [
     ignores: [".amplify/**"],
   },
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    files: ["**/*.{ts,tsx}"],
     languageOptions: {
       globals: {
         ...globals.browser,
