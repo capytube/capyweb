@@ -6,6 +6,7 @@ import LiveStream from "./components/LiveStream";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsOfService from "./components/TermsOfService";
 import DeletionInstructions from "./components/DeletionInstructions"; // Import the Deletion component
+import ProfilePage from "./components/ProfilePage"; // Import the Profile Page component
 import { Authenticator } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 import "./App.css";
@@ -36,6 +37,12 @@ const App: React.FC = () => {
                     Home
                   </Link>
                   <Link
+                    to="/profile"
+                    className="mr-5 text-blue-300 hover:text-blue-500"
+                  >
+                    Profile
+                  </Link>
+                  <Link
                     to="/privacy-policy"
                     className="mr-5 text-blue-300 hover:text-blue-500"
                   >
@@ -52,8 +59,7 @@ const App: React.FC = () => {
                     className="text-blue-300 hover:text-blue-500"
                   >
                     Account Deletion
-                  </Link>{" "}
-                  {/* Add deletion link */}
+                  </Link>
                 </nav>
 
                 {/* Define Routes */}
@@ -62,13 +68,14 @@ const App: React.FC = () => {
                     path="/"
                     element={<LiveStream streamId={streamId} />}
                   />
+                  <Route path="/profile" element={<ProfilePage />} />{" "}
+                  {/* Add profile route */}
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route
                     path="/terms-of-service"
                     element={<TermsOfService />}
                   />
-                  <Route path="/deletion" element={<DeletionInstructions />} />{" "}
-                  {/* Add route for deletion */}
+                  <Route path="/deletion" element={<DeletionInstructions />} />
                 </Routes>
               </header>
             </div>
