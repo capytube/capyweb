@@ -1,7 +1,7 @@
 // src/components/ProfilePage.tsx
 
 import React, { useEffect, useState } from "react";
-import "profile-page.css";
+import "./ProfilePage.css";
 
 interface UserProfile {
   username: string;
@@ -36,17 +36,11 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div className="profile-page-container" style={profilePageStyles.container}>
-      <div style={profilePageStyles.card}>
+      <div>
         <h1>Profile Page</h1>
 
         {/* Avatar */}
-        {user.avatarUrl && (
-          <img
-            src={user.avatarUrl}
-            alt="User Avatar"
-            style={profilePageStyles.avatar}
-          />
-        )}
+        {user.avatarUrl && <img src={user.avatarUrl} alt="User Avatar" />}
 
         {/* Display User Info */}
         <div style={profilePageStyles.infoSection}>
