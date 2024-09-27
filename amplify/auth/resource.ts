@@ -5,7 +5,7 @@ export const auth = defineAuth({
     email: true,
     externalProviders: {
       google: {
-        clientId: secret("GOOGLE_CLIENT_ID"),
+        clientId: secret("G_CLIENT_ID"),
         clientSecret: secret("GOOGLE_CLIENT_SECRET"),
       },
       signInWithApple: {
@@ -15,8 +15,8 @@ export const auth = defineAuth({
         teamId: secret("SIWA_TEAM_ID"),
       },
       loginWithAmazon: {
-        clientId: secret("LOGINWITHAMAZON_CLIENT_ID"),
-        clientSecret: secret("LOGINWITHAMAZON_CLIENT_SECRET"),
+        clientId: secret("A_CLIENT_ID"),
+        clientSecret: secret("A_SECRET"),
       },
       facebook: {
         clientId: secret("FACEBOOK_CLIENT_ID"),
