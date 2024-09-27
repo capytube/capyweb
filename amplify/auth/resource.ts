@@ -23,7 +23,7 @@ export const auth = defineAuth({
         clientSecret: secret("FACEBOOK_CLIENT_SECRET"),
       },
       callbackUrls: [
-        "http://localhost:3000/profile",
+        "http://localhost:5137/profile",
         "https://capytube.xyz/profile",
       ],
       logoutUrls: ["http://localhost:5137/", "https://capytube.xyz"],

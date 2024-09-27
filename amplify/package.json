@@ -1,3 +1,7 @@
 {
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@livepeer/react": "^4.2.7",
+    "livepeer": "^3.4.0"
+  }
 }

@@ -1,6 +1,25 @@
 import type { Handler } from "aws-lambda";
+import { Livepeer } from "livepeer";
+import { getSrc } from "@livepeer/react/external";
+import type { Schema } from "../../data/resource";
+import { env } from "$amplify/env/getStream";
 
-export const handler: Handler = async (event, context) => {
+const livepeer = new Livepeer({
+  apiKey: env.VITE_LIVEPEER_API_KEY!,
+});
+async function getSourceForPlaybackId(playbackId: string) {
+  const response = await livepeer.playback.get(playbackId);
+
+  // the return value can be passed directly to the Player as `src`
+  return getSrc(response.playbackInfo);
+}
+
+export const handler: Schema["getStream"]["functionHandler"] = async (
+  event
+) => {
   // your function code goes here
-  return "Hello, World!";
+  const { streamId } = event.arguments;
+  const playSrc = await getSourceForPlaybackId(streamId!);
+  const playSrcString = JSON.stringify(playSrc);
+  return playSrcString;
 };

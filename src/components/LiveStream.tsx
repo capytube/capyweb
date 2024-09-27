@@ -1,25 +1,14 @@
 // src/components/LiveStream.tsx
 import { PauseIcon, PlayIcon } from "@livepeer/react/assets";
-import { getSrc } from "@livepeer/react/external";
 import { Src } from "@livepeer/react";
 import * as Player from "@livepeer/react/player";
-import { Livepeer } from "livepeer";
 import "./LiveStream.css"; // Optional: Create this file for component-specific styles
 import { useState, useEffect } from "react";
+import { generateClient } from "aws-amplify/api";
+import type { Schema } from "../../amplify/data/resource"; // Assuming your schema is defined in a separate file
 
 interface LiveStreamProps {
   streamId: string;
-}
-
-const livepeer = new Livepeer({
-  apiKey: import.meta.env.VITE_LIVEPEER_API_KEY!,
-});
-
-export async function getSourceForPlaybackId(playbackId: string) {
-  const response = await livepeer.playback.get(playbackId);
-
-  // the return value can be passed directly to the Player as `src`
-  return getSrc(response.playbackInfo);
 }
 
 const LiveStream: React.FC<LiveStreamProps> = ({ streamId }) => {
@@ -30,7 +19,12 @@ const LiveStream: React.FC<LiveStreamProps> = ({ streamId }) => {
   useEffect(() => {
     const fetchSource = async () => {
       try {
-        const source = await getSourceForPlaybackId(streamId);
+        const client = generateClient<Schema>();
+        const srcString = (
+          await client.queries.getStream({ streamId: streamId })
+        ).data!;
+        const source = JSON.parse(srcString) as Src[];
+        // const source = await
         setVodSource(source);
       } catch (err) {
         setError("Failed to load the stream. Please try again later.");
