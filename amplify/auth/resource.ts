@@ -4,10 +4,10 @@ export const auth = defineAuth({
   loginWith: {
     email: true,
     externalProviders: {
-      google: {
-        clientId: secret("G_CLIENT_ID"),
-        clientSecret: secret("GOOGLE_CLIENT_SECRET"),
-      },
+      // google: {
+      //   clientId: secret("G_CLIENT_ID"),
+      //   clientSecret: secret("GOOGLE_CLIENT_SECRET"),
+      // },
       // signInWithApple: {
       //   clientId: secret("SIWA_CLIENT_ID"),
       //   keyId: secret("SIWA_KEY_ID"),
