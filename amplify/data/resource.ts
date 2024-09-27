@@ -8,7 +8,8 @@ const schema = a.schema({
       streamId: a.string(),
     })
     .returns(a.string())
-    .handler(a.handler.function(getStream)),
+    .handler(a.handler.function(getStream))
+    .authorization((allow) => [allow.publicApiKey()]),
 
   Todo: a
     .model({
