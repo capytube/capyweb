@@ -18,10 +18,10 @@ export const auth = defineAuth({
       //   clientId: secret("A_CLIENT_ID"),
       //   clientSecret: secret("A_SECRET"),
       // },
-      facebook: {
-        clientId: secret("FACEBOOK_CLIENT_ID"),
-        clientSecret: secret("FACEBOOK_CLIENT_SECRET"),
-      },
+      // facebook: {
+      //   clientId: secret("FACEBOOK_CLIENT_ID"),
+      //   clientSecret: secret("FACEBOOK_CLIENT_SECRET"),
+      // },
       callbackUrls: [
         "http://localhost:5137/profile",
         "https://capytube.xyz/profile",
