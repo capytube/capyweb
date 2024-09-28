@@ -23,9 +23,7 @@
       "require_uppercase": true
     },
     "oauth": {
-      "identity_providers": [
-        "FACEBOOK"
-      ],
+      "identity_providers": [],
       "redirect_sign_in_uri": [
         "http://localhost:5137/profile",
         "https://capytube.xyz/profile"
