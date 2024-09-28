@@ -14,10 +14,10 @@ export const auth = defineAuth({
         privateKey: secret("SIWA_PRIVATE_KEY"),
         teamId: secret("SIWA_TEAM_ID"),
       },
-      // loginWithAmazon: {
-      //   clientId: secret("A_CLIENT_ID"),
-      //   clientSecret: secret("A_SECRET"),
-      // },
+      loginWithAmazon: {
+        clientId: secret("A_ID"),
+        clientSecret: secret("A_SECRET"),
+      },
       facebook: {
         clientId: secret("FACEBOOK_CLIENT_ID"),
         clientSecret: secret("FACEBOOK_CLIENT_SECRET"),
