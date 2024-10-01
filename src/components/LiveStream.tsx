@@ -19,6 +19,7 @@ const LiveStream: React.FC<LiveStreamProps> = ({ streamId }) => {
   useEffect(() => {
     const fetchSource = async () => {
       try {
+        console.log("input streamId in livepper is :", streamId);
         const client = generateClient<Schema>();
         const srcString = (
           await client.queries.getStream({ streamId: streamId })
