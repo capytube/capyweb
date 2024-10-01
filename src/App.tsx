@@ -15,6 +15,7 @@ const App: React.FC = () => {
   // const streamId = import.meta.env.VITE_LIVEPEER_STREAM_ID;
   // console.log("Stream ID:", streamId);
   const streamId = "3ad581cgj5ahdc7z";
+  console.log("Stream ID:", streamId);
 
   return (
     <Authenticator>
