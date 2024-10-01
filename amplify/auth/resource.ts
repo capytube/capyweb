@@ -7,6 +7,7 @@ export const auth = defineAuth({
       google: {
         clientId: secret("GOOGLE_CLIENT_ID"),
         clientSecret: secret("GOOGLE_CLIENT_SECRET"),
+        scopes: ["public_profile", "email"],
       },
       // signInWithApple: {
       //   clientId: secret("SIWA_CLIENT_ID"),
@@ -17,6 +18,7 @@ export const auth = defineAuth({
       facebook: {
         clientId: secret("FACEBOOK_CLIENT_ID"),
         clientSecret: secret("FACEBOOK_CLIENT_SECRET"),
+        scopes: ["public_profile", "email"],
       },
       callbackUrls: [
         "http://localhost:5137/profile",
