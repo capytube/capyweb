@@ -23,6 +23,7 @@ const LiveStream: React.FC<LiveStreamProps> = ({ streamId }) => {
         const srcString = (
           await client.queries.getStream({ streamId: streamId })
         ).data!;
+        console.log("src string form server is", srcString);
         const source = JSON.parse(srcString) as Src[];
         // const source = await
         setVodSource(source);
