@@ -15,7 +15,7 @@ const App: React.FC = () => {
   // const streamId = import.meta.env.VITE_LIVEPEER_STREAM_ID;
   // console.log("Stream ID:", streamId);
   const streamId = "3ad581cgj5ahdc7z";
-  console.log("Stream ID:", streamId);
+  // console.log("Stream ID:", streamId);
 
   return (
     <Authenticator>
@@ -67,6 +67,7 @@ const App: React.FC = () => {
 
                 {/* Define Routes */}
                 <Routes>
+                  <h1>Magnus Stream</h1>
                   <Route
                     path="/"
                     element={<LiveStream streamId={streamId} />}
