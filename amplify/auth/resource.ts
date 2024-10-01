@@ -7,7 +7,7 @@ export const auth = defineAuth({
       google: {
         clientId: secret("GOOGLE_CLIENT_ID"),
         clientSecret: secret("GOOGLE_CLIENT_SECRET"),
-        scopes: ["public_profile", "email"],
+        scopes: ["email"],
       },
       // signInWithApple: {
       //   clientId: secret("SIWA_CLIENT_ID"),
