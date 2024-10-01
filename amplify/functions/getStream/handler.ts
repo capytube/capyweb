@@ -19,7 +19,10 @@ export const handler: Schema["getStream"]["functionHandler"] = async (
 ) => {
   // your function code goes here
   const { streamId } = event.arguments;
+  console.log("streamId is ", streamId);
   const playSrc = await getSourceForPlaybackId(streamId!);
+  console.log("playSrc is ", playSrc);
   const playSrcString = JSON.stringify(playSrc);
+  console.log("playSrcString is ", playSrcString);
   return playSrcString;
 };
