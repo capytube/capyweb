@@ -24,7 +24,8 @@
     },
     "oauth": {
       "identity_providers": [
-        "GOOGLE"
+        "GOOGLE",
+        "FACEBOOK"
       ],
       "redirect_sign_in_uri": [
         "http://localhost:5137/profile",
