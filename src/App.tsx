@@ -67,7 +67,6 @@ const App: React.FC = () => {
 
                 {/* Define Routes */}
                 <Routes>
-                  <h1>Magnus Stream</h1>
                   <Route
                     path="/"
                     element={<LiveStream streamId={streamId} />}
