@@ -2,7 +2,6 @@
 
 import React from "react";
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
-import LiveStream from "./components/LiveStream";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsOfService from "./components/TermsOfService";
 import DeletionInstructions from "./components/DeletionInstructions"; // Import the Deletion component
@@ -10,13 +9,38 @@ import ProfilePage from "./components/ProfilePage"; // Import the Profile Page c
 import { Authenticator } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 import "./App.css";
+import StreamingHome from "./components/Streaming/StreamingHome";
+import SignOutButton from "./components/SignOutButton"; // Import the SignOutButton
+import Logo from "./components/Logo";
+
+const styles = {
+  container: {
+    display: "flex",
+    justifyContent: "space-between", // Pushes the text to the left and logo to the right
+    alignItems: "center",
+    width: "100%", // Takes full width of the parent
+  },
+  logoAndSignout: {
+    display: "flex",
+    gap: "10px",
+  },
+  rightbar: {
+    display: "grid",
+    justifyContent: "center",
+    alignItems: "left",
+    gap: "10px",
+  },
+  text: {
+    marginRight: "10px",
+    fontSize: "20px",
+  },
+  logo: {
+    width: "40px",
+    height: "40px",
+  },
+};
 
 const App: React.FC = () => {
-  // const streamId = import.meta.env.VITE_LIVEPEER_STREAM_ID;
-  // console.log("Stream ID:", streamId);
-  const streamId = "3ad581cgj5ahdc7z";
-  // console.log("Stream ID:", streamId);
-
   return (
     <Authenticator>
       {({ signOut, user }) => (
@@ -24,14 +48,16 @@ const App: React.FC = () => {
           <main>
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
               <header className="bg-gray-800 p-6 rounded-lg shadow-md text-white max-w-3xl w-11/12">
-                <h1>Welcome, {user?.username}</h1>
-                <button
-                  onClick={signOut}
-                  className="mt-5 text-white bg-red-500 hover:bg-red-700 p-3 rounded-md"
-                >
-                  Sign Out
-                </button>
-                <h1 className="text-4xl mb-5">CapyTube</h1>
+                <div style={styles.container}>
+                  <h1 className="text-4xl mb-5">CapyTube</h1>
+                  <div style={styles.rightbar}>
+                    <div style={styles.logoAndSignout}>
+                      <Logo />
+                      <SignOutButton signOut={signOut} />
+                    </div>
+                    <p>{user?.signInDetails?.loginId}</p>
+                  </div>
+                </div>
                 <nav className="mb-4">
                   <Link
                     to="/"
@@ -57,19 +83,19 @@ const App: React.FC = () => {
                   >
                     Terms of Service
                   </Link>
-                  <Link
+                  {/* <Link
                     to="/deletion"
                     className="text-blue-300 hover:text-blue-500"
                   >
                     Account Deletion
-                  </Link>
+                  </Link> */}
                 </nav>
 
                 {/* Define Routes */}
                 <Routes>
                   <Route
                     path="/"
-                    element={<LiveStream streamId={streamId} />}
+                    element={<StreamingHome title={"capystream"} />}
                   />
                   <Route path="/profile" element={<ProfilePage />} />{" "}
                   {/* Add profile route */}

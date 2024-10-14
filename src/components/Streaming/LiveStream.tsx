@@ -5,13 +5,19 @@ import * as Player from "@livepeer/react/player";
 import "./LiveStream.css"; // Optional: Create this file for component-specific styles
 import { useState, useEffect } from "react";
 import { generateClient } from "aws-amplify/api";
-import type { Schema } from "../../amplify/data/resource"; // Assuming your schema is defined in a separate file
+import type { Schema } from "../../../amplify/data/resource"; // Assuming your schema is defined in a separate file
 
 interface LiveStreamProps {
   streamId: string;
+  title: string;
+  profilePic: string;
 }
 
-const LiveStream: React.FC<LiveStreamProps> = ({ streamId }) => {
+const LiveStream: React.FC<LiveStreamProps> = ({
+  streamId,
+  title,
+  profilePic,
+}) => {
   const [vodSource, setVodSource] = useState<Src[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,10 +54,12 @@ const LiveStream: React.FC<LiveStreamProps> = ({ streamId }) => {
 
   return (
     <Player.Root src={vodSource}>
-      <h1>Magnus Stream</h1>
+      <div style={styles.titleAndImageContainer}>
+        <h1 style={styles.title}>{title}</h1>
+        <img src={profilePic} alt="Profile" style={styles.profilePic} />
+      </div>
       <Player.Container className="h-full w-full overflow-hidden bg-gray-950">
         <Player.Video title="Live stream" className="h-full w-full" />
-
         <Player.Controls className="flex items-center justify-center">
           <Player.PlayPauseTrigger className="w-10 h-10 hover:scale-105 flex-shrink-0">
             <Player.PlayingIndicator asChild matcher={false}>
@@ -68,3 +76,37 @@ const LiveStream: React.FC<LiveStreamProps> = ({ streamId }) => {
 };
 
 export default LiveStream;
+
+const styles = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "20px",
+  },
+  title: {
+    display: "flex",
+    fontSize: "24px",
+    fontWeight: "bold",
+    marginBottom: "10px",
+  },
+  profilePic: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%", // Makes the image circular
+  },
+  titleAndImageContainer: {
+    display: "flex",
+    alignItems: "center", // Aligns items vertically in the center
+    marginBottom: "5px",
+    justifyContent: "space-between", // Pushes the title to the left and image to the right
+  },
+  streamContainer: {
+    width: "100%",
+    maxWidth: "800px",
+    backgroundColor: "#f0f0f0",
+    padding: "10px",
+    borderRadius: "10px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+  },
+};
