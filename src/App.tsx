@@ -12,6 +12,7 @@ import "./App.css";
 import StreamingHome from "./components/Streaming/StreamingHome";
 import SignOutButton from "./components/SignOutButton"; // Import the SignOutButton
 import Logo from "./components/Logo";
+import AboutMagnus from "./components/AboutMagnus";
 
 const styles = {
   container: {
@@ -83,12 +84,12 @@ const App: React.FC = () => {
                   >
                     Terms of Service
                   </Link>
-                  {/* <Link
-                    to="/deletion"
-                    className="text-blue-300 hover:text-blue-500"
+                  <Link
+                    to="/about-magnus"
+                    className="mr-5 text-blue-300 hover:text-blue-500"
                   >
-                    Account Deletion
-                  </Link> */}
+                    About
+                  </Link>
                 </nav>
 
                 {/* Define Routes */}
@@ -105,6 +106,7 @@ const App: React.FC = () => {
                     element={<TermsOfService />}
                   />
                   <Route path="/deletion" element={<DeletionInstructions />} />
+                  <Route path="/about-magnus" element={<AboutMagnus />} />
                 </Routes>
               </header>
             </div>
