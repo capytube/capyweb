@@ -14,8 +14,8 @@ const EmojiSection: React.FC<EmojiSectionProps> = ({
   emojiCounts,
   onEmojiClick,
 }) => {
-  const {address} = useAccount()
-  console.log(address)
+  const { address } = useAccount();
+  console.log(address);
   return (
     <div style={styles.emojiContainer}>
       {emojis.map((emoji, index) => (
@@ -24,7 +24,8 @@ const EmojiSection: React.FC<EmojiSectionProps> = ({
           style={styles.emojiButton}
           onClick={() => onEmojiClick(streamId, emoji)}
         >
-          {emoji} {emojiCounts[emoji] || 0}
+          <span>{emoji}</span>
+          <span style={styles.emojiCount}>{emojiCounts[emoji] || 0}</span>
         </button>
       ))}
     </div>
@@ -40,8 +41,15 @@ const styles = {
   emojiButton: {
     background: "none",
     border: "none",
-    fontSize: "24px",
+    fontSize: "24px", // Keep the emoji size large
     cursor: "pointer",
+    color: "#000", // Adjust color if needed
+    display: "flex",
+    alignItems: "center",
+  },
+  emojiCount: {
+    fontSize: "16px", // Smaller size for the counter
+    marginLeft: "5px", // Add some space between the emoji and the count
   },
 };
 
