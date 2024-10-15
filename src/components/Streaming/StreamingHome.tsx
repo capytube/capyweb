@@ -1,20 +1,16 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate from react-router-dom
 import magnuspic from "../../assets/filled-magnus.svg";
 import Stream from "./Stream";
 
-interface StreamingHomeProps {
-  title: string;
-}
-
-const StreamingHome: React.FC<StreamingHomeProps> = ({ title }) => {
-  const [zoomedStreamId, setZoomedStreamId] = useState<string | null>(null);
+const StreamingHome: React.FC = () => {
   const [comments, setComments] = useState<{ [key: string]: string[] }>({});
   const [emojiCounts, setEmojiCounts] = useState<{
     [key: string]: { [emoji: string]: number };
   }>({});
-  console.log(title);
 
   const emojis = ["👍", "❤️", "😂", "👏", "🔥"];
+  const navigate = useNavigate(); // Hook to navigate between routes
 
   // Handle adding comments for individual streams
   const handleAddComment = (streamId: string, comment: string) => {
@@ -35,15 +31,9 @@ const StreamingHome: React.FC<StreamingHomeProps> = ({ title }) => {
     }));
   };
 
-  // Handle zooming into the stream by clicking the stream
-  const handleZoom = (streamId: string) => {
-    setZoomedStreamId(streamId);
-  };
-
-  // Handle zoom out using the back button
-  const handleZoomOut = (event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent zoom-in behavior when clicking the back button
-    setZoomedStreamId(null);
+  // Navigate to full-screen view when a stream is clicked
+  const openStreamInFullScreen = (streamId: string, title: string) => {
+    navigate(`/stream/${streamId}/${title}`);
   };
 
   const renderStream = (
@@ -52,13 +42,8 @@ const StreamingHome: React.FC<StreamingHomeProps> = ({ title }) => {
     profilePic: string
   ) => (
     <div
-      style={
-        {
-          ...styles.gridItem,
-          ...(zoomedStreamId === streamId ? styles.zoomedItem : {}),
-        } as React.CSSProperties
-      }
-      onClick={() => handleZoom(streamId)} // Clicking the stream zooms in
+      style={styles.gridItem as React.CSSProperties}
+      onClick={() => openStreamInFullScreen(streamId, title)} // Navigate to full screen view
     >
       <Stream
         streamId={streamId}
@@ -70,13 +55,6 @@ const StreamingHome: React.FC<StreamingHomeProps> = ({ title }) => {
         emojiCounts={emojiCounts[streamId] || {}}
         onEmojiClick={handleEmojiClick}
       />
-
-      {/* Show back button only when zoomed */}
-      {zoomedStreamId === streamId && (
-        <button onClick={handleZoomOut} style={styles.backButton}>
-          Back
-        </button>
-      )}
     </div>
   );
 
@@ -104,22 +82,6 @@ const styles = {
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
     cursor: "pointer",
     position: "relative",
-  } as React.CSSProperties,
-  zoomedItem: {
-    gridColumn: "span 2",
-    gridRow: "span 2",
-    position: "relative",
-  } as React.CSSProperties,
-  backButton: {
-    position: "absolute",
-    top: "10px",
-    left: "10px",
-    backgroundColor: "#ff5733",
-    color: "white",
-    padding: "5px 10px",
-    borderRadius: "5px",
-    border: "none",
-    cursor: "pointer",
   } as React.CSSProperties,
 };
 

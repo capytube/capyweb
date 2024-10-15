@@ -13,6 +13,7 @@ import StreamingHome from "./components/Streaming/StreamingHome";
 import SignOutButton from "./components/SignOutButton"; // Import the SignOutButton
 import Logo from "./components/Logo";
 import AboutMagnus from "./components/AboutMagnus";
+import FullScreenStream from "./components/Streaming/FullScreenStream";
 
 const styles = {
   container: {
@@ -94,9 +95,11 @@ const App: React.FC = () => {
 
                 {/* Define Routes */}
                 <Routes>
+                  <Route path="/" element={<StreamingHome />} />
+                  {/* Full screen stream page */}
                   <Route
-                    path="/"
-                    element={<StreamingHome title={"capystream"} />}
+                    path="/stream/:streamId/:streamTitle"
+                    element={<FullScreenStream />}
                   />
                   <Route path="/profile" element={<ProfilePage />} />{" "}
                   {/* Add profile route */}

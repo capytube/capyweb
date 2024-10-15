@@ -20,6 +20,14 @@ const LiveStream: React.FC<LiveStreamProps> = ({
 }) => {
   const [vodSource, setVodSource] = useState<Src[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  console.log(
+    "streamId in livepper is :",
+    streamId,
+    "title is :",
+    title,
+    "profilePic is :",
+    profilePic
+  );
 
   // Fetch the source for the playback ID on component mount
   useEffect(() => {
@@ -54,10 +62,6 @@ const LiveStream: React.FC<LiveStreamProps> = ({
 
   return (
     <Player.Root src={vodSource}>
-      <div style={styles.titleAndImageContainer}>
-        <h1 style={styles.title}>{title}</h1>
-        <img src={profilePic} alt="Profile" style={styles.profilePic} />
-      </div>
       <Player.Container className="h-full w-full overflow-hidden bg-gray-950">
         <Player.Video title="Live stream" className="h-full w-full" />
         <Player.Controls className="flex items-center justify-center">
