@@ -14,6 +14,8 @@ import SignOutButton from "./components/SignOutButton"; // Import the SignOutBut
 import Logo from "./components/Logo";
 import AboutMagnus from "./components/AboutMagnus";
 import FullScreenStream from "./components/Streaming/FullScreenStream";
+import { Web3Provider } from "./Web3Provider";
+import { ConnectKitButton } from "connectkit";
 
 const styles = {
   container: {
@@ -44,79 +46,85 @@ const styles = {
 
 const App: React.FC = () => {
   return (
-    <Authenticator>
-      {({ signOut, user }) => (
-        <Router>
-          <main>
-            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-              <header className="bg-gray-800 p-6 rounded-lg shadow-md text-white max-w-3xl w-11/12">
-                <div style={styles.container}>
-                  <h1 className="text-4xl mb-5">CapyTube</h1>
-                  <div style={styles.rightbar}>
-                    <div style={styles.logoAndSignout}>
-                      <Logo />
-                      <SignOutButton signOut={signOut} />
+    <Web3Provider>
+      <Authenticator>
+        {({ signOut, user }) => (
+          <Router>
+            <main>
+              <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+                <header className="bg-gray-800 p-6 rounded-lg shadow-md text-white max-w-3xl w-11/12">
+                  <div style={styles.container}>
+                    <h1 className="text-4xl mb-5">CapyTube</h1>
+                    <div style={styles.rightbar}>
+                      <div style={styles.logoAndSignout}>
+                        <Logo />
+                        <SignOutButton signOut={signOut} />
+                        <ConnectKitButton />
+                      </div>
+                      <p>{user?.signInDetails?.loginId}</p>
                     </div>
-                    <p>{user?.signInDetails?.loginId}</p>
                   </div>
-                </div>
-                <nav className="mb-4">
-                  <Link
-                    to="/"
-                    className="mr-5 text-blue-300 hover:text-blue-500"
-                  >
-                    Home
-                  </Link>
-                  <Link
-                    to="/profile"
-                    className="mr-5 text-blue-300 hover:text-blue-500"
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    to="/privacy-policy"
-                    className="mr-5 text-blue-300 hover:text-blue-500"
-                  >
-                    Privacy Policy
-                  </Link>
-                  <Link
-                    to="/terms-of-service"
-                    className="mr-5 text-blue-300 hover:text-blue-500"
-                  >
-                    Terms of Service
-                  </Link>
-                  <Link
-                    to="/about-magnus"
-                    className="mr-5 text-blue-300 hover:text-blue-500"
-                  >
-                    About
-                  </Link>
-                </nav>
+                  <nav className="mb-4">
+                    <Link
+                      to="/"
+                      className="mr-5 text-blue-300 hover:text-blue-500"
+                    >
+                      Home
+                    </Link>
+                    <Link
+                      to="/profile"
+                      className="mr-5 text-blue-300 hover:text-blue-500"
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      to="/privacy-policy"
+                      className="mr-5 text-blue-300 hover:text-blue-500"
+                    >
+                      Privacy Policy
+                    </Link>
+                    <Link
+                      to="/terms-of-service"
+                      className="mr-5 text-blue-300 hover:text-blue-500"
+                    >
+                      Terms of Service
+                    </Link>
+                    <Link
+                      to="/about-magnus"
+                      className="mr-5 text-blue-300 hover:text-blue-500"
+                    >
+                      About
+                    </Link>
+                  </nav>
 
-                {/* Define Routes */}
-                <Routes>
-                  <Route path="/" element={<StreamingHome />} />
-                  {/* Full screen stream page */}
-                  <Route
-                    path="/stream/:streamId/:streamTitle"
-                    element={<FullScreenStream />}
-                  />
-                  <Route path="/profile" element={<ProfilePage />} />{" "}
-                  {/* Add profile route */}
-                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                  <Route
-                    path="/terms-of-service"
-                    element={<TermsOfService />}
-                  />
-                  <Route path="/deletion" element={<DeletionInstructions />} />
-                  <Route path="/about-magnus" element={<AboutMagnus />} />
-                </Routes>
-              </header>
-            </div>
-          </main>
-        </Router>
-      )}
-    </Authenticator>
+                  {/* Define Routes */}
+                  <Routes>
+                    <Route path="/" element={<StreamingHome />} />
+                    {/* Full screen stream page */}
+                    <Route
+                      path="/stream/:streamId/:streamTitle"
+                      element={<FullScreenStream />}
+                    />
+                    <Route path="/profile" element={<ProfilePage />} />{" "}
+                    {/* Add profile route */}
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route
+                      path="/terms-of-service"
+                      element={<TermsOfService />}
+                    />
+                    <Route
+                      path="/deletion"
+                      element={<DeletionInstructions />}
+                    />
+                    <Route path="/about-magnus" element={<AboutMagnus />} />
+                  </Routes>
+                </header>
+              </div>
+            </main>
+          </Router>
+        )}
+      </Authenticator>
+    </Web3Provider>
   );
 };
 
