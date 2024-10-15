@@ -26,7 +26,12 @@ const Stream: React.FC<StreamProps> = ({
 }) => {
   return (
     <div>
-      <LiveStream streamId={streamId} title={title} profilePic={profilePic} />
+      {/* Add a wrapper with the 'video-container' class around the video */}
+      <div className="video-container">
+        <LiveStream streamId={streamId} title={title} profilePic={profilePic} />
+      </div>
+
+      {/* Other sections should remain outside the video-container */}
       <EmojiSection
         streamId={streamId}
         emojis={emojis}

@@ -31,9 +31,17 @@ const StreamingHome: React.FC = () => {
     }));
   };
 
-  // Navigate to full-screen view when a stream is clicked
-  const openStreamInFullScreen = (streamId: string, title: string) => {
-    navigate(`/stream/${streamId}/${title}`);
+  // Navigate to full-screen view when the video is clicked
+  const openStreamInFullScreen = (
+    streamId: string,
+    title: string,
+    e: React.MouseEvent
+  ) => {
+    // Check if the clicked target is the video container itself
+    const clickedElement = e.target as HTMLElement;
+    if (clickedElement.closest(".video-container")) {
+      navigate(`/stream/${streamId}/${title}`);
+    }
   };
 
   const renderStream = (
@@ -43,7 +51,7 @@ const StreamingHome: React.FC = () => {
   ) => (
     <div
       style={styles.gridItem as React.CSSProperties}
-      onClick={() => openStreamInFullScreen(streamId, title)} // Navigate to full screen view
+      onClick={(e) => openStreamInFullScreen(streamId, title, e)} // Navigate to full screen only if the video is clicked
     >
       <Stream
         streamId={streamId}
