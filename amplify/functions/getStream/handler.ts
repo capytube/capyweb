@@ -1,4 +1,3 @@
-import type { Handler } from "aws-lambda";
 import { Livepeer } from "livepeer";
 import { getSrc } from "@livepeer/react/external";
 import type { Schema } from "../../data/resource";
