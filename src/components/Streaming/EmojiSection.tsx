@@ -1,4 +1,5 @@
 import React from "react";
+import { useAccount } from "wagmi";
 
 interface EmojiSectionProps {
   streamId: string;
@@ -13,6 +14,8 @@ const EmojiSection: React.FC<EmojiSectionProps> = ({
   emojiCounts,
   onEmojiClick,
 }) => {
+  const {address} = useAccount()
+  console.log(address)
   return (
     <div style={styles.emojiContainer}>
       {emojis.map((emoji, index) => (
