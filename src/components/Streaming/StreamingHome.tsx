@@ -54,7 +54,6 @@ const StreamingHome: React.FC<StreamingHomeProps> = ({ title }) => {
       }}
       onClick={() => handleZoom(streamId)}
     >
-      <h1>{title}</h1>
       <LiveStream streamId={streamId} title={title} profilePic={profilePic} />
       {zoomedStreamId === streamId && (
         <div
@@ -100,6 +99,8 @@ const StreamingHome: React.FC<StreamingHomeProps> = ({ title }) => {
       )}
     </div>
   );
+
+  console.log("title is ", title);
 
   return (
     <div style={styles.gridContainer as React.CSSProperties}>
