@@ -16,7 +16,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
   const handleAddComment = () => {
     if (newComment) {
       onAddComment(streamId, newComment);
-      setNewComment(""); // Clear the input after adding comment
+      setNewComment(""); // Clear the input after adding the comment
     }
   };
 
@@ -42,7 +42,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
   );
 };
 
-const styles = {
+const styles: { [key: string]: React.CSSProperties } = {
   commentSection: {
     marginTop: "10px",
     backgroundColor: "#f4f4f4",
@@ -53,7 +53,7 @@ const styles = {
   commentsList: {
     marginBottom: "10px",
     maxHeight: "100px",
-    overflowY: "auto",
+    overflowY: "auto", // This is correctly typed now
   },
   commentInput: {
     width: "100%",
