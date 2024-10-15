@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import LiveStream from "./LiveStream";
 import magnuspic from "../../assets/filled-magnus.svg";
+import Stream from "./Stream";
 
 interface StreamingHomeProps {
   title: string;
@@ -9,29 +9,22 @@ interface StreamingHomeProps {
 const StreamingHome: React.FC<StreamingHomeProps> = ({ title }) => {
   const [zoomedStreamId, setZoomedStreamId] = useState<string | null>(null);
   const [comments, setComments] = useState<{ [key: string]: string[] }>({});
-  const [newComment, setNewComment] = useState<string>("");
   const [emojiCounts, setEmojiCounts] = useState<{
     [key: string]: { [emoji: string]: number };
   }>({});
+  console.log(title);
 
   const emojis = ["👍", "❤️", "😂", "👏", "🔥"];
 
-  // Handle adding comments
-  const handleAddComment = (streamId: string) => {
-    if (!newComment) return;
+  // Handle adding comments for individual streams
+  const handleAddComment = (streamId: string, comment: string) => {
     setComments((prevComments) => ({
       ...prevComments,
-      [streamId]: [...(prevComments[streamId] || []), newComment],
+      [streamId]: [...(prevComments[streamId] || []), comment],
     }));
-    setNewComment(""); // Clear the input
   };
 
-  // Handle zooming into the stream
-  const handleZoom = (streamId: string) => {
-    setZoomedStreamId(streamId === zoomedStreamId ? null : streamId);
-  };
-
-  // Handle emoji click and increment the count
+  // Handle emoji click and increment the count for individual streams
   const handleEmojiClick = (streamId: string, emoji: string) => {
     setEmojiCounts((prevCounts) => ({
       ...prevCounts,
@@ -42,65 +35,50 @@ const StreamingHome: React.FC<StreamingHomeProps> = ({ title }) => {
     }));
   };
 
+  // Handle zooming into the stream by clicking the stream
+  const handleZoom = (streamId: string) => {
+    setZoomedStreamId(streamId);
+  };
+
+  // Handle zoom out using the back button
+  const handleZoomOut = (event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent zoom-in behavior when clicking the back button
+    setZoomedStreamId(null);
+  };
+
   const renderStream = (
     streamId: string,
     title: string,
     profilePic: string
   ) => (
     <div
-      style={{
-        ...styles.gridItem,
-        ...(zoomedStreamId === streamId ? styles.zoomedItem : {}),
-      }}
-      onClick={() => handleZoom(streamId)}
+      style={
+        {
+          ...styles.gridItem,
+          ...(zoomedStreamId === streamId ? styles.zoomedItem : {}),
+        } as React.CSSProperties
+      }
+      onClick={() => handleZoom(streamId)} // Clicking the stream zooms in
     >
-      <LiveStream streamId={streamId} title={title} profilePic={profilePic} />
-      {zoomedStreamId === streamId && (
-        <div
-          style={styles.commentSection as React.CSSProperties}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Emoji Reactions */}
-          <div style={styles.emojiContainer as React.CSSProperties}>
-            {emojis.map((emoji, index) => (
-              <button
-                key={index}
-                style={styles.emojiButton as React.CSSProperties}
-                onClick={() => handleEmojiClick(streamId, emoji)}
-              >
-                {emoji} {emojiCounts[streamId]?.[emoji] || 0}
-              </button>
-            ))}
-          </div>
+      <Stream
+        streamId={streamId}
+        title={title}
+        profilePic={profilePic}
+        comments={comments[streamId] || []}
+        onAddComment={handleAddComment}
+        emojis={emojis}
+        emojiCounts={emojiCounts[streamId] || {}}
+        onEmojiClick={handleEmojiClick}
+      />
 
-          {/* Comment Section */}
-          <div>
-            <h4 style={{ fontWeight: "bold" }}>Comments</h4>
-            <div style={styles.commentsList as React.CSSProperties}>
-              {(comments[streamId] || []).map((comment, index) => (
-                <p key={index}>{comment}</p>
-              ))}
-            </div>
-            <input
-              type="text"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment"
-              style={styles.commentInput as React.CSSProperties}
-            />
-            <button
-              onClick={() => handleAddComment(streamId)}
-              style={styles.addButton as React.CSSProperties}
-            >
-              Add Comment
-            </button>
-          </div>
-        </div>
+      {/* Show back button only when zoomed */}
+      {zoomedStreamId === streamId && (
+        <button onClick={handleZoomOut} style={styles.backButton}>
+          Back
+        </button>
       )}
     </div>
   );
-
-  console.log("title is ", title);
 
   return (
     <div style={styles.gridContainer as React.CSSProperties}>
@@ -115,61 +93,34 @@ const StreamingHome: React.FC<StreamingHomeProps> = ({ title }) => {
 const styles = {
   gridContainer: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)", // Define how many columns you want
-    gap: "10px", // Gap between grid items
+    gridTemplateColumns: "repeat(2, 1fr)",
+    gap: "10px",
     padding: "10px",
-  },
+  } as React.CSSProperties,
   gridItem: {
     backgroundColor: "#585d65",
     padding: "10px",
     borderRadius: "10px",
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-    cursor: "pointer", // Make it clear that it's clickable
-  },
-  zoomedItem: {
-    gridColumn: "span 2", // Make the zoomed stream take full width
-    gridRow: "span 2", // Make it expand height
-    position: "relative" as React.CSSProperties["position"], // Fix TypeScript error
-  },
-  commentSection: {
-    marginTop: "10px",
-    backgroundColor: "#f4f4f4",
-    padding: "10px",
-    borderRadius: "8px",
-    color: "black",
-  },
-  emojiContainer: {
-    display: "flex",
-    gap: "10px",
-    marginBottom: "10px",
-  },
-  emojiButton: {
-    background: "none",
-    border: "none",
-    fontSize: "24px",
     cursor: "pointer",
-  },
-  commentsList: {
-    marginBottom: "10px",
-    maxHeight: "100px",
-    overflowY: "auto", // Scroll when there are many comments
-  },
-  commentInput: {
-    width: "100%",
-    padding: "8px",
-    marginBottom: "10px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-    color: "black",
-  },
-  addButton: {
-    backgroundColor: "#007bff",
+    position: "relative",
+  } as React.CSSProperties,
+  zoomedItem: {
+    gridColumn: "span 2",
+    gridRow: "span 2",
+    position: "relative",
+  } as React.CSSProperties,
+  backButton: {
+    position: "absolute",
+    top: "10px",
+    left: "10px",
+    backgroundColor: "#ff5733",
     color: "white",
     padding: "5px 10px",
+    borderRadius: "5px",
     border: "none",
-    borderRadius: "4px",
     cursor: "pointer",
-  },
+  } as React.CSSProperties,
 };
 
 export default StreamingHome;
