@@ -3,7 +3,7 @@ import { baseSepolia } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 
-const config = createConfig(
+export const config = createConfig(
   getDefaultConfig({
     chains: [baseSepolia],
 
