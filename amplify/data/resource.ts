@@ -16,14 +16,14 @@ const schema = a.schema({
       content: a.string(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
-  Comment: a
-    .model({
-      streamId: a.string(),
-      content: a.string(),
-      userId: a.string(),
-      createdAt: a.timestamp(),
-    })
-    .authorization((allow) => [allow.publicApiKey()]),
+  // Comment: a
+  //   .model({
+  //     streamId: a.string(),
+  //     content: a.string(),
+  //     userId: a.string(),
+  //     createdAt: a.timestamp(),
+  //   })
+  //   .authorization((allow) => [allow.publicApiKey()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
