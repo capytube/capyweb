@@ -21,7 +21,7 @@ const LiveStream: React.FC<LiveStreamProps> = ({
   const [vodSource, setVodSource] = useState<Src[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   console.log(
-    "streamId in livepper is :",
+    "streamId in livepeer is :",
     streamId,
     "title is :",
     title,
@@ -33,14 +33,13 @@ const LiveStream: React.FC<LiveStreamProps> = ({
   useEffect(() => {
     const fetchSource = async () => {
       try {
-        console.log("input streamId in livepper is :", streamId);
+        console.log("input streamId in livepeer is :", streamId);
         const client = generateClient<Schema>();
         const srcString = (
           await client.queries.getStream({ streamId: streamId })
         ).data!;
-        console.log("src string form server is", srcString);
+        console.log("src string from server is", srcString);
         const source = JSON.parse(srcString) as Src[];
-        // const source = await
         setVodSource(source);
       } catch (err) {
         setError("Failed to load the stream. Please try again later.");
@@ -80,37 +79,3 @@ const LiveStream: React.FC<LiveStreamProps> = ({
 };
 
 export default LiveStream;
-
-const styles = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "20px",
-  },
-  title: {
-    display: "flex",
-    fontSize: "24px",
-    fontWeight: "bold",
-    marginBottom: "10px",
-  },
-  profilePic: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "50%", // Makes the image circular
-  },
-  titleAndImageContainer: {
-    display: "flex",
-    alignItems: "center", // Aligns items vertically in the center
-    marginBottom: "5px",
-    justifyContent: "space-between", // Pushes the title to the left and image to the right
-  },
-  streamContainer: {
-    width: "100%",
-    maxWidth: "800px",
-    backgroundColor: "#f0f0f0",
-    padding: "10px",
-    borderRadius: "10px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-  },
-};
