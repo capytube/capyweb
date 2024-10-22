@@ -14,6 +14,7 @@ import AboutMagnus from "./components/AboutMagnus";
 import FullScreenStream from "./components/Streaming/FullScreenStream";
 import { Web3Provider } from "./Web3Provider";
 import { ConnectKitButton } from "connectkit";
+import capytube from "./assets/capytube.svg";
 
 const styles = {
   container: {
@@ -50,6 +51,7 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
             <header className="bg-gray-800 p-6 rounded-lg shadow-md text-white max-w-3xl w-11/12">
               <div style={styles.container}>
+                <img src={capytube} alt="CapyTube" className="h-20 w-40 mr-4" />
                 <h1 className="text-4xl mb-5">CapyTube</h1>
                 <div style={styles.rightbar}>
                   <div style={styles.logoAndSignout}>

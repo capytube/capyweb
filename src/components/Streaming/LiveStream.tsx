@@ -1,5 +1,10 @@
 // src/components/LiveStream.tsx
-import { PauseIcon, PlayIcon } from "@livepeer/react/assets";
+import {
+  PauseIcon,
+  PlayIcon,
+  EnterFullscreenIcon,
+  ExitFullscreenIcon,
+} from "@livepeer/react/assets";
 import { Src } from "@livepeer/react";
 import * as Player from "@livepeer/react/player";
 import "./LiveStream.css"; // Optional: Create this file for component-specific styles
@@ -63,7 +68,23 @@ const LiveStream: React.FC<LiveStreamProps> = ({
     <Player.Root src={vodSource}>
       <Player.Container className="h-full w-full overflow-hidden bg-gray-950">
         <Player.Video title="Live stream" className="h-full w-full" />
-        <Player.Controls className="flex items-center justify-center">
+        <Player.FullscreenTrigger
+          style={{
+            position: "absolute",
+            left: 20,
+            bottom: 20,
+            width: 25,
+            height: 25,
+          }}
+        >
+          <Player.FullscreenIndicator asChild matcher={false}>
+            <EnterFullscreenIcon />
+          </Player.FullscreenIndicator>
+          <Player.FullscreenIndicator asChild>
+            <ExitFullscreenIcon />
+          </Player.FullscreenIndicator>
+        </Player.FullscreenTrigger>
+        {/* <Player.Controls className="flex items-center justify-center">
           <Player.PlayPauseTrigger className="w-10 h-10 hover:scale-105 flex-shrink-0">
             <Player.PlayingIndicator asChild matcher={false}>
               <PlayIcon className="w-full h-full" />
@@ -72,7 +93,7 @@ const LiveStream: React.FC<LiveStreamProps> = ({
               <PauseIcon className="w-full h-full" />
             </Player.PlayingIndicator>
           </Player.PlayPauseTrigger>
-        </Player.Controls>
+        </Player.Controls> */}
       </Player.Container>
     </Player.Root>
   );
