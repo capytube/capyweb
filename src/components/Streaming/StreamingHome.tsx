@@ -69,9 +69,9 @@ const StreamingHome: React.FC = () => {
   return (
     <div style={styles.gridContainer as React.CSSProperties}>
       {renderStream("fa7ahoikpf19u1e0", "magstream1", magnuspic)}
-      {renderStream("fa7ahoikpf19u1e0", "magstream2", magnuspic)}
+      {/* {renderStream("fa7ahoikpf19u1e0", "magstream2", magnuspic)} */}
       {renderStream("3ad581cgj5ahdc7z", "magstream3", magnuspic)}
-      {renderStream("3ad581cgj5ahdc7z", "magstream4", magnuspic)}
+      {/* {renderStream("3ad581cgj5ahdc7z", "magstream4", magnuspic)} */}
     </div>
   );
 };
