@@ -79,7 +79,7 @@ const StreamingHome: React.FC = () => {
 const styles = {
   gridContainer: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
+    gridTemplateColumns: "repeat(1, 1fr)",
     gap: "10px",
     padding: "10px",
   } as React.CSSProperties,
