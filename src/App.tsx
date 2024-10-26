@@ -1,6 +1,12 @@
 // src/App.tsx
 
 import React from "react";
+import {
+  DynamicContextProvider,
+  DynamicWidget,
+} from "@dynamic-labs/sdk-react-core";
+import { createConfig, http, WagmiProvider } from 'wagmi';
+import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsOfService from "./components/TermsOfService";
@@ -12,9 +18,15 @@ import StreamingHome from "./components/Streaming/StreamingHome";
 import Logo from "./components/Logo";
 import AboutMagnus from "./components/AboutMagnus";
 import FullScreenStream from "./components/Streaming/FullScreenStream";
-import { Web3Provider } from "./Web3Provider";
-import { ConnectKitButton } from "connectkit";
 import capytube from "./assets/capytube.svg";
+import { baseSepolia } from "viem/chains";
+
+export const wagmiConfig = createConfig({
+  chains: [baseSepolia],
+  transports: {
+      [baseSepolia.id]: http("https://sepolia.base.org"),
+  },
+});
 
 const styles = {
   container: {
@@ -45,7 +57,13 @@ const styles = {
 
 const App: React.FC = () => {
   return (
-    <Web3Provider>
+    <WagmiProvider config={wagmiConfig}>
+    <DynamicContextProvider
+      settings={{
+        environmentId: "d36e0777-89be-4cb6-a0ee-27e4a50aac35",
+        walletConnectors: [EthereumWalletConnectors],
+      }}
+    >
       <Router>
         <main>
           <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -56,7 +74,7 @@ const App: React.FC = () => {
                 <div style={styles.rightbar}>
                   <div style={styles.logoAndSignout}>
                     <Logo />
-                    <ConnectKitButton />
+                    <DynamicWidget />
                   </div>
                 </div>
               </div>
@@ -108,7 +126,8 @@ const App: React.FC = () => {
           </div>
         </main>
       </Router>
-    </Web3Provider>
+     </DynamicContextProvider>
+     </WagmiProvider>
   );
 };
 
