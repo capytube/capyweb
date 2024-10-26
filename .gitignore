@@ -42,3 +42,4 @@ build/
 
 # amplify
 .amplify/*
+yarn.lock
