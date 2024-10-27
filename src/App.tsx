@@ -44,18 +44,18 @@ const styles = {
     alignItems: "flex-end",
   },
   appBackground: {
-    backgroundColor: "#1a3a1a", // Dark green background
+    backgroundColor: "#FFFCC8", // Light yellow background
     minHeight: "100vh",
   },
   mainContent: {
-    color: "#ffffff", // White text for readability
+    color: "#000000", // Changed to black for better contrast on light background
     padding: "40px",
     borderRadius: "8px",
     maxWidth: "800px",
     width: "90%",
   },
   navLink: {
-    color: "#ffffff", // White color for nav links
+    color: "#000000", // Changed to black for better visibility
     marginRight: "20px",
     textDecoration: "none",
   },

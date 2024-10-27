@@ -50,8 +50,11 @@ const StreamingHome: React.FC = () => {
     profilePic: string
   ) => (
     <div
-      style={styles.gridItem as React.CSSProperties}
-      onClick={(e) => openStreamInFullScreen(streamId, title, e)} // Navigate to full screen only if the video is clicked
+      style={{
+        ...styles.gridItem,
+        backgroundColor: "#FFFCC8", // Set the background color here
+      }}
+      onClick={(e) => openStreamInFullScreen(streamId, title, e)}
     >
       <Stream
         streamId={streamId}
@@ -67,7 +70,7 @@ const StreamingHome: React.FC = () => {
   );
 
   return (
-    <div style={styles.gridContainer as React.CSSProperties}>
+    <div style={styles.gridContainer}>
       {renderStream("fa7ahoikpf19u1e0", "magstream1", magnuspic)}
       {renderStream("3ad581cgj5ahdc7z", "magstream3", magnuspic)}
     </div>
@@ -80,13 +83,12 @@ const styles = {
     gridTemplateColumns: "repeat(1, 1fr)",
     gap: "10px",
     padding: "10px",
-   // background: "#d0e591"
+    background: "#FFFCC8", // Set the overall background color
   } as React.CSSProperties,
   gridItem: {
-    backgroundColor: "#d0e591",
     padding: "10px",
     borderRadius: "10px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    // boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)", // This line is removed
     cursor: "pointer",
     position: "relative",
   } as React.CSSProperties,
