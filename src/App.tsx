@@ -22,7 +22,8 @@ import { baseSepolia } from "viem/chains";
 import homeIcon from "./assets/home.svg";
 import profileIcon from "./assets/profile.svg";
 import capyIcon from "./assets/capy.svg";
-import aboutIcon from "./assets/about.svg"; // Add this line
+import aboutIcon from "./assets/about.svg";
+import loginIcon from "./assets/login.svg";
 
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
@@ -69,6 +70,15 @@ const styles = {
     width: "48px", // Doubled from 24px to 48px
     height: "48px", // Doubled from 24px to 48px
   },
+  customLoginButton: {
+    backgroundImage: `url(${loginIcon})`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "center",
+    backgroundSize: "contain",
+    width: "96px", // Doubled from 48px to 96px
+    height: "96px", // Doubled from 48px to 96px
+    cursor: "pointer",
+  },
 };
 
 const App: React.FC = () => {
@@ -95,7 +105,13 @@ const App: React.FC = () => {
                   />
                   <div style={styles.rightbar}>
                     <div style={styles.logoAndSignout}>
-                      <DynamicWidget />
+                      <DynamicWidget
+                        buttonClassName="custom-login-button"
+                        innerButtonComponent={
+                          <div style={styles.customLoginButton}></div>
+                        }
+                        buttonContainerClassName="custom-login-container"
+                      />
                     </div>
                   </div>
                 </div>
