@@ -17,8 +17,6 @@ const FullScreenStream: React.FC = () => {
     {}
   );
 
-  const emojis = ["capyangry", "capyfire", "capylike", "capylove", "capywow"];
-
   // Handle adding a comment (removed unused streamId parameter)
   const handleAddComment = (_: string, comment: string) => {
     setComments((prevComments) => [...prevComments, comment]);
@@ -50,7 +48,6 @@ const FullScreenStream: React.FC = () => {
         </div>
         <EmojiSection
           streamId={streamId || ""}
-          emojis={emojis}
           emojiCounts={emojiCounts}
           onEmojiClick={handleEmojiClick}
         />

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate from react-router-dom
+import { useNavigate } from "react-router-dom";
 import magnuspic from "../../assets/filled-magnus.svg";
 import Stream from "./Stream";
 
@@ -9,8 +9,7 @@ const StreamingHome: React.FC = () => {
     [key: string]: { [emoji: string]: number };
   }>({});
 
-  const emojis = ["capyangry", "capyfire", "capylike", "capylove", "capywow"];
-  const navigate = useNavigate(); // Hook to navigate between routes
+  const navigate = useNavigate();
 
   // Handle adding comments for individual streams
   const handleAddComment = (streamId: string, comment: string) => {
@@ -62,7 +61,6 @@ const StreamingHome: React.FC = () => {
         profilePic={profilePic}
         comments={comments[streamId] || []}
         onAddComment={handleAddComment}
-        emojis={emojis}
         emojiCounts={emojiCounts[streamId] || {}}
         onEmojiClick={handleEmojiClick}
       />

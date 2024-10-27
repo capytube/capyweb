@@ -9,7 +9,6 @@ interface StreamProps {
   profilePic: string;
   comments: string[];
   onAddComment: (streamId: string, comment: string) => void;
-  emojis: string[];
   emojiCounts: { [emoji: string]: number };
   onEmojiClick: (streamId: string, emoji: string) => void;
 }
@@ -20,7 +19,6 @@ const Stream: React.FC<StreamProps> = ({
   profilePic,
   comments,
   onAddComment,
-  emojis,
   emojiCounts,
   onEmojiClick,
 }) => {
