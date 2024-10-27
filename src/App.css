@@ -1,7 +1,7 @@
 /* src/App.css */
 .App {
   text-align: center;
-  background-color: #f0f0f0;
+  background-color: #1a3a1a; /* Dark green background */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -11,11 +11,11 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #2c5e2c; /* Slightly lighter green for contrast */
   padding: 40px;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  color: #e0f0e0; /* Light green text for readability */
   max-width: 800px;
   width: 90%;
 }
@@ -23,4 +23,5 @@
 h1 {
   margin-bottom: 20px;
   font-size: 3rem;
+  color: #000000; /* Light green color for the main title */
 }
