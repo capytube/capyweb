@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import addCommentIcon from "../../assets/add-comment.svg"; // Make sure this path is correct
 
 interface CommentSectionProps {
   streamId: string;
@@ -22,22 +23,32 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
   return (
     <div style={styles.commentSection}>
-      <h4 style={{ fontWeight: "bold" }}>Comments</h4>
+      <h4 style={{ ...styles.text, fontWeight: "bold", fontSize: "24px" }}>
+        Comments
+      </h4>
       <div style={styles.commentsList}>
         {comments.map((comment, index) => (
-          <p key={index}>{comment}</p>
+          <p key={index} style={styles.text}>
+            {comment}
+          </p>
         ))}
       </div>
-      <input
-        type="text"
-        value={newComment}
-        onChange={(e) => setNewComment(e.target.value)}
-        placeholder="Add a comment"
-        style={styles.commentInput}
-      />
-      <button onClick={handleAddComment} style={styles.addButton}>
-        Add Comment
-      </button>
+      <div style={styles.inputContainer}>
+        <input
+          type="text"
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Add a comment"
+          style={styles.commentInput}
+        />
+        <button onClick={handleAddComment} style={styles.addButton}>
+          <img
+            src={addCommentIcon}
+            alt="Add Comment"
+            style={styles.addButtonIcon}
+          />
+        </button>
+      </div>
     </div>
   );
 };
@@ -45,31 +56,46 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 const styles: { [key: string]: React.CSSProperties } = {
   commentSection: {
     marginTop: "10px",
-    backgroundColor: "#f4f4f4",
+    backgroundColor: "transparent",
     padding: "10px",
     borderRadius: "8px",
-    color: "black",
+    color: "#7A3F3E",
+    fontFamily: "'AdLaM Display', sans-serif",
+  },
+  text: {
+    fontSize: "16px",
+    fontFamily: "'AdLaM Display', sans-serif",
+    color: "#7A3F3E",
   },
   commentsList: {
     marginBottom: "10px",
-    maxHeight: "100px",
-    overflowY: "auto", // This is correctly typed now
+    maxHeight: "200px",
+    overflowY: "auto",
+  },
+  inputContainer: {
+    display: "flex",
+    alignItems: "center",
   },
   commentInput: {
-    width: "100%",
+    flex: 1,
     padding: "8px",
-    marginBottom: "10px",
+    marginRight: "10px",
     borderRadius: "4px",
     border: "1px solid #ccc",
-    color: "black",
+    backgroundColor: "#FFFCDD",
+    color: "#7A3F3E",
+    fontSize: "16px",
+    fontFamily: "'AdLaM Display', sans-serif",
   },
   addButton: {
-    backgroundColor: "#007bff",
-    color: "white",
-    padding: "5px 10px",
+    backgroundColor: "transparent",
     border: "none",
-    borderRadius: "4px",
     cursor: "pointer",
+    padding: 0,
+  },
+  addButtonIcon: {
+    width: "24px",
+    height: "24px",
   },
 };
 

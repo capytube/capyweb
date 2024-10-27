@@ -19,6 +19,10 @@ import AboutMagnus from "./components/AboutMagnus";
 import FullScreenStream from "./components/Streaming/FullScreenStream";
 import capytube from "./assets/capytube.svg";
 import { baseSepolia } from "viem/chains";
+import homeIcon from "./assets/home.svg";
+import profileIcon from "./assets/profile.svg";
+import capyIcon from "./assets/capy.svg";
+import aboutIcon from "./assets/about.svg"; // Add this line
 
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
@@ -55,9 +59,15 @@ const styles = {
     width: "90%",
   },
   navLink: {
-    color: "#000000", // Changed to black for better visibility
+    color: "#000000",
     marginRight: "20px",
     textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
+  },
+  navIcon: {
+    width: "48px", // Doubled from 24px to 48px
+    height: "48px", // Doubled from 24px to 48px
   },
 };
 
@@ -90,20 +100,25 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <nav className="mb-4">
-                  <Link to="/" style={styles.navLink}>
-                    Home
+                  <Link to="/" style={styles.navLink} title="Home">
+                    <img src={homeIcon} alt="Home" style={styles.navIcon} />
                   </Link>
-                  <Link to="/profile" style={styles.navLink}>
-                    Profile
+                  <Link to="/profile" style={styles.navLink} title="Profile">
+                    <img
+                      src={profileIcon}
+                      alt="Profile"
+                      style={styles.navIcon}
+                    />
                   </Link>
-                  <Link to="/privacy-policy" style={styles.navLink}>
-                    Privacy Policy
+                  <Link to="#" style={styles.navLink} title="Placeholder">
+                    <img
+                      src={capyIcon}
+                      alt="Placeholder"
+                      style={styles.navIcon}
+                    />
                   </Link>
-                  <Link to="/terms-of-service" style={styles.navLink}>
-                    Terms of Service
-                  </Link>
-                  <Link to="/about-magnus" style={styles.navLink}>
-                    About
+                  <Link to="/about-magnus" style={styles.navLink} title="About">
+                    <img src={aboutIcon} alt="About" style={styles.navIcon} />
                   </Link>
                 </nav>
 

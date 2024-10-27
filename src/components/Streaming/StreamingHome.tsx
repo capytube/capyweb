@@ -83,12 +83,11 @@ const styles = {
     gridTemplateColumns: "repeat(1, 1fr)",
     gap: "10px",
     padding: "10px",
-    background: "#FFFCC8", // Set the overall background color
+    background: "#FFFCC8",
   } as React.CSSProperties,
   gridItem: {
-    padding: "10px",
-    borderRadius: "10px",
-    // boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)", // This line is removed
+    padding: "0",
+    borderRadius: "0",
     cursor: "pointer",
     position: "relative",
   } as React.CSSProperties,
