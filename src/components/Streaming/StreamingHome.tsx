@@ -9,7 +9,7 @@ const StreamingHome: React.FC = () => {
     [key: string]: { [emoji: string]: number };
   }>({});
 
-  const emojis = ["👍", "❤️", "😂", "👏", "🔥"];
+  const emojis = ["capyangry", "capyfire", "capylike", "capylove", "capywow"];
   const navigate = useNavigate(); // Hook to navigate between routes
 
   // Handle adding comments for individual streams

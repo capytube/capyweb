@@ -1,31 +1,43 @@
 import React from "react";
 import { useAccount } from "wagmi";
+import capyangry from "../../assets/capyangry.svg";
+import capyfire from "../../assets/capyfire.svg";
+import capylike from "../../assets/capylike.svg";
+import capylove from "../../assets/capylove.svg";
+import capywow from "../../assets/capywow.svg";
 
 interface EmojiSectionProps {
   streamId: string;
-  emojis: string[];
   emojiCounts: { [emoji: string]: number };
   onEmojiClick: (streamId: string, emoji: string) => void;
 }
 
 const EmojiSection: React.FC<EmojiSectionProps> = ({
   streamId,
-  emojis,
   emojiCounts,
   onEmojiClick,
 }) => {
   const { address } = useAccount();
   console.log(address);
+
+  const emojis = [
+    { name: "capyangry", icon: capyangry },
+    { name: "capyfire", icon: capyfire },
+    { name: "capylike", icon: capylike },
+    { name: "capylove", icon: capylove },
+    { name: "capywow", icon: capywow },
+  ];
+
   return (
     <div style={styles.emojiContainer}>
-      {emojis.map((emoji, index) => (
+      {emojis.map((emoji) => (
         <button
-          key={index}
+          key={emoji.name}
           style={styles.emojiButton}
-          onClick={() => onEmojiClick(streamId, emoji)}
+          onClick={() => onEmojiClick(streamId, emoji.name)}
         >
-          <span>{emoji}</span>
-          <span style={styles.emojiCount}>{emojiCounts[emoji] || 0}</span>
+          <img src={emoji.icon} alt={emoji.name} style={styles.emojiIcon} />
+          <span style={styles.emojiCount}>{emojiCounts[emoji.name] || 0}</span>
         </button>
       ))}
     </div>
@@ -41,15 +53,17 @@ const styles = {
   emojiButton: {
     background: "none",
     border: "none",
-    fontSize: "24px", // Keep the emoji size large
     cursor: "pointer",
-    color: "#000", // Adjust color if needed
     display: "flex",
     alignItems: "center",
   },
+  emojiIcon: {
+    width: "24px",
+    height: "24px",
+    marginRight: "4px",
+  },
   emojiCount: {
-    fontSize: "16px", // Smaller size for the counter
-    marginLeft: "5px", // Add some space between the emoji and the count
+    fontSize: "12px",
   },
 };
 

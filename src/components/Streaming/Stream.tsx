@@ -34,7 +34,6 @@ const Stream: React.FC<StreamProps> = ({
       {/* Other sections should remain outside the video-container */}
       <EmojiSection
         streamId={streamId}
-        emojis={emojis}
         emojiCounts={emojiCounts}
         onEmojiClick={onEmojiClick}
       />

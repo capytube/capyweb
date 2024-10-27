@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import LiveStream from "./LiveStream";
 import CommentSection from "./CommentSection";
 import EmojiSection from "./EmojiSection";
-import mainLogo from "../../assets/main-logo.svg";
 
 const FullScreenStream: React.FC = () => {
   const { streamId, streamTitle } = useParams<{
     streamId: string;
     streamTitle: string;
   }>();
+  const navigate = useNavigate();
 
   // State for comments and emojis
   const [comments, setComments] = useState<string[]>([]);
@@ -17,7 +17,7 @@ const FullScreenStream: React.FC = () => {
     {}
   );
 
-  const emojis = ["👍", "❤️", "😂", "👏", "🔥"];
+  const emojis = ["capyangry", "capyfire", "capylike", "capylove", "capywow"];
 
   // Handle adding a comment (removed unused streamId parameter)
   const handleAddComment = (_: string, comment: string) => {
@@ -34,43 +34,32 @@ const FullScreenStream: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      {/* Stream Info Section */}
-      <div style={styles.streamInfo}>
-        <img src={mainLogo} alt="Logo" style={styles.logo} />
+      <div style={styles.header}>
         <h1 style={styles.streamName}>{streamTitle}</h1>
+        <button style={styles.backButton} onClick={() => navigate("/")}>
+          Back
+        </button>
       </div>
-
-      {/* Main content wrapper for stream, emojis, and comments */}
       <div style={styles.contentWrapper}>
-        {/* Live Stream Component */}
         <div style={styles.liveStreamWrapper}>
           <LiveStream
             streamId={streamId || ""}
             title={streamTitle || `Stream ${streamId}`}
-            profilePic={mainLogo}
+            profilePic=""
           />
         </div>
-
-        {/* Emoji Section */}
         <EmojiSection
           streamId={streamId || ""}
           emojis={emojis}
           emojiCounts={emojiCounts}
           onEmojiClick={handleEmojiClick}
         />
-
-        {/* Comment Section */}
         <CommentSection
           streamId={streamId || ""}
           comments={comments}
           onAddComment={handleAddComment}
         />
       </div>
-
-      {/* Back Button */}
-      <button style={styles.backButton} onClick={() => window.history.back()}>
-        Back
-      </button>
     </div>
   );
 };
@@ -78,56 +67,47 @@ const FullScreenStream: React.FC = () => {
 const styles = {
   container: {
     display: "flex",
-    flexDirection: "column" as const, // Ensure proper typing for flexDirection
+    flexDirection: "column" as const,
     alignItems: "center",
-    justifyContent: "center",
-    height: "100vh",
-    backgroundColor: "#000",
-    position: "relative" as const, // Cast position to the correct type
+    minHeight: "100vh",
+    backgroundColor: "#FFFCC8",
     padding: "20px",
   },
-  streamInfo: {
+  header: {
     display: "flex",
-    flexDirection: "row" as const, // Ensure proper typing for flexDirection
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    width: "100%",
     marginBottom: "20px",
   },
-  logo: {
-    height: "50px",
-    marginRight: "15px",
-  },
   streamName: {
-    color: "white",
+    color: "#7A3F3E",
     fontSize: "24px",
     fontWeight: "bold",
+    fontFamily: "'AdLaM Display', sans-serif",
   },
   contentWrapper: {
     width: "100%",
-    maxWidth: "800px", // Ensures the content does not exceed this width
-    padding: "10px",
-    backgroundColor: "#fff",
+    maxWidth: "800px",
+    backgroundColor: "#FFFCC8",
     borderRadius: "10px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-    display: "flex",
-    flexDirection: "column" as const, // Cast flexDirection to proper type
-    gap: "20px", // Adding some space between the sections
+    overflow: "hidden",
   },
   liveStreamWrapper: {
-    display: "flex",
-    justifyContent: "center",
-    marginBottom: "10px",
+    width: "100%",
+    marginBottom: "20px",
   },
   backButton: {
-    position: "absolute" as const, // Cast position to proper type
-    top: "10px",
-    left: "10px",
-    backgroundColor: "#ff5733",
+    backgroundColor: "#7A3F3E",
     color: "white",
-    padding: "10px",
+    padding: "8px 16px", // Reduced padding to make the button smaller
     borderRadius: "5px",
     border: "none",
     cursor: "pointer",
+    fontFamily: "'AdLaM Display', sans-serif",
+    fontSize: "14px", // Reduced font size
+    transform: "rotate(15deg)", // Rotate the button by 15 degrees
+    boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.3)", // Add shadow
   },
 };
 
