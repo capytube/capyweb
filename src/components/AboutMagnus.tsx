@@ -121,11 +121,13 @@ const styles = {
   },
   paragraph: {
     marginBottom: "15px",
+    color: "#000",
   },
   list: {
     marginBottom: "15px",
     listStyleType: "disc",
     paddingLeft: "20px",
+    color: "#000",
   },
   imageWrapper: {
     display: "flex",
