@@ -11,7 +11,7 @@ import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsOfService from "./components/TermsOfService";
 import DeletionInstructions from "./components/DeletionInstructions";
-import ProfilePage from "./components/ProfilePage";
+import ProfilePage from "./components/Account/ProfilePage";
 import "@aws-amplify/ui-react/styles.css";
 import "./App.css";
 // import StreamingHome from "./components/Streaming/StreamingHome";
