@@ -16,6 +16,7 @@ import "@aws-amplify/ui-react/styles.css";
 import "./App.css";
 // import StreamingHome from "./components/Streaming/StreamingHome";
 import Home from "./components/Home";
+import Watch from "./components/Watch";
 import AboutMagnus from "./components/AboutMagnus";
 import FullScreenStream from "./components/Streaming/FullScreenStream";
 import FooterNavbar from "./components/FooterNavbar/FooterNavbar";
@@ -73,7 +74,7 @@ const App: React.FC = () => {
                   <Link to="/" className="navLink" title="Home">
                     <img src={homeIcon} alt="Home" className="navIcon" />
                   </Link>
-                  <Link to="#" className="navLink" title="Watch">
+                  <Link to="/watch" className="navLink" title="Watch">
                     <img src={watchIcon} alt="Watch" className="navIcon" />
                   </Link>
                   <Link to="#" className="navLink" title="Play">
@@ -88,6 +89,7 @@ const App: React.FC = () => {
                 {/* Define Routes */}
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/watch" element={<Watch />} />
                   <Route
                     path="/stream/:streamId/:streamTitle"
                     element={<FullScreenStream />}

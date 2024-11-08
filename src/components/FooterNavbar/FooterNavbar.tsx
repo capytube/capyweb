@@ -12,7 +12,7 @@ const FooterNavbar = () => {
         <Link to="/" className={styles.navLink} title="Home">
           <img src={homeIcon} alt="Home" className="navIcon" />
         </Link>
-        <Link to="#" className={styles.navLink} title="Watch">
+        <Link to="/watch" className={styles.navLink} title="Watch">
           <img src={watchIcon} alt="Watch" className="navIcon" />
         </Link>
         <Link to="#" className={styles.navLink} title="Play">

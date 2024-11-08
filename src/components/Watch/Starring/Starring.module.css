@@ -1,0 +1,52 @@
+.starringWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, #d0e591 0%, #ffb26f 100%);
+  padding: 3rem 0;
+}
+
+.starringWrapper > h1 {
+  font-family: "Hanalei Fill", sans-serif;
+  font-size: 80px;
+  font-weight: 400;
+  line-height: 96px;
+  color: #7a3f3e;
+  margin-bottom: 2rem;
+
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.starringCapyCardsWrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 3rem;
+  pad: 0 4rem;
+}
+
+@media screen and (max-width: 1000px) {
+  .starringWrapper > h1 {
+    font-size: 60px;
+    line-height: 76px;
+    margin-bottom: 1rem;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .starringWrapper {
+    padding-bottom: 6rem;
+  }
+  .starringWrapper > h1 {
+    font-size: 24px;
+    line-height: 28px;
+    gap: 0.5rem;
+  }
+
+  .starringWrapper > h1 > img {
+    width: 35px;
+  }
+}

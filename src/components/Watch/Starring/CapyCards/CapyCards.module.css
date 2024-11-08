@@ -1,0 +1,145 @@
+.card {
+  display: flex;
+  background-color: #fffcc8;
+  border: 1px solid #7a3f3e;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 600px;
+  font-family: Arial, sans-serif;
+  color: #5a4a42;
+
+  box-shadow: 6px 6px 0px #7a3f3e;
+}
+
+.image {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  margin-right: 15px;
+  object-fit: cover;
+}
+
+.content {
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  color: #7a3f3e;
+}
+
+.name {
+  font-family: DynaPuff, sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 38.4px;
+}
+
+.detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.bio {
+  font-family: Commissioner, sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 24.8px;
+}
+
+.streamCount {
+  font-family: Commissioner, sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 24.8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.greenCircle {
+  width: 12px;
+  height: 12px;
+  background-color: #60a571;
+  border-radius: 100%;
+}
+
+.watchButton {
+  background-color: #ca5000;
+  height: 40px;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 8px;
+
+  font-family: ADLaM Display, sans-serif;
+  font-size: 20px;
+
+  transform: rotate(-4deg);
+  box-shadow: 3px 3px 0px #7a3f3e;
+}
+.watchButton__mobile {
+  display: none;
+}
+
+@media screen and (max-width: 1000px) {
+  .card {
+    max-width: 90%;
+  }
+}
+
+@media screen and (max-width: 650px) {
+  .image {
+    width: 170px;
+    height: 170px;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .card {
+    flex-direction: column;
+    align-items: center;
+  }
+  .image {
+    width: 150px;
+    height: 150px;
+  }
+  .content {
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    width: 100%;
+  }
+  .name {
+    font-size: 22px;
+    line-height: 26.4px;
+  }
+  .bio {
+    font-size: 17px;
+    line-height: 20.8px;
+  }
+  .streamCount {
+    font-size: 17px;
+    line-height: 20.8px;
+  }
+  .watchButton {
+    font-size: 18px;
+    line-height: 22.14px;
+    display: none;
+  }
+  .watchButton__mobile {
+    display: block;
+
+    background-color: #ca5000;
+    height: 40px;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 8px;
+
+    font-family: ADLaM Display, sans-serif;
+    font-size: 20px;
+
+    transform: rotate(-4deg);
+    box-shadow: 3px 3px 0px #7a3f3e;
+  }
+}
