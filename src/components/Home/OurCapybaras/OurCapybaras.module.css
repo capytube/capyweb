@@ -1,0 +1,27 @@
+.ourCapybarasWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, #ffe3a2 0%, #ffb26f 100%);
+  padding: 3rem 0;
+}
+
+.ourCapybarasWrapper > h1 {
+  font-family: "Hanalei Fill", sans-serif;
+  font-size: 80px;
+  font-weight: 400;
+  line-height: 96px;
+  color: #7a3f3e;
+  margin-bottom: 2rem;
+
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ourCapybarasProfilesCards {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  pad: 0 4rem;
+}

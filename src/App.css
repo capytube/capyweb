@@ -26,6 +26,30 @@ h1 {
   color: #000000; /* Light green color for the main title */
 }
 
+.mainContainer {
+  min-height: 100vh;
+}
+
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(180deg, #fffcc8 0%, #d0e591 100%);
+  padding: 0 10rem;
+  height: 130px;
+}
+
+.capyMainIcon {
+  width: 435px;
+  min-width: 203px;
+  margin-right: 4px;
+}
+
+.logoAndSignoutButton {
+  width: 120px;
+  min-width: 100px;
+}
+
 .custom-login-container {
   background: none !important;
   border: none !important;
@@ -36,4 +60,47 @@ h1 {
   background: none !important;
   border: none !important;
   padding: 0 !important;
+}
+
+.navlinks-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  background-color: #d0e591;
+  padding: 1rem 0;
+}
+
+.navLink {
+  color: #000000;
+  text-decoration: none;
+}
+.navIcon {
+  width: 150px;
+  height: 78px;
+}
+
+@media screen and (max-width: 900px) {
+  .headerContainer {
+    padding: 4rem;
+  }
+  .navlinks-container {
+    padding: 1rem;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .headerContainer {
+    padding: 1rem 2rem;
+  }
+  .navIcon {
+    width: 120px;
+    height: 58px;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .navlinks-container {
+    display: none;
+  }
 }

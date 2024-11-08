@@ -1,0 +1,40 @@
+.premiumStreamWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #ffe3a2;
+  padding: 3rem 0;
+}
+
+.premiumStreamWrapper > h1 {
+  font-family: "Hanalei Fill", sans-serif;
+  font-size: 80px;
+  font-weight: 400;
+  line-height: 96px;
+  color: #7a3f3e;
+  margin-bottom: 2rem;
+}
+
+.premiumStreamDesc {
+  font-family: Mulish, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 28.8px;
+  color: #7a3f3e;
+  margin-bottom: 2rem;
+}
+
+.getCapyNftButton {
+  background-color: #ca5000;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+
+  font-family: ADLaM Display, sans-serif;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 39.14px;
+
+  transform: rotate(-4deg);
+  box-shadow: 5px 5px 0px #7a3f3e;
+}
