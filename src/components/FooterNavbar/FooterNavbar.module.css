@@ -1,0 +1,24 @@
+.footerNavbar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 42px;
+  background-color: #94bd62;
+  border-radius: 20px 20px 0 0;
+  padding: 10px 0;
+  z-index: 100;
+}
+
+.navlinkContainer {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+.navLink {
+  position: relative;
+  top: -40px; 
+}
+
+.navLink > img {
+  width: 80px;
+}

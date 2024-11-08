@@ -7,7 +7,7 @@ const PremiumStream = () => {
       <span className={styles.premiumStreamDesc}>
         Exclusive contents only for premium members!
       </span>
-      <button className={styles.getCapyNftButton}>Get CapyNFT</button>
+      <button className={styles.getCapyNftButton}>Subscribe</button>
     </div>
   );
 };

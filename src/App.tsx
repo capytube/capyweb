@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   DynamicContextProvider,
   DynamicWidget,
@@ -18,6 +18,7 @@ import "./App.css";
 import Home from "./components/Home";
 import AboutMagnus from "./components/AboutMagnus";
 import FullScreenStream from "./components/Streaming/FullScreenStream";
+import FooterNavbar from "./components/FooterNavbar/FooterNavbar";
 import capytube from "./assets/capytube.svg";
 import { baseSepolia } from "viem/chains";
 import homeIcon from "./assets/home.svg";
@@ -38,6 +39,14 @@ export const wagmiConfig = createConfig({
 });
 
 const App: React.FC = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 500);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <DynamicContextProvider
@@ -74,6 +83,7 @@ const App: React.FC = () => {
                     <img src={accountIcon} alt="Account" className="navIcon" />
                   </Link>
                 </nav>
+                {isMobile && <FooterNavbar />}
 
                 {/* Define Routes */}
                 <Routes>
