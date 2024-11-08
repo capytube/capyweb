@@ -210,7 +210,7 @@ export function CapyCoin() {
   );
 }
 
-export function CoinCurrency() {
+export function CoinCurrency({ className }: { className?: string }) {
   return (
     <svg
       width="48"
@@ -218,6 +218,7 @@ export function CoinCurrency() {
       viewBox="0 0 48 49"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className={className}
     >
       <ellipse cx="26.8798" cy="24.4141" rx="21.12" ry="24" fill="#6D5621" />
       <ellipse cx="22.08" cy="24.4141" rx="22.08" ry="24" fill="#DBAA36" />
@@ -237,6 +238,80 @@ export function CoinCurrency() {
           />
         </clipPath>
       </defs>
+    </svg>
+  );
+}
+
+export function PlusIcon() {
+  return (
+    <svg
+      width="33"
+      height="33"
+      viewBox="0 0 33 33"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect
+        x="1.00665"
+        y="1.33222"
+        width="31"
+        height="31"
+        rx="15.5"
+        transform="rotate(0.133564 1.00665 1.33222)"
+        fill="#7A3F3E"
+      />
+      <rect
+        x="1.00665"
+        y="1.33222"
+        width="31"
+        height="31"
+        rx="15.5"
+        transform="rotate(0.133564 1.00665 1.33222)"
+        stroke="#7A3F3E"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M18.5298 11.4135C18.5298 10.2838 17.6141 9.36807 16.4844 9.36807C15.3547 9.36807 14.4389 10.2838 14.4389 11.4135L14.4389 14.7962L11.0163 14.7962C9.8866 14.7962 8.97082 15.712 8.97082 16.8417C8.97082 17.9714 9.8866 18.8871 11.0163 18.8871L14.4389 18.8871L14.4389 22.3226C14.4389 23.4523 15.3547 24.368 16.4844 24.3681C17.6141 24.3681 18.5298 23.4523 18.5298 22.3226L18.5298 18.8871L21.9254 18.8871C23.055 18.8871 23.9708 17.9714 23.9708 16.8417C23.9708 15.712 23.055 14.7962 21.9254 14.7962L18.5298 14.7962L18.5298 11.4135Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
+
+export function MinusIcon() {
+  return (
+    <svg
+      width="33"
+      height="33"
+      viewBox="0 0 33 33"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect
+        x="1.00665"
+        y="0.996281"
+        width="31"
+        height="31"
+        rx="15.5"
+        transform="rotate(0.133564 1.00665 0.996281)"
+        fill="#7A3F3E"
+      />
+      <rect
+        x="1.00665"
+        y="0.996281"
+        width="31"
+        height="31"
+        rx="15.5"
+        transform="rotate(0.133564 1.00665 0.996281)"
+        stroke="#7A3F3E"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M9.4707 16.5321C9.4707 15.4778 10.3254 14.623 11.3798 14.623L21.5616 14.623C22.616 14.623 23.4707 15.4778 23.4707 16.5321C23.4707 17.5865 22.616 18.4412 21.5616 18.4412L11.3798 18.4412C10.3254 18.4412 9.4707 17.5865 9.4707 16.5321Z"
+        fill="white"
+      />
     </svg>
   );
 }

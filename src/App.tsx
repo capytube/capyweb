@@ -1,39 +1,41 @@
 // src/App.tsx
 
-import React from "react";
+import React from 'react';
 import {
   DynamicContextProvider,
   DynamicWidget,
-} from "@dynamic-labs/sdk-react-core";
-import { createConfig, http, WagmiProvider } from "wagmi";
-import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
-import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
-import PrivacyPolicy from "./components/PrivacyPolicy";
-import TermsOfService from "./components/TermsOfService";
-import DeletionInstructions from "./components/DeletionInstructions";
-import ProfilePage from "./components/Account/ProfilePage";
-import "@aws-amplify/ui-react/styles.css";
-import "./App.css";
+} from '@dynamic-labs/sdk-react-core';
+import { createConfig, http, WagmiProvider } from 'wagmi';
+import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+import DeletionInstructions from './components/DeletionInstructions';
+import ProfilePage from './components/Account/ProfilePage';
+import '@aws-amplify/ui-react/styles.css';
+import './App.css';
 // import StreamingHome from "./components/Streaming/StreamingHome";
-import Home from "./components/Home";
-import AboutMagnus from "./components/AboutMagnus";
-import FullScreenStream from "./components/Streaming/FullScreenStream";
-import capytube from "./assets/capytube.svg";
-import { baseSepolia } from "viem/chains";
-import homeIcon from "./assets/home.svg";
+import Home from './components/Home';
+import AboutMagnus from './components/AboutMagnus';
+import FullScreenStream from './components/Streaming/FullScreenStream';
+import capytube from './assets/capytube.svg';
+import { baseSepolia } from 'viem/chains';
+import homeIcon from './assets/home.svg';
 // import profileIcon from "./assets/profile.svg";
 // import capyIcon from "./assets/capy.svg";
 // import aboutIcon from "./assets/about.svg";
-import loginIcon from "./assets/newlogin.png";
+import loginIcon from './assets/newlogin.png';
 
-import watchIcon from "./assets/watch.svg";
-import playIcon from "./assets/play.svg";
-import accountIcon from "./assets/account.svg";
+import watchIcon from './assets/watch.svg';
+import playIcon from './assets/play.svg';
+import accountIcon from './assets/account.svg';
+
+import PlayPage from './components/Play/index';
 
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
   transports: {
-    [baseSepolia.id]: http("https://sepolia.base.org"),
+    [baseSepolia.id]: http('https://sepolia.base.org'),
   },
 });
 
@@ -42,7 +44,7 @@ const App: React.FC = () => {
     <WagmiProvider config={wagmiConfig}>
       <DynamicContextProvider
         settings={{
-          environmentId: "d36e0777-89be-4cb6-a0ee-27e4a50aac35",
+          environmentId: 'd36e0777-89be-4cb6-a0ee-27e4a50aac35',
           walletConnectors: [EthereumWalletConnectors],
         }}
       >
@@ -67,7 +69,7 @@ const App: React.FC = () => {
                   <Link to="#" className="navLink" title="Watch">
                     <img src={watchIcon} alt="Watch" className="navIcon" />
                   </Link>
-                  <Link to="#" className="navLink" title="Play">
+                  <Link to="/play" className="navLink" title="Play">
                     <img src={playIcon} alt="Play" className="navIcon" />
                   </Link>
                   <Link to="/profile" className="navLink" title="Account">
@@ -83,6 +85,7 @@ const App: React.FC = () => {
                     element={<FullScreenStream />}
                   />
                   <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/play" element={<PlayPage />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route
                     path="/terms-of-service"
