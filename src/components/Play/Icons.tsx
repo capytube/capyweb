@@ -26,7 +26,7 @@ export function DropdownIcon({ className }: { className?: string }) {
   );
 }
 
-export function DownRightArrowIcon() {
+export function DownRightArrowIcon({ clx }: { clx?: string }) {
   return (
     <svg
       width="60"
@@ -34,6 +34,7 @@ export function DownRightArrowIcon() {
       viewBox="0 0 60 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className={clx}
     >
       <path
         d="M3.11914 7.24781L3.11914 33.8278C3.11914 36.4478 5.23914 38.5678 7.85914 38.5678L34.2591 38.5678L34.2591 40.7478C34.2591 44.7878 38.9791 46.9778 42.0591 44.3778L55.3691 33.1678C58.0691 30.8878 57.9691 26.6978 55.1591 24.5578L42.3891 14.8278C39.2091 12.4078 34.6491 14.7578 34.7691 18.7478L34.8791 22.1778L23.7091 21.8978C21.1391 21.8278 19.0891 19.7278 19.0891 17.1578L19.0891 7.24781C19.0891 4.62781 16.9691 2.50781 14.3491 2.50781L7.87914 2.50781C5.23914 2.50781 3.11914 4.62781 3.11914 7.24781Z"
@@ -54,6 +55,7 @@ export function OrangeIcon() {
       viewBox="0 0 49 54"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className="md:max-w-max max-w-9"
     >
       <g clipPath="url(#clip0_306_26874)">
         <path

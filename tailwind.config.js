@@ -10,6 +10,8 @@ module.exports = {
         babyCronYellow: 'var(--babycorn-yellow)',
         siteGreen: 'var(--site-green)',
         darkOrange: 'var(--dark-orange)',
+        custard: 'var(--custard)',
+        cream: 'var(--cream)',
       },
       fontFamily: {
         hanaleiFill: ['Hanalei Fill', 'sans-serif'],

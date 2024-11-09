@@ -3,15 +3,22 @@ import { DropdownIcon } from './Icons';
 // import Footer from '../Footer/Footer';
 import ChooseCapySection from './ChooseCapySection';
 import GameSection from './GameSection';
+import Footer from '../Footer/Footer';
 
 type Props = {};
 
 function index({}: Props) {
   const [selection, setSelection] = React.useState(1);
   const [openMenu, setOpenMenu] = React.useState(false);
-  const [section] = React.useState(2);
+  const [section, setSection] = React.useState(1);
 
   const optionsStyle = 'text-left text-lg p-2';
+
+  const handleSection = (e: any, selection: string) => {
+    e.preventDefault();
+    console.log(selection);
+    setSection(2);
+  };
 
   return (
     <div>
@@ -72,9 +79,13 @@ function index({}: Props) {
           ) : null}
         </div>
       </div>
-      {section !== 2 ? <ChooseCapySection /> : <GameSection />}
+      {section !== 2 ? (
+        <ChooseCapySection handleCapySelection={handleSection} />
+      ) : (
+        <GameSection handleSectionChange={() => setSection(1)} />
+      )}
 
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 }
