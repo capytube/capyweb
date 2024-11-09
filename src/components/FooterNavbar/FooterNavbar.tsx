@@ -16,7 +16,12 @@ const FooterNavbar = () => {
           <img src={watchIcon} alt="Watch" className="navIcon" />
         </Link>
         <Link to="#" className={styles.navLink} title="Play">
-          <img src={playIcon} alt="Play" className="navIcon" />
+          <img
+            src={playIcon}
+            alt="Play"
+            className="navIcon"
+            style={{ transform: "scale(1.2)" }}
+          />
         </Link>
         <Link to="/profile" className={styles.navLink} title="Account">
           <img src={accountIcon} alt="Account" className="navIcon" />

@@ -4,7 +4,7 @@ import React from "react";
 
 const PrivacyPolicy: React.FC = () => {
   return (
-    <div className="privacy-policy-container">
+    <div className="privacy-policy-container" style={{ padding: "2rem" }}>
       <h1>Privacy Policy</h1>
       <p>Effective Date: [Insert Date]</p>
 

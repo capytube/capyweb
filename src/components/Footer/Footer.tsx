@@ -14,22 +14,22 @@ const Footer = () => {
           <Link to="/" className={styles.navLink} title="Home">
             Home
           </Link>
-          <Link to="/" className={styles.navLink} title="Watch Capy">
+          <Link to="/watch" className={styles.navLink} title="Watch Capy">
             Watch Capy
           </Link>
           <Link to="/" className={styles.navLink} title="Play with Capy">
             Play with Capy
           </Link>
-          <Link to="/" className={styles.navLink} title="Profile">
+          <Link to="/profile" className={styles.navLink} title="Profile">
             Profile
           </Link>
         </div>
 
         <div>
-          <Link to="/" className={styles.navLink} title="About Capytube">
+          <Link to="/about-magnus" className={styles.navLink} title="About Capytube">
             About Capytube
           </Link>
-          <Link to="/" className={styles.navLink} title="Privacy">
+          <Link to="/privacy-policy" className={styles.navLink} title="Privacy">
             Privacy
           </Link>
         </div>

@@ -61,7 +61,13 @@ const App: React.FC = () => {
             <div className="mainContainer">
               <header className="mainContent">
                 <div className="headerContainer">
-                  <img src={capytube} alt="CapyTube" className="capyMainIcon" />
+                  <Link to="/" className="navLink" title="Home">
+                    <img
+                      src={capytube}
+                      alt="CapyTube"
+                      className="capyMainIcon"
+                    />
+                  </Link>
                   <div className="logoAndSignoutButton">
                     <DynamicWidget
                       buttonClassName="custom-login-button"
@@ -78,7 +84,12 @@ const App: React.FC = () => {
                     <img src={watchIcon} alt="Watch" className="navIcon" />
                   </Link>
                   <Link to="#" className="navLink" title="Play">
-                    <img src={playIcon} alt="Play" className="navIcon" />
+                    <img
+                      src={playIcon}
+                      alt="Play"
+                      className="navIcon"
+                      style={{ transform: "scale(1.4)" }}
+                    />
                   </Link>
                   <Link to="/profile" className="navLink" title="Account">
                     <img src={accountIcon} alt="Account" className="navIcon" />
