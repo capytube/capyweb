@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   DynamicContextProvider,
   DynamicWidget,
@@ -16,8 +16,11 @@ import '@aws-amplify/ui-react/styles.css';
 import './App.css';
 // import StreamingHome from "./components/Streaming/StreamingHome";
 import Home from './components/Home';
+import Watch from './components/Watch';
 import AboutMagnus from './components/AboutMagnus';
-import FullScreenStream from './components/Streaming/FullScreenStream';
+// import FullScreenStream from "./components/Streaming/FullScreenStream";
+import WatchRoom from './components/Watch/WatchRoom/WatchRoom';
+import FooterNavbar from './components/FooterNavbar/FooterNavbar';
 import capytube from './assets/capytube.svg';
 import { baseSepolia } from 'viem/chains';
 import homeIcon from './assets/home.svg';
@@ -40,6 +43,14 @@ export const wagmiConfig = createConfig({
 });
 
 const App: React.FC = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 500);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <DynamicContextProvider
@@ -53,7 +64,13 @@ const App: React.FC = () => {
             <div className="mainContainer">
               <header className="mainContent">
                 <div className="headerContainer">
-                  <img src={capytube} alt="CapyTube" className="capyMainIcon" />
+                  <Link to="/" className="navLink" title="Home">
+                    <img
+                      src={capytube}
+                      alt="CapyTube"
+                      className="capyMainIcon"
+                    />
+                  </Link>
                   <div className="logoAndSignoutButton">
                     <DynamicWidget
                       buttonClassName="custom-login-button"
@@ -66,23 +83,30 @@ const App: React.FC = () => {
                   <Link to="/" className="navLink" title="Home">
                     <img src={homeIcon} alt="Home" className="navIcon" />
                   </Link>
-                  <Link to="#" className="navLink" title="Watch">
+                  <Link to="/watch" className="navLink" title="Watch">
                     <img src={watchIcon} alt="Watch" className="navIcon" />
                   </Link>
                   <Link to="/play" className="navLink" title="Play">
-                    <img src={playIcon} alt="Play" className="navIcon" />
+                    <img
+                      src={playIcon}
+                      alt="Play"
+                      className="navIcon"
+                      style={{ transform: 'scale(1.4)' }}
+                    />
                   </Link>
                   <Link to="/profile" className="navLink" title="Account">
                     <img src={accountIcon} alt="Account" className="navIcon" />
                   </Link>
                 </nav>
+                {isMobile && <FooterNavbar />}
 
                 {/* Define Routes */}
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/watch" element={<Watch />} />
                   <Route
                     path="/stream/:streamId/:streamTitle"
-                    element={<FullScreenStream />}
+                    element={<WatchRoom />}
                   />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/play" element={<PlayPage />} />

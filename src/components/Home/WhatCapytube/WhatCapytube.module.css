@@ -65,3 +65,44 @@
   transform: rotate(4deg);
   box-shadow: 5px 5px 0px #7a3f3e;
 }
+
+@media screen and (max-width: 1000px) {
+  .whatCapytubeWrapper > h1 {
+    font-size: 60px;
+    line-height: 76px;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .whatCapytubeWrapper > h1 {
+    font-size: 60px;
+    line-height: 76px;
+  }
+
+  .whatCapyAnswers {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .whatCapytubeWrapper {
+    padding: 1rem 0;
+  }
+  .whatCapytubeWrapper > h1 {
+    font-size: 24px;
+    line-height: 28px;
+    margin-bottom: 1rem;
+  }
+  .capyAnswerCard_title {
+    font-size: 22px;
+    line-height: 26.4px;
+  }
+  .capyAnswerCard_desc {
+    font-size: 14px;
+    line-height: 16.8px;
+  }
+  .earnCapyButton {
+    font-size: 18px;
+    line-height: 22.14px;
+  }
+}

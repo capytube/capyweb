@@ -100,6 +100,13 @@ h1 {
 }
 
 @media screen and (max-width: 500px) {
+  .headerContainer {
+    padding: 1rem;
+  }
+  .capyMainIcon {
+    min-width: 170px;
+    margin-right: 2px;
+  }
   .navlinks-container {
     display: none;
   }

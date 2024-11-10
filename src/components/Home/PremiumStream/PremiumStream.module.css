@@ -38,3 +38,31 @@
   transform: rotate(-4deg);
   box-shadow: 5px 5px 0px #7a3f3e;
 }
+
+@media screen and (max-width: 1000px) {
+  .premiumStreamWrapper > h1 {
+    font-size: 60px;
+    line-height: 76px;
+    margin-bottom: 1rem;
+  }
+  .premiumStreamDesc {
+    font-size: 20px;
+    line-height: 20.8px;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .premiumStreamWrapper > h1 {
+    font-size: 24px;
+    line-height: 28px;
+  }
+
+  .premiumStreamDesc {
+    font-size: 14px;
+    line-height: 16.8px;
+  }
+  .getCapyNftButton {
+    font-size: 18px;
+    line-height: 22.14px;
+  }
+}

@@ -20,8 +20,30 @@
 }
 
 .ourCapybarasProfilesCards {
+  width: 100%;
   display: flex;
+  align-items: center;
   flex-direction: column;
   gap: 2rem;
   pad: 0 4rem;
+}
+
+@media screen and (max-width: 1000px) {
+  .ourCapybarasWrapper > h1 {
+    font-size: 60px;
+    line-height: 76px;
+    margin-bottom: 1rem;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .ourCapybarasWrapper > h1 {
+    font-size: 24px;
+    line-height: 28px;
+    gap: 0.5rem;
+  }
+
+  .ourCapybarasWrapper > h1 > img {
+    width: 35px;
+  }
 }

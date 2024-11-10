@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
-import PublicStream from "./PublicStream/PublicStream";
-import PremiumStream from "./PremiumStream/PremiumStream";
-import WhatCapytube from "./WhatCapytube/WhatCapytube";
-import OurCapybaras from "./OurCapybaras/OurCapybaras";
-import CapyGallery from "./CapyGallery/CapyGallery";
+import WatchCapy from "./WatchCapy/WatchCapy";
+import Starring from "./Starring/Starring";
 import Footer from "../Footer/Footer";
 
-const Home = () => {
+const Watch = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
 
   useEffect(() => {
@@ -17,14 +14,11 @@ const Home = () => {
 
   return (
     <div>
-      <PublicStream />
-      <PremiumStream />
-      <WhatCapytube />
-      <OurCapybaras />
-      <CapyGallery />
+      <WatchCapy />
+      <Starring />
       {!isMobile && <Footer />}
     </div>
   );
 };
 
-export default Home;
+export default Watch;
