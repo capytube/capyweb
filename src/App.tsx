@@ -18,7 +18,8 @@ import "./App.css";
 import Home from "./components/Home";
 import Watch from "./components/Watch";
 import AboutMagnus from "./components/AboutMagnus";
-import FullScreenStream from "./components/Streaming/FullScreenStream";
+// import FullScreenStream from "./components/Streaming/FullScreenStream";
+import WatchRoom from "./components/Watch/WatchRoom/WatchRoom";
 import FooterNavbar from "./components/FooterNavbar/FooterNavbar";
 import capytube from "./assets/capytube.svg";
 import { baseSepolia } from "viem/chains";
@@ -103,7 +104,7 @@ const App: React.FC = () => {
                   <Route path="/watch" element={<Watch />} />
                   <Route
                     path="/stream/:streamId/:streamTitle"
-                    element={<FullScreenStream />}
+                    element={<WatchRoom />}
                   />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
