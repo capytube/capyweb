@@ -12,6 +12,7 @@ module.exports = {
         darkOrange: 'var(--dark-orange)',
         custard: 'var(--custard)',
         cream: 'var(--cream)',
+        persimmon: 'var(--persimmon)',
       },
       fontFamily: {
         hanaleiFill: ['Hanalei Fill', 'sans-serif'],

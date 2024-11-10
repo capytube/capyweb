@@ -9,7 +9,9 @@ import {
 import { ClockIcon } from './Icons';
 import RulesPopup from './RulesPopup/RulesPopup';
 
-type Props = {};
+type Props = {
+  handleSubmit: Function;
+};
 
 const rulesContent = (
   <ul className="font-commissioner md:text-2xl text-base list-disc pl-10">
@@ -25,7 +27,7 @@ const rulesContent = (
   </ul>
 );
 
-function CapySafariCard({}: Props) {
+function CapySafariCard({ handleSubmit }: Props) {
   const [bid, setBid] = React.useState<number>(20);
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
 
@@ -113,6 +115,7 @@ function CapySafariCard({}: Props) {
         <button
           type="submit"
           className="text-white bg-darkOrange font-ADLaM font-bold md:text-3xl text-base rounded-lg shadow-buttonShadow md:py-2.5 py-1.5 px-4 hover:bg-chocoBrown hover:text-white"
+          onClick={() => handleSubmit({ vType: 'bid', bType: 'safari' })}
         >
           Place your bid
         </button>

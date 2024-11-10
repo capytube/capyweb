@@ -1,4 +1,4 @@
-import React, { MouseEventHandler } from 'react';
+import React from 'react';
 import {
   CoinCurrency,
   MinusIcon,
@@ -9,7 +9,7 @@ import { ClockIcon, OrangeIcon } from './Icons';
 import RulesPopup from './RulesPopup/RulesPopup';
 
 type Props = {
-  handleSubmit: MouseEventHandler<HTMLElement>;
+  handleSubmit: Function;
 };
 
 const foodCards = [
@@ -210,7 +210,7 @@ function SnackCard({ handleSubmit }: Props) {
           <button
             type="submit"
             className="text-white bg-darkOrange font-ADLaM font-bold md:text-3xl text-base rounded-lg shadow-buttonShadow md:py-2.5 py-1.5 px-4 hover:bg-chocoBrown hover:text-white"
-            onClick={handleSubmit}
+            onClick={() => handleSubmit({ vType: 'vote', bType: '' })}
           >
             Place your vote
           </button>

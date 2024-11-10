@@ -24,7 +24,7 @@ function ChooseCapySection({ handleCapySelection }: Props) {
   return (
     <div
       id="choose-capy"
-      className="md:py-20 py-8 md:px-40 px-10 flex flex-col justify-center items-center md:gap-y-10 gap-y-[18px]"
+      className="md:py-20 py-8 pb-24 md:px-40 px-10 flex flex-col justify-center items-center md:gap-y-10 gap-y-[18px]"
     >
       <div>
         <h2 className="uppercase md:text-titleSize text-titleSizeSM text-center text-chocoBrown font-hanaleiFill">

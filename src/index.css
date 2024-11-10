@@ -9,6 +9,7 @@
   --site-green: #60a571;
   --custard: #ffe3a2;
   --cream: #ffeee2;
+  --persimmon: #ffb26f;
 }
 
 /* src/index.css */
@@ -17,7 +18,8 @@
 @tailwind utilities;
 
 #choose-capy,
-#game-section {
+#game-section,
+#past-session {
   background: linear-gradient(180deg, #d0e591 0%, #ffffff 100%);
 }
 

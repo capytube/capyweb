@@ -18,6 +18,14 @@ interface UserProfile {
 const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 500);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Simulate fetching user data from an API (or use AWS Cognito to fetch user attributes)
   useEffect(() => {
     // Replace with real data fetching logic
@@ -109,7 +117,7 @@ const ProfilePage: React.FC = () => {
       </div>
       <NftSection />
       <WalletSection />
-      <Footer />
+      {!isMobile && <Footer />}
     </div>
   );
 };

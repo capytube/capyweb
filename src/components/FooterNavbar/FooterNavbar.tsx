@@ -15,7 +15,7 @@ const FooterNavbar = () => {
         <Link to="/watch" className={styles.navLink} title="Watch">
           <img src={watchIcon} alt="Watch" className="navIcon" />
         </Link>
-        <Link to="#" className={styles.navLink} title="Play">
+        <Link to="/play" className={styles.navLink} title="Play">
           <img
             src={playIcon}
             alt="Play"
