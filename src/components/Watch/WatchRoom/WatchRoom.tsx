@@ -33,16 +33,30 @@ const WatchRoom = () => {
         <h1>{streamTitle}’ ROOM</h1>
         <div className={styles.watchRoomContent}>
           <div className={styles.roomCamsContainer}>
-            <button className={styles.selected}>{streamTitle}’ main cam</button>
-            <button>{streamTitle}’ food cam</button>
-            <button>{streamTitle}’ bedroom cam</button>
+            <button className={styles.selected}>
+              <span className={styles.hideInMobile}>{streamTitle}’ </span>
+              {""}
+              main cam
+            </button>
+            <button>
+              <span className={styles.hideInMobile}>{streamTitle}’ </span>
+              {""}
+              food cam
+            </button>
+            <button>
+              <span className={styles.hideInMobile}>{streamTitle}’ </span>
+              {""}
+              bedroom cam
+            </button>
           </div>
 
           <div className={styles.streamToolbarContainer}>
             <div className={styles.coinsStatus}>
               <span className={styles.coinsStatus__title}>Watch-to-earn:</span>
-              <img src={coinIcon} alt="coin" />
-              <span className={styles.coinsStatus__value}>8/10</span>
+              <div className={styles.coinsStatus__value__div}>
+                <img src={coinIcon} alt="coin" />
+                <span className={styles.coinsStatus__value}>8/10</span>
+              </div>
             </div>
 
             <div className={styles.progressContainer}>
@@ -73,10 +87,15 @@ const WatchRoom = () => {
               />
             </div>
             <div className={styles.commentSection}>
+              <div className={styles.emojiRatingWrapper__mobile}>
+                <EmojiRating />
+              </div>
               <ChatRoom />
             </div>
           </div>
-          <EmojiRating />
+          <div className={styles.emojiRatingWrapper}>
+            <EmojiRating />
+          </div>
         </div>
       </div>
       {!isMobile && <Footer />}
