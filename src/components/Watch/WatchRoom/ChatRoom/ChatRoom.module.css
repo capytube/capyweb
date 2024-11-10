@@ -1,5 +1,6 @@
 .chatRoom {
   width: 400px;
+  height: 100%;
   border: 2px solid #7a3f3e;
   border-radius: 10px;
   background-color: #fafad2;
@@ -61,4 +62,10 @@
 
 .sendButton:hover {
   background-color: #a52a2a;
+}
+
+@media screen and (max-width: 500px) {
+  .chatRoom {
+    width: 90%;
+  }
 }
