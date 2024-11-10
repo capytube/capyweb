@@ -4,6 +4,7 @@ import starringMagnus from "../../../assets/starringMagnus.jpg";
 
 export interface StarringData {
   id: number;
+  streamId: string;
   image: string;
   name: string;
   bio: string | null;
@@ -14,6 +15,7 @@ export interface StarringData {
 const capyData: StarringData[] = [
   {
     id: 1,
+    streamId: "fa7ahoikpf19u1e0",
     image: starringMagnus,
     name: "Magnus",
     bio: "Watch our biggest naughty boy munching and chasing his little brother",
@@ -22,6 +24,7 @@ const capyData: StarringData[] = [
   },
   {
     id: 2,
+    streamId: "fa7ahoikpf19u1e0",
     image: starringMagnus,
     name: "Elon",
     bio: "This fearless bad boy doesn’t afraid of anything. Chatty and full of energy. A truely socialised capy.",
@@ -30,6 +33,7 @@ const capyData: StarringData[] = [
   },
   {
     id: 3,
+    streamId: "fa7ahoikpf19u1e0",
     image: starringMagnus,
     name: "Einstein",
     bio: "The youngest and shy baby loves to plan a prison break. Brainy of the boys. The mastermind capy lord.",

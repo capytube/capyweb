@@ -1,0 +1,29 @@
+.emojiRatingWrapper {
+  width: 100%;
+  background: #ffe3a2;
+  padding: 30px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.emojiRatingButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.emojiIcon {
+  width: 24px;
+  height: 24px;
+  margin-right: 5px;
+}
+.emojiCount {
+  font-family: ADLaM Display, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 33.6px;
+  color: #7a3f3e;
+}
