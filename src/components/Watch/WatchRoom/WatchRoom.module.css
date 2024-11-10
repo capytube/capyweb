@@ -21,6 +21,7 @@
 
 .roomCamsContainer {
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 1rem;
 }
@@ -61,6 +62,12 @@
   color: #7a3f3e;
 }
 
+.coinsStatus__value__div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .coinsStatus__value {
   font-family: Commissioner, sans-serif;
   font-size: 20px;
@@ -77,7 +84,7 @@
 }
 
 .progressBar {
-  height: 20px;
+  height: 12px;
   background-color: #e94b0e;
   border-radius: 10px;
   transition: width 0.3s ease;
@@ -111,12 +118,14 @@
 .videoAndCommentSection {
   display: flex;
   justify-content: center;
-  align-items: center;
   gap: 20px;
 }
 
 .videoSection {
   min-width: 40%;
+}
+.emojiRatingWrapper__mobile {
+  display: none;
 }
 
 @media screen and (max-width: 1000px) {
@@ -124,12 +133,98 @@
     font-size: 60px;
     line-height: 76px;
   }
+  .videoAndCommentSection {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .videoSection {
+    width: 90%;
+  }
+  .commentSection {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffe3a2;
+    padding-bottom: 2rem;
+  }
+  .emojiRatingWrapper {
+    display: none;
+  }
+  .emojiRatingWrapper__mobile {
+    display: block;
+  }
+}
+
+@media screen and (max-width: 850px) {
+  .streamToolbarContainer {
+    flex-direction: column;
+  }
+  .coinsStatus {
+    flex-direction: column;
+  }
+  .streamShareIcons {
+    display: none;
+  }
+
+  .roomCamsContainer {
+    gap: 0.5rem;
+  }
+  .roomCamsContainer > button {
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 15px;
+    line-height: 18px;
+  }
 }
 
 @media screen and (max-width: 500px) {
+  .hideInMobile {
+    display: none;
+  }
   .watchRoomWrapper > h1 {
     font-size: 24px;
     line-height: 28px;
     margin-bottom: 1rem;
+  }
+  .watchRoomContent {
+    margin-bottom: 1.5rem;
+  }
+  .streamToolbarContainer {
+    gap: 0.8rem;
+  }
+  .roomCamsContainer {
+    padding: 0 0.5rem;
+  }
+  .roomCamsContainer > button {
+    padding: 6px 8px;
+    font-size: 15px;
+    line-height: 18px;
+  }
+
+  .coinsStatus__title {
+    font-size: 14px;
+    line-height: 18px;
+  }
+  .coinsStatus__value__div > img {
+    width: 22px;
+  }
+  .coinsStatus__value {
+    font-size: 14px;
+    line-height: 18px;
+  }
+  .progressBar {
+    height: 10px;
+  }
+
+  .collectButton {
+    font-size: 15px;
+    line-height: 18px;
+  }
+
+  .commentSection {
+    padding-bottom: 6rem;
   }
 }
