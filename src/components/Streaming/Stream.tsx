@@ -1,5 +1,5 @@
 import React from "react";
-import LiveStream from "./LiveStream";
+import LivepeerPlayer from "../LivepeerPlayer";
 import CommentSection from "./CommentSection";
 import EmojiSection from "./EmojiSection";
 
@@ -22,11 +22,13 @@ const Stream: React.FC<StreamProps> = ({
   emojiCounts,
   onEmojiClick,
 }) => {
+  console.log("title", title);
+  console.log("profilePic", profilePic);
   return (
     <div>
       {/* Add a wrapper with the 'video-container' class around the video */}
       <div className="video-container">
-        <LiveStream streamId={streamId} title={title} profilePic={profilePic} />
+        <LivepeerPlayer streamId="fa7ahoikpf19u1e0" title="Magnus" />
       </div>
 
       {/* Other sections should remain outside the video-container */}
