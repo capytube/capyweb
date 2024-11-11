@@ -2,7 +2,9 @@ import CapyProfile from "./CapyProfile/CapyProfile";
 import styles from "./OurCapybaras.module.css";
 import fruitIcon from "../../../assets/fruit.svg";
 import flowerIcon from "../../../assets/flower.svg";
+import magnusImg from "../../../assets/magnus.jpg";
 import elonImg from "../../../assets/elon.jpg";
+import einsteinImg from "../../../assets/einstein.jpg";
 
 interface Detail {
   title: string;
@@ -23,7 +25,7 @@ export interface CapybaraData {
 const capyData: CapybaraData[] = [
   {
     id: 1,
-    image: elonImg,
+    image: magnusImg,
     name: "Magnus",
     gender: "Male",
     dob: "7 months",
@@ -63,7 +65,7 @@ const capyData: CapybaraData[] = [
   },
   {
     id: 3,
-    image: elonImg,
+    image: einsteinImg,
     name: "Einstein",
     gender: "Male",
     dob: "2 months",

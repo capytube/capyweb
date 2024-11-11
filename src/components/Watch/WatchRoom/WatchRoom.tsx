@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import styles from "./WatchRoom.module.css";
-import LiveStream from "../../Streaming/LiveStream";
+import LivepeerPlayer from "../../LivepeerPlayer";
 import ChatRoom from "./ChatRoom/ChatRoom";
 import EmojiRating from "./EmojiRating/EmojiRating";
 import Footer from "../../Footer/Footer";
@@ -11,7 +11,6 @@ import fbIcon from "../../../assets/icons/fb.svg";
 import twitterIcon from "../../../assets/icons/twitter.svg";
 import instaIcon from "../../../assets/icons/insta.svg";
 import shareIcon from "../../../assets/icons/share.svg";
-import magnuspic from "../../../assets/filled-magnus.svg";
 
 const WatchRoom = () => {
   const { streamId, streamTitle } = useParams<{
@@ -80,10 +79,9 @@ const WatchRoom = () => {
         <div className={styles.videoMainContainer}>
           <div className={styles.videoAndCommentSection}>
             <div className={styles.videoSection}>
-              <LiveStream
+              <LivepeerPlayer
                 streamId={streamId ?? "fa7ahoikpf19u1e0"}
                 title={streamTitle ?? "magstream1"}
-                profilePic={magnuspic}
               />
             </div>
             <div className={styles.commentSection}>

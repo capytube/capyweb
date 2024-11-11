@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import LiveStream from "./LiveStream";
 import CommentSection from "./CommentSection";
 import EmojiSection from "./EmojiSection";
+import LivepeerPlayer from "../LivepeerPlayer";
 
 const FullScreenStream: React.FC = () => {
   const { streamId, streamTitle } = useParams<{
@@ -40,11 +40,7 @@ const FullScreenStream: React.FC = () => {
       </div>
       <div style={styles.contentWrapper}>
         <div style={styles.liveStreamWrapper}>
-          <LiveStream
-            streamId={streamId || ""}
-            title={streamTitle || `Stream ${streamId}`}
-            profilePic=""
-          />
+        <LivepeerPlayer streamId="fa7ahoikpf19u1e0" title="Magnus" />
         </div>
         <EmojiSection
           streamId={streamId || ""}
