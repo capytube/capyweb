@@ -4,7 +4,6 @@
   border: 2px solid #7a3f3e;
   border-radius: 10px;
   background-color: #fafad2;
-  font-family: Arial, sans-serif;
   display: flex;
   flex-direction: column;
 }
@@ -12,9 +11,13 @@
 .chatHeader {
   background-color: #7a3f3e;
   color: white;
-  font-weight: bold;
   padding: 10px;
   border-radius: 5px 5px 0 0;
+
+  font-family: ADLaM Display, sans-serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 28.7px;
 }
 
 .messages {
@@ -26,12 +29,19 @@
 }
 
 .message {
-  margin: 5px 0;
+  margin: 8px 0;
   color: #7a3f3e;
+
+  font-family: Comic Neue, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 20px;
 }
 
 .username {
-  font-weight: bold;
+  font-family: ADLaM Display, sans-serif;
+  font-size: 16px;
+  line-height: 20px;
 }
 
 .inputContainer {
@@ -47,25 +57,56 @@
   border: 1px solid #7a3f3e;
   border-radius: 5px;
   outline: none;
+
+  font-family: Comic Neue, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 20px;
+  color: #7a3f3e;
+}
+.input::placeholder {
+  color: #7a3f3e;
 }
 
 .sendButton {
-  background-color: #7a3f3e;
+  background-color: transparent;
   color: white;
   border: none;
-  padding: 5px 10px;
   cursor: pointer;
-  font-size: 18px;
-  border-radius: 5px;
   margin-left: 5px;
+  border-radius: 5px;
+}
+.sendButton > img {
+  width: 40px;
+  height: 40px;
 }
 
 .sendButton:hover {
-  background-color: #a52a2a;
+  outline: 1px solid #7a3f3e;
 }
 
 @media screen and (max-width: 500px) {
   .chatRoom {
     width: 90%;
+  }
+  .chatHeader {
+    font-size: 18px;
+    line-height: 24.7px;
+  }
+  .message {
+    margin: 10px 0;
+    font-size: 15px;
+    line-height: 18px;
+  }
+  .username {
+    font-size: 15px;
+    line-height: 18px;
+  }
+  .input {
+    font-size: 15px;
+  }
+  .sendButton > img {
+    width: 30px;
+    height: 30px;
   }
 }

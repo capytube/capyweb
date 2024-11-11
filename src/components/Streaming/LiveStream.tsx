@@ -1,73 +1,22 @@
-// src/components/LiveStream.tsx
 import {
   EnterFullscreenIcon,
   ExitFullscreenIcon,
 } from "@livepeer/react/assets";
-import { Src } from "@livepeer/react";
 import * as Player from "@livepeer/react/player";
-import "./LiveStream.css"; // Optional: Create this file for component-specific styles
-import { useState, useEffect } from "react";
-import { generateClient } from "aws-amplify/api";
-import type { Schema } from "../../../amplify/data/resource"; // Assuming your schema is defined in a separate file
+import { Src } from "@livepeer/react";
+import "./LiveStream.css";
 
 interface LiveStreamProps {
-  streamId: string;
+  vodSource: Src[];
   title: string;
-  profilePic: string;
+  viewerId: string;
 }
 
-const LiveStream: React.FC<LiveStreamProps> = ({
-  streamId,
-  title,
-  profilePic,
-}) => {
-  const [vodSource, setVodSource] = useState<Src[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  console.log(
-    "streamId in livepeer is :",
-    streamId,
-    "title is :",
-    title,
-    "profilePic is :",
-    profilePic
-  );
-
-  // Fetch the source for the playback ID on component mount
-  useEffect(() => {
-    const fetchSource = async () => {
-      try {
-        console.log("input streamId in livepeer is :", streamId);
-        const client = generateClient<Schema>();
-        const srcString = (
-          await client.queries.getStream({ streamId: streamId })
-        ).data!;
-        console.log("src string from server is", srcString);
-        const source = JSON.parse(srcString) as Src[];
-        setVodSource(source);
-      } catch (err) {
-        setError("Failed to load the stream. Please try again later.");
-        console.error(err); // Log error for debugging
-      }
-    };
-
-    fetchSource();
-  }, [streamId]);
-
-  if (error) {
-    return <div className="error-message">{error}</div>;
-  }
-
-  // Show loading message until the source is fetched
-  if (!vodSource) {
-    return <div>Loading stream...</div>;
-  }
+const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
   return (
-    <Player.Root src={vodSource} autoPlay volume={0}>
+    <Player.Root src={vodSource} autoPlay volume={0} viewerId={viewerId}>
       <Player.Container>
-        <Player.Video
-          title="Agent 327"
-          style={{ height: "100%", width: "100%" }}
-        />
+        <Player.Video title={title} style={{ height: "100%", width: "100%" }} />
         <Player.FullscreenTrigger
           style={{
             position: "absolute",

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styles from "./ChatRoom.module.css";
+import sendBtn from "../../../../assets/sendBtn.svg";
 
 const ChatRoom = () => {
   const [messages, setMessages] = useState([
@@ -40,7 +41,7 @@ const ChatRoom = () => {
           className={styles.input}
         />
         <button onClick={handleSendMessage} className={styles.sendButton}>
-          ➤
+          <img src={sendBtn} alt="send" />
         </button>
       </div>
     </div>

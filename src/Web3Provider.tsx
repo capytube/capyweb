@@ -1,32 +1,32 @@
-import { WagmiProvider, createConfig } from "wagmi";
+import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
+import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
+import { WagmiProvider, createConfig, http } from "wagmi";
 import { baseSepolia } from "wagmi/chains";
+import { DynamicWagmiConnector } from "@dynamic-labs/wagmi-connector";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 
-const config = createConfig(
-  getDefaultConfig({
-    chains: [baseSepolia],
-
-    walletConnectProjectId: "5b600b13f39b789df2c8c85f41209a40",
-
-    // Required App Info
-    appName: "CapyTube",
-
-    // Optional App Info
-    appDescription: "Your App Description",
-    appUrl: "https://family.co", // your app's url
-    appIcon: "https://family.co/logo.png", // your app's icon, no bigger than 1024x1024px (max. 1MB)
-  })
-);
+export const wagmiConfig = createConfig({
+  chains: [baseSepolia],
+  transports: {
+    [baseSepolia.id]: http("https://sepolia.base.org"),
+  },
+});
 
 const queryClient = new QueryClient();
 
 export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider>{children}</ConnectKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <DynamicContextProvider
+      settings={{
+        environmentId: "d36e0777-89be-4cb6-a0ee-27e4a50aac35",
+        walletConnectors: [EthereumWalletConnectors],
+      }}
+    >
+      <WagmiProvider config={wagmiConfig}>
+        <QueryClientProvider client={queryClient}>
+          <DynamicWagmiConnector>{children}</DynamicWagmiConnector>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </DynamicContextProvider>
   );
 };

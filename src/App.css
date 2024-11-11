@@ -50,12 +50,6 @@ h1 {
   min-width: 100px;
 }
 
-.custom-login-container {
-  background: none !important;
-  border: none !important;
-  padding: 0 !important;
-}
-
 .custom-login-button {
   background: none !important;
   border: none !important;

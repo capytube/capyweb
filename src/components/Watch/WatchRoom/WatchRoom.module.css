@@ -123,6 +123,7 @@
 
 .videoSection {
   min-width: 40%;
+  width: 500px;
 }
 .emojiRatingWrapper__mobile {
   display: none;
