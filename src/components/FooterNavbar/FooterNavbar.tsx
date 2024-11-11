@@ -1,30 +1,37 @@
-import { Link } from "react-router-dom";
-import styles from "./FooterNavbar.module.css";
-import homeIcon from "./../../assets/home.svg";
-import watchIcon from "./../../assets/watch.svg";
-import playIcon from "./../../assets/play.svg";
-import accountIcon from "./../../assets/account.svg";
+import { Link, useLocation } from 'react-router-dom';
+import { AccountIcon, HomeIcon, PlayIcon, WatchIcon } from '../Icons/Icons';
+
+import styles from './FooterNavbar.module.css';
 
 const FooterNavbar = () => {
+  const pathName = useLocation()?.pathname?.slice(1);
+
   return (
     <nav className={styles.footerNavbar}>
       <div className={styles.navlinkContainer}>
         <Link to="/" className={styles.navLink} title="Home">
-          <img src={homeIcon} alt="Home" className="navIcon" />
+          <HomeIcon
+            className="navIcon max-w-20"
+            fill={pathName === '' ? '#FFB26F' : '#FFEEE2'}
+          />
         </Link>
         <Link to="/watch" className={styles.navLink} title="Watch">
-          <img src={watchIcon} alt="Watch" className="navIcon" />
+          <WatchIcon
+            className="navIcon max-w-20"
+            fill={pathName === 'watch' ? '#FFB26F' : '#FFEEE2'}
+          />
         </Link>
         <Link to="/play" className={styles.navLink} title="Play">
-          <img
-            src={playIcon}
-            alt="Play"
-            className="navIcon"
-            style={{ transform: "scale(1.2)" }}
+          <PlayIcon
+            className="navIcon scale-[1.4] max-w-[83px]"
+            fill={pathName === 'play' ? '#FFB26F' : '#FFEEE2'}
           />
         </Link>
         <Link to="/profile" className={styles.navLink} title="Account">
-          <img src={accountIcon} alt="Account" className="navIcon" />
+          <AccountIcon
+            className="navIcon max-w-[80px]"
+            fill={pathName === 'profile' ? '#FFB26F' : '#FFEEE2'}
+          />
         </Link>
       </div>
     </nav>

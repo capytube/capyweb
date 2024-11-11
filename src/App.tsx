@@ -18,22 +18,20 @@ import './App.css';
 import Home from './components/Home';
 import Watch from './components/Watch';
 import AboutMagnus from './components/AboutMagnus';
+import NFTMarket from './components/NFTMarket/index';
+import NFTDetails from './components/NFTMarket/NFTDetails/index';
 // import FullScreenStream from "./components/Streaming/FullScreenStream";
 import WatchRoom from './components/Watch/WatchRoom/WatchRoom';
 import FooterNavbar from './components/FooterNavbar/FooterNavbar';
 import capytube from './assets/capytube.svg';
 import { baseSepolia } from 'viem/chains';
-import homeIcon from './assets/home.svg';
 // import profileIcon from "./assets/profile.svg";
 // import capyIcon from "./assets/capy.svg";
 // import aboutIcon from "./assets/about.svg";
 import loginIcon from './assets/newlogin.png';
 
-import watchIcon from './assets/watch.svg';
-import playIcon from './assets/play.svg';
-import accountIcon from './assets/account.svg';
-
 import PlayPage from './components/Play/index';
+import Navbar from './components/Navbar/Navbar';
 
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
@@ -80,23 +78,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <nav className="navlinks-container">
-                  <Link to="/" className="navLink" title="Home">
-                    <img src={homeIcon} alt="Home" className="navIcon" />
-                  </Link>
-                  <Link to="/watch" className="navLink" title="Watch">
-                    <img src={watchIcon} alt="Watch" className="navIcon" />
-                  </Link>
-                  <Link to="/play" className="navLink" title="Play">
-                    <img
-                      src={playIcon}
-                      alt="Play"
-                      className="navIcon"
-                      style={{ transform: 'scale(1.4)' }}
-                    />
-                  </Link>
-                  <Link to="/profile" className="navLink" title="Account">
-                    <img src={accountIcon} alt="Account" className="navIcon" />
-                  </Link>
+                  <Navbar />
                 </nav>
                 {isMobile && <FooterNavbar />}
 
@@ -110,6 +92,8 @@ const App: React.FC = () => {
                   />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/play" element={<PlayPage />} />
+                  <Route path="/shop" element={<NFTMarket />} />
+                  <Route path="/shop/:id" element={<NFTDetails />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route
                     path="/terms-of-service"

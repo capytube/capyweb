@@ -1,9 +1,28 @@
+import { Link } from 'react-router-dom';
 import NFTCard from './NFTCard';
 
 const nftCards = [
-  { id: 1, image: 'src/assets/account/brownRat.png' },
-  { id: 2, image: 'src/assets/account/pinkRat.png' },
-  { id: 3, image: 'src/assets/account/slateRat.png' },
+  {
+    id: 1,
+    title: '#12345678',
+    image: 'src/assets/account/brownRat.png',
+    tag: 'ultra rare',
+    price: 8.5,
+  },
+  {
+    id: 2,
+    title: '#12345678',
+    image: 'src/assets/account/pinkRat.png',
+    tag: 'ultra rare',
+    price: 8.5,
+  },
+  {
+    id: 3,
+    title: '#12345678',
+    image: 'src/assets/account/slateRat.png',
+    tag: 'ultra rare',
+    price: 8.5,
+  },
 ];
 
 export default function NftSection() {
@@ -22,19 +41,16 @@ export default function NftSection() {
       </h1>
       <div className="sm:flex grid auto-cols-smallCard grid-cols-2 sm:gap-x-10 sm:gap-y-10 gap-x-4 gap-y-4 justify-center pb-10">
         {nftCards?.map((card) => (
-          <NFTCard
-            key={card?.id}
-            data={{ imageSrc: card?.image, title: '#12345678' }}
-          />
+          <NFTCard key={card?.id} data={card} />
         ))}
       </div>
       <div className="flex sm:gap-x-10 gap-x-4 justify-center items-center">
-        <button type="button" className={`bg-darkOrange ${btnStyle}`}>
-          Buy NFT
-        </button>
-        <button type="button" className={`bg-siteGreen ${btnStyle}`}>
-          Sell NFT
-        </button>
+        <Link
+          to="/shop"
+          className={`bg-darkGreen lg:shadow-loginShadow ${btnStyle}`}
+        >
+          Go to NFT Marketplace
+        </Link>
       </div>
     </div>
   );

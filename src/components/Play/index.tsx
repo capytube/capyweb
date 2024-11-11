@@ -10,7 +10,7 @@ import magnuspic from '/src/assets/filled-magnus.svg';
 type Props = {};
 
 function index({}: Props) {
-  const [selection, setSelection] = React.useState(2);
+  const [selection, setSelection] = React.useState(1);
   const [openMenu, setOpenMenu] = React.useState(false);
   const [date, setDate] = React.useState('5 Nov 2024');
   const [dateMenu, setDateMenu] = React.useState(false);
