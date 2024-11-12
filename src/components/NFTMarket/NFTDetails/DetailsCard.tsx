@@ -1,3 +1,5 @@
+import BrowCapy from "/src/assets/account/brownRat.png"
+
 type Props = {};
 
 function getTagBG(value: string) {
@@ -15,7 +17,7 @@ function NFTDetailsCard({}: Props) {
     <div className="w-fit min-w-[172px] flex flex-col gap-y-6 rounded-lg border border-chocoBrown p-8 max-w-[544px]">
       <img
         className="rounded-t-lg"
-        src="/src/assets/account/brownRat.png"
+        src={BrowCapy}
         width={480}
         alt="image"
       />

@@ -1,6 +1,12 @@
 import React, { MouseEventHandler } from 'react';
 import { ShareIcon, XIcon } from '../../Account/Icons';
 
+import CapyTable from '/src/assets/play/dineTable.png';
+import CapySafari from '/src/assets/play/capy-safari.png';
+import VisionCapy from '/src/assets/play/visionCat.png';
+import Fb from '/src/assets/play/fb.png';
+import Ig from '/src/assets/play/ig.png';
+
 type Props = {
   handleVoteAgain: MouseEventHandler<HTMLElement>;
   voteType?: boolean;
@@ -48,7 +54,7 @@ function ThanksSection({
           </h2>
           <div className="md:py-12 py-6 flex justify-center">
             <img
-              src="/src/assets/play/dineTable.png"
+              src={CapyTable}
               alt="capy-table"
               className="md:max-w-max max-w-[194px]"
             />
@@ -73,18 +79,18 @@ function ThanksSection({
             </button>
           </div>
           <div id="social-contacts" className="pt-2">
-            <p className="font-commissioner md:text-2xl text-sm text-center text-chocoBrown pb-8">
+            <p className="font-commissioner md:text-2xl text-sm text-center text-chocoBrown lg:pb-8 pb-4">
               Share to your social media:
             </p>
             <div className="flex justify-center gap-x-7 items-center">
               <img
-                src="/src/assets/play/fb.png"
+                src={Fb}
                 alt="facebook-icon"
                 className="md:max-w-max max-w-8"
               />
               <XIcon />
               <img
-                src="/src/assets/play/ig.png"
+                src={Ig}
                 alt="instagram-icon"
                 className="md:max-w-max max-w-8"
               />
@@ -99,11 +105,7 @@ function ThanksSection({
           </h2>
           <div className="md:py-12 py-6 flex justify-center">
             <img
-              src={
-                bidType === 'safari'
-                  ? '/src/assets/play/capy-safari.png'
-                  : '/src/assets/play/visionCat.png'
-              }
+              src={bidType === 'safari' ? CapySafari : VisionCapy}
               alt="capy-table"
               className="md:max-w-max max-w-[194px]"
             />
@@ -127,18 +129,18 @@ function ThanksSection({
             </button>
           </div>
           <div id="social-contacts" className="pt-2">
-            <p className="font-commissioner md:text-2xl text-sm text-center text-chocoBrown pb-8">
+            <p className="font-commissioner md:text-2xl text-sm text-center text-chocoBrown lg:pb-8 pb-4">
               Share to your social media:
             </p>
             <div className="flex justify-center gap-x-7 items-center">
               <img
-                src="/src/assets/play/fb.png"
+                src={Fb}
                 alt="facebook-icon"
                 className="md:max-w-max max-w-8"
               />
               <XIcon />
               <img
-                src="/src/assets/play/ig.png"
+                src={Ig}
                 alt="instagram-icon"
                 className="md:max-w-max max-w-8"
               />

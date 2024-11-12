@@ -82,10 +82,16 @@ const ProfilePage: React.FC = () => {
         {!isMobile && <Footer />}
       </>
     ) : (
-      <NotPremiumPage />
+      <>
+        <NotPremiumPage />
+        {!isMobile && <Footer />}
+      </>
     )
   ) : (
-    <NotLoggedInPage setLoggedIn={setLoggedIn} />
+    <>
+      <NotLoggedInPage setLoggedIn={setLoggedIn} />
+      {!isMobile && <Footer />}
+    </>
   );
 };
 

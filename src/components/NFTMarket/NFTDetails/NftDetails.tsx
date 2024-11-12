@@ -1,10 +1,12 @@
 import { CoinCurrency, ShareIcon, XIcon } from '../../Account/Icons';
+import Fb from '/src/assets/play/fb.png';
+import IG from '/src/assets/play/ig.png';
 
 type Props = {};
 
 function NftDetails({}: Props) {
   return (
-    <div className='lg:w-fit w-full'>
+    <div className="lg:w-fit w-full">
       <div className="flex flex-col gap-y-6 border-b pb-12 border-chocoBrown">
         <span className="font-dynapuff text-[44px] leading-[52px] text-chocoBrown">
           Capy #1234
@@ -37,14 +39,14 @@ function NftDetails({}: Props) {
           </p>
           <div className="flex justify-start gap-x-7 items-center">
             <img
-              src="/src/assets/play/fb.png"
+              src={Fb}
               alt="facebook-icon"
               className="md:max-w-max max-w-8"
               width={56}
             />
             <XIcon />
             <img
-              src="/src/assets/play/ig.png"
+              src={IG}
               alt="instagram-icon"
               className="md:max-w-max max-w-8"
               width={56}
