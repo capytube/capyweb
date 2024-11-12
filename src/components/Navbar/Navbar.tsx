@@ -1,29 +1,29 @@
-import { Link, useLocation } from 'react-router-dom';
-import { AccountIcon, HomeIcon, PlayIcon, WatchIcon } from '../Icons/Icons';
+import { Link, useLocation } from "react-router-dom";
+import { AccountIcon, HomeIcon, PlayIcon, WatchIcon } from "../Icons/Icons";
 
 type Props = {};
 
 export default function Navbar({}: Props) {
   const pathName = useLocation()?.pathname?.slice(1);
 
-  return pathName.includes('shop') ? null : (
+  return pathName.includes("shop") ? null : (
     <nav className="navlinks-container">
       <Link to="/" className="navLink" title="Home">
         <HomeIcon
           className="navIcon"
-          fill={pathName === '' ? '#FFB26F' : '#FFEEE2'}
+          fill={pathName === "" ? "#FFB26F" : "#FFEEE2"}
         />
       </Link>
       <Link to="/watch" className="navLink" title="Watch">
         <WatchIcon
           className="navIcon"
-          fill={pathName === 'watch' ? '#FFB26F' : '#FFEEE2'}
+          fill={pathName?.includes("watch") ? "#FFB26F" : "#FFEEE2"}
         />
       </Link>
       <Link to="/play" className="navLink" title="Play">
         <PlayIcon
           className="navIcon scale-[1.4]"
-          fill={pathName === 'play' ? '#FFB26F' : '#FFEEE2'}
+          fill={pathName?.includes("play") ? "#FFB26F" : "#FFEEE2"}
         />
         {/* <img
       src={playIcon}
@@ -35,7 +35,7 @@ export default function Navbar({}: Props) {
       <Link to="/profile" className="navLink" title="Account">
         <AccountIcon
           className="navIcon"
-          fill={pathName === 'profile' ? '#FFB26F' : '#FFEEE2'}
+          fill={pathName?.includes("profile") ? "#FFB26F" : "#FFEEE2"}
         />
       </Link>
     </nav>

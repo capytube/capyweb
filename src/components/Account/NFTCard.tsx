@@ -1,5 +1,5 @@
-import { Link, useLocation } from 'react-router-dom';
-import { CoinCurrency } from './Icons';
+import { Link, useLocation } from "react-router-dom";
+import { CoinCurrency } from "./Icons";
 
 type Props = {
   data: {
@@ -12,12 +12,12 @@ type Props = {
 };
 
 function getTagBG(value: string) {
-  if (value === 'rare') {
-    return 'bg-[#7542AB]';
-  } else if (value === 'epic') {
-    return 'bg-tomatoRed';
+  if (value === "rare") {
+    return "bg-[#7542AB]";
+  } else if (value === "epic") {
+    return "bg-tomatoRed";
   } else {
-    return 'bg-siteGreen';
+    return "bg-siteGreen";
   }
 }
 
@@ -49,7 +49,7 @@ function NFTCard({ data }: Props) {
           <CoinCurrency className="max-h-8" />
           {data?.price}
         </span>
-        {pathName === 'shop' ? (
+        {pathName?.includes("shop") ? (
           <Link
             to={`/shop/${data?.id}`}
             className="border-4 max-w-[106px] md:self-end self-center border-chocoBrown rounded-lg shadow-buttonShadow bg-babyCronYellow font-ADLaM sm:py-2 py-1 px-4 text-chocoBrown sm:text-3xl text-base max-h-[57px]"
