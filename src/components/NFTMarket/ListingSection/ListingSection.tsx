@@ -3,27 +3,31 @@ import { DropdownIcon } from '../../Play/Icons';
 import { SearchIcon } from '../../Icons/Icons';
 import NFTCard from '../../Account/NFTCard';
 
+import BrownCapy from '/src/assets/account/brownRat.png';
+import PinkCapy from '/src/assets/account/pinkRat.png';
+import SlateCapy from '/src/assets/account/slateRat.png';
+
 type Props = {};
 
 const nftCards = [
   {
     id: 1,
     title: '#12345678',
-    image: 'src/assets/account/brownRat.png',
+    image: BrownCapy,
     tag: 'ultra rare',
     price: 8.5,
   },
   {
     id: 2,
     title: '#12345678',
-    image: 'src/assets/account/pinkRat.png',
+    image: PinkCapy,
     tag: 'rare',
     price: 8.5,
   },
   {
     id: 3,
     title: '#12345678',
-    image: 'src/assets/account/slateRat.png',
+    image: SlateCapy,
     tag: 'epic',
     price: 8.5,
   },

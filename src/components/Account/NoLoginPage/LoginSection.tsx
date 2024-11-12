@@ -1,3 +1,7 @@
+import PlayCapy from '/src/assets/account/noLogin/play-cappys.png';
+import WindowCapy from '/src/assets/account/noLogin/capy-window.png';
+import CapyCoin from '/src/assets/account/noLogin/capycoin.png';
+
 type Props = {
   setLoggedIn: Function;
 };
@@ -11,7 +15,7 @@ function LoginSection({ setLoggedIn }: Props) {
         </h1>
         <div className="md:max-w-max max-w-[305px]">
           <img
-            src="/src/assets/account/noLogin/play-cappys.png"
+            src={PlayCapy}
             alt="play"
             className="md:max-h-max max-h-[150px]"
           />
@@ -29,7 +33,7 @@ function LoginSection({ setLoggedIn }: Props) {
         <div className="flex md:flex-row flex-col md:gap-x-14">
           <div className="px-4 max-w-md">
             <img
-              src="/src/assets/account/noLogin/capy-window.png"
+              src={WindowCapy}
               alt="winodw"
               className="md:max-h-max max-h-[150px] mx-auto"
             />
@@ -45,7 +49,7 @@ function LoginSection({ setLoggedIn }: Props) {
           <div className="px-4 max-w-md">
             <img
               className="mx-auto md:max-h-max max-h-[150px]"
-              src="/src/assets/account/noLogin/capycoin.png"
+              src={CapyCoin}
               alt="capycoin"
             />
             <p className="md:pt-10 pt-4 font-ADLaM md:text-[28px] md:leading-8 text-sm text-center text-chocoBrown font-semibold md:pb-10 pb-6">

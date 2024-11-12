@@ -9,7 +9,7 @@ export default function NotLoggedInPage({ setLoggedIn }: Props) {
   return (
     <>
       <LoginSection setLoggedIn={setLoggedIn} />
-      <NftSection clx="pb-20" />
+      <NftSection clx="!pb-20" />
     </>
   );
 }

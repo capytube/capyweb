@@ -1,25 +1,29 @@
 import { Link } from 'react-router-dom';
 import NFTCard from './NFTCard';
 
+import BrownCapy from '/src/assets/account/brownRat.png';
+import PinkCapy from '/src/assets/account/pinkRat.png';
+import SlateCapy from '/src/assets/account/slateRat.png';
+
 const nftCards = [
   {
     id: 1,
     title: '#12345678',
-    image: 'src/assets/account/brownRat.png',
+    image: BrownCapy,
     tag: 'ultra rare',
     price: 8.5,
   },
   {
     id: 2,
     title: '#12345678',
-    image: 'src/assets/account/pinkRat.png',
+    image: PinkCapy,
     tag: 'ultra rare',
     price: 8.5,
   },
   {
     id: 3,
     title: '#12345678',
-    image: 'src/assets/account/slateRat.png',
+    image: SlateCapy,
     tag: 'ultra rare',
     price: 8.5,
   },

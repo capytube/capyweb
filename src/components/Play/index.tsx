@@ -50,7 +50,7 @@ function index({}: Props) {
               type="text"
               value={selection === 1 ? "Today’s session" : "Past session"}
               disabled
-              className="pr-3 outline-none md:max-w-[210px] max-w-44 text-chocoBrown font-ADLaM md:text-[28px] md:leading-8 text-base"
+              className="pr-2 outline-none md:max-w-[210px] max-w-44 text-chocoBrown font-ADLaM md:text-[28px] md:leading-8 text-base"
             />
             <DropdownIcon className={`${openMenu ? "rotate-180" : ""}`} />
           </button>

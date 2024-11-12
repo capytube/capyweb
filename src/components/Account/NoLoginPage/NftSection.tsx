@@ -1,25 +1,29 @@
 import { Link } from 'react-router-dom';
 
+import FrameCapy from '/src/assets/account/noLogin/frame-capy.png';
+import TVRemote from '/src/assets/account/noLogin/tv-remote.png';
+import ExclusiveCapy from '/src/assets/account/noLogin/exclusive-capy.png';
+
 type Props = { clx?: string };
 
 const cards = [
   {
     id: 1,
-    img: '/src/assets/account/noLogin/frame-capy.png',
+    img: FrameCapy,
     title: 'Own Unique NFT Art',
     description:
       'Get a special NFT collectible to store in your wallet. Each NFT isn’t just a piece of art—it’s packed with unique abilities that let you interact with the capybaras like a true VIP! Buy more NFTs to unlock even more special powers.',
   },
   {
     id: 2,
-    img: '/src/assets/account/noLogin/tv-remote.png',
+    img: TVRemote,
     title: ' Choose Your Own View',
     description:
       'Say goodbye to downtime! As a premium member, you have full control over which camera you want to watch, giving you uninterrupted, up-close access to your favourite capybara moments.',
   },
   {
     id: 3,
-    img: '/src/assets/account/noLogin/exclusive-capy.png',
+    img: ExclusiveCapy,
     title: ' Exclusive Content, Just for You',
     description:
       'Access behind-the-scenes footage and special capybara content made only for our premium members. It’s your ticket to the cutest, most exclusive moments!',

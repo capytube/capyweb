@@ -7,6 +7,7 @@ import {
 } from '../Account/Icons';
 import { ClockIcon, OrangeIcon } from './Icons';
 import RulesPopup from './RulesPopup/RulesPopup';
+import CapyTable from '/src/assets/play/dineTable.png';
 
 type Props = {
   handleSubmit: Function;
@@ -70,13 +71,13 @@ function SnackCard({ handleSubmit }: Props) {
       </div>
       <div className="md:py-12 py-6 flex justify-center">
         <img
-          src="/src/assets/play/dineTable.png"
+          src={CapyTable}
           alt="capy-table"
           className="md:max-w-max max-w-48"
         />
       </div>
       <div className="relative">
-        <p className="flex justify-center gap-x-4 items-center font-ADLaM md:text-2xl text-sm text-chocoBrown text-center pb-4 font-[600]">
+        <p className="flex justify-center gap-x-4 items-center font-ADLaM md:text-2xl text-sm text-chocoBrown text-center pb-4">
           Vote what capy should eat today?
           <button
             type="button"

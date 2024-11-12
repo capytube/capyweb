@@ -1,5 +1,6 @@
 import { MouseEventHandler } from 'react';
 import { DownRightArrowIcon } from './Icons';
+import Elon from '/src/assets/play/elon.png';
 
 type Props = {
   handleClick: MouseEventHandler<HTMLElement>;
@@ -14,14 +15,10 @@ function SelectedCharacterCard({ handleClick }: Props) {
           ELON
         </span>
       </div>
-      <img
-        src="/src/assets/play/elon.png"
-        alt="capy"
-        className="md:max-w-full max-w-[106px] md:max-h-auto max-h-[75px]"
-      />
+      <img src={Elon} alt="capy" className="md:max-w-[192px] max-w-[106px] " />
       <button
         type="button"
-        className="md:text-3xl text-base bg-darkOrange rounded-lg px-4 md:py-2.5 py-1.5 max-h-fit text-white font-ADLaM shadow-buttonShadow"
+        className="md:text-3xl text-base bg-darkOrange rounded-lg md:px-4 px-3.5 md:py-2.5 py-1.5 max-h-fit text-white font-ADLaM shadow-buttonShadow"
         onClick={handleClick}
       >
         Change capy

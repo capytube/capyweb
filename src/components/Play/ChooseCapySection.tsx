@@ -1,21 +1,25 @@
 import CharacterCard from './CharacterCard';
 
+import Elon from '/src/assets/play/elon.png';
+import Einstein from '/src/assets/play/einstien.png';
+import Magnus from '/src/assets/play/magnus.png';
+
 type Props = {
   handleCapySelection: Function;
 };
 
 const characters = [
-  { id: 1, name: 'Elon', image: 'src/assets/play/elon.png', rotate: 356.62 },
+  { id: 1, name: 'Elon', image: Elon, rotate: 356.62 },
   {
     id: 2,
     name: 'Einstein',
-    image: 'src/assets/play/einstien.png',
+    image: Einstein,
     rotate: 4,
   },
   {
     id: 3,
     name: 'Magnus',
-    image: 'src/assets/play/magnus.png',
+    image: Magnus,
     rotate: 356.62,
   },
 ];
