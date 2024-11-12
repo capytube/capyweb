@@ -1,0 +1,159 @@
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  background: linear-gradient(180deg, #fffcc8 0%, #d0e591 100%);
+  padding: 0 10rem;
+  height: 130px;
+}
+
+.navLink {
+  color: #000000;
+  text-decoration: none;
+}
+
+.capyMainIcon,
+.hideCapyInMobile {
+  width: 435px;
+  min-width: 203px;
+  margin-right: 4px;
+}
+.capyMobileIcon {
+  display: none;
+}
+
+.logoAndSignoutButton {
+  width: 120px;
+  min-width: 100px;
+}
+
+.signedInProfileContainer,
+.profile__coinCounts,
+.profile__details,
+.profile__walletAddress {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.signedInProfileContainer {
+  gap: 1rem;
+  color: #7a3f3e;
+}
+.profile__coinCounts {
+  gap: 0.5rem;
+}
+.verticalSeparator {
+  border-left: 2px solid #7a3f3e;
+  height: 50px;
+}
+.profile__details {
+  gap: 1rem;
+}
+.profile__coinCounts > img,
+.profile__walletAddress > img {
+  width: 30px;
+  height: 30px;
+}
+.profile__coinCounts > span {
+  font-family: Mulish, sans-serif;
+  font-size: 24px;
+  line-height: 28px;
+}
+.profile__details > img {
+  width: 56px;
+  height: 56px;
+}
+.profile__walletAddress > img {
+  margin-left: -0.3rem;
+}
+
+.customLoginButton {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.profile__nameAndAddress > p {
+  font-family: ADLaM Display, sans-serif;
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 31.2px;
+  text-align: left;
+}
+.profile__walletAddress > span {
+  font-family: Commissioner, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 19.2px;
+}
+
+@media screen and (max-width: 1000px) {
+  .headerContainer {
+    padding: 4rem;
+    gap: 1rem;
+  }
+  .capyMainIcon {
+    width: 335px;
+    margin-right: 2px;
+  }
+  .profile__coinCounts > img,
+  .profile__walletAddress > img {
+    width: 25px;
+    height: 25px;
+  }
+  .profile__coinCounts > span {
+    font-size: 22px;
+  }
+  .profile__details > img {
+    width: 50px;
+    height: 50px;
+  }
+  .profile__nameAndAddress > p {
+    font-size: 20px;
+    line-height: 25.2px;
+  }
+  .profile__walletAddress > span {
+    font-size: 14px;
+    line-height: 18.2px;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .headerContainer {
+    padding: 1rem 1.5rem;
+  }
+  .capyMobileIcon {
+    display: block;
+    min-width: 60px;
+    width: 70px;
+    height: 60px;
+  }
+  .hideCapyInMobile {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .headerContainer {
+    padding: 1rem;
+  }
+  .capyMainIcon {
+    min-width: 170px;
+    margin-right: 2px;
+  }
+  .signedInProfileContainer {
+    gap: 0.5rem;
+  }
+  .profile__coinCounts {
+    gap: 0.4rem;
+  }
+  .profile__details {
+    gap: 0.5rem;
+  }
+  .verticalSeparator {
+    height: 40px;
+  }
+}

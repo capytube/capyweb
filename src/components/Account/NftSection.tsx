@@ -51,6 +51,8 @@ export default function NftSection() {
       <div className="flex sm:gap-x-10 gap-x-4 justify-center items-center">
         <Link
           to="/shop"
+          target="_blank"
+          rel="noreferrer"
           className={`bg-darkGreen lg:shadow-loginShadow ${btnStyle}`}
         >
           Go to NFT Marketplace

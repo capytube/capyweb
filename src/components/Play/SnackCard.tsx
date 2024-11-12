@@ -130,7 +130,7 @@ function SnackCard({ handleSubmit }: Props) {
               type="button"
               key={foodCard?.id}
               onClick={() => setSelectedFood(foodCard?.name)}
-              className={`border-[3px] rounded-2xl border-chocoBrown flex p-4 min-w-[340px] cursor-pointer ${
+              className={`border-[3px] rounded-2xl border-chocoBrown flex p-4 sm:min-w-[340px] min-w-full cursor-pointer ${
                 selectedFood === foodCard?.name ? 'bg-white' : ''
               } ${
                 foodCard?.name === 'New request'

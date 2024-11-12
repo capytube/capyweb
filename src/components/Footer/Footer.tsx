@@ -17,7 +17,7 @@ const Footer = () => {
           <Link to="/watch" className={styles.navLink} title="Watch Capy">
             Watch Capy
           </Link>
-          <Link to="/" className={styles.navLink} title="Play with Capy">
+          <Link to="/play" className={styles.navLink} title="Play with Capy">
             Play with Capy
           </Link>
           <Link to="/profile" className={styles.navLink} title="Profile">
