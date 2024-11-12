@@ -1,27 +1,27 @@
 // src/App.tsx
-import React, { useEffect, useState } from "react";
-import { DynamicWidget, useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
-import { useAccount, useBalance } from "wagmi";
-import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
-import PrivacyPolicy from "./components/PrivacyPolicy";
-import TermsOfService from "./components/TermsOfService";
-import DeletionInstructions from "./components/DeletionInstructions";
-import ProfilePage from "./components/Account/ProfilePage";
-import "@aws-amplify/ui-react/styles.css";
-import "./App.css";
+import React, { useEffect, useState } from 'react';
+import { DynamicWidget, useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+import { useAccount, useBalance } from 'wagmi';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+import DeletionInstructions from './components/DeletionInstructions';
+import ProfilePage from './components/Account/ProfilePage';
+import '@aws-amplify/ui-react/styles.css';
+import './App.css';
 // import StreamingHome from "./components/Streaming/StreamingHome";
-import Home from "./components/Home";
-import Watch from "./components/Watch";
-import AboutMagnus from "./components/AboutMagnus";
-import NFTMarket from "./components/NFTMarket/index";
-import NFTDetails from "./components/NFTMarket/NFTDetails/index";
+import Home from './components/Home';
+import Watch from './components/Watch';
+import AboutMagnus from './components/AboutMagnus';
+import NFTMarket from './components/NFTMarket/index';
+import NFTDetails from './components/NFTMarket/NFTDetails/index';
 // import FullScreenStream from "./components/Streaming/FullScreenStream";
-import WatchRoom from "./components/Watch/WatchRoom/WatchRoom";
-import FooterNavbar from "./components/FooterNavbar/FooterNavbar";
-import capytube from "./assets/capytube.svg";
-import loginIcon from "./assets/newlogin.png";
-import Navbar from "./components/Navbar/Navbar";
-import PlayPage from "./components/Play/index";
+import WatchRoom from './components/Watch/WatchRoom/WatchRoom';
+import FooterNavbar from './components/FooterNavbar/FooterNavbar';
+import capytube from './assets/capytube.svg';
+import loginIcon from './assets/newlogin.png';
+import Navbar from './components/Navbar/Navbar';
+import PlayPage from './components/Play/index';
 
 const App: React.FC = () => {
   const isLoggedIn = useIsLoggedIn();
@@ -31,18 +31,18 @@ const App: React.FC = () => {
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
 
-  console.log("dynamic___isLoggedIn", isLoggedIn);
-  console.log("wagmi___address", address);
-  console.log("wagmi___isConnected", isConnected);
+  console.log('dynamic___isLoggedIn', isLoggedIn);
+  console.log('wagmi___address', address);
+  console.log('wagmi___isConnected', isConnected);
   if (wagmiBalanceResult?.isSuccess) {
     const balanceData = wagmiBalanceResult?.data;
-    console.log("balanceData", balanceData);
+    console.log('balanceData', balanceData);
   }
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 500);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
@@ -61,9 +61,7 @@ const App: React.FC = () => {
                 />
               </div>
             </div>
-            <nav className="navlinks-container">
-              <Navbar />
-            </nav>
+            <Navbar />
             {isMobile && <FooterNavbar />}
 
             {/* Define Routes */}

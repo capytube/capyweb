@@ -66,6 +66,8 @@ function NftSection({ clx }: Props) {
       </div>
       <Link
         to="/shop"
+        target="_blank"
+        rel="noreferrer"
         className="md:-rotate-1 bg-darkOrange font-ADLaM text-white md:text-3xl md:py-2.5 py-1 px-4 rounded-lg md:shadow-loginShadow shadow-buttonShadow"
       >
         Buy NFT & Join Premium ✨

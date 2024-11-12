@@ -1,17 +1,17 @@
-import React from "react";
-import { DropdownIcon } from "./Icons";
+import React from 'react';
+import { DropdownIcon } from './Icons';
 // import Footer from '../Footer/Footer';
-import ChooseCapySection from "./ChooseCapySection";
-import GameSection from "./GameSection";
-import Footer from "../Footer/Footer";
-import LivepeerPlayer from "../LivepeerPlayer";
+import ChooseCapySection from './ChooseCapySection';
+import GameSection from './GameSection';
+import Footer from '../Footer/Footer';
+import LivepeerPlayer from '../LivepeerPlayer';
 
 type Props = {};
 
 function index({}: Props) {
   const [selection, setSelection] = React.useState(1);
   const [openMenu, setOpenMenu] = React.useState(false);
-  const [date, setDate] = React.useState("5 Nov 2024");
+  const [date, setDate] = React.useState('5 Nov 2024');
   const [dateMenu, setDateMenu] = React.useState(false);
   const [section, setSection] = React.useState(1);
 
@@ -19,11 +19,11 @@ function index({}: Props) {
 
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 500);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const optionsStyle = "text-left text-lg p-2";
+  const optionsStyle = 'text-left text-lg p-2';
 
   const handleSection = (e: any, selection: string) => {
     e.preventDefault();
@@ -48,14 +48,14 @@ function index({}: Props) {
           >
             <input
               type="text"
-              value={selection === 1 ? "Today’s session" : "Past session"}
+              value={selection === 1 ? 'Today’s session' : 'Past session'}
               disabled
               className="pr-2 outline-none md:max-w-[210px] max-w-44 text-chocoBrown font-ADLaM md:text-[28px] md:leading-8 text-base"
             />
-            <DropdownIcon className={`${openMenu ? "rotate-180" : ""}`} />
+            <DropdownIcon className={`${openMenu ? 'rotate-180' : ''}`} />
           </button>
           {openMenu ? (
-            <div className="absolute flex flex-col bg-white w-full text-chocoBrown top-[70px] rounded-lg p-2">
+            <div className="absolute z-40 flex flex-col bg-white w-full text-chocoBrown md:top-[70px] top-11 rounded-lg p-2">
               <button
                 type="button"
                 className={optionsStyle}
@@ -88,7 +88,7 @@ function index({}: Props) {
         )
       ) : (
         <div id="past-session" className="md:py-20 md:px-80">
-          <div className="flex md:flex-row flex-col gap-y-4 gap-x-6 justify-center items-center relative">
+          <div className="flex md:flex-row flex-col gap-y-4 gap-x-6 justify-center items-center">
             <p className="font-ADLaM md:text-2xl text-chocoBrown md:leading-6 text-xs font-semibold">
               Select the play:
             </p>
@@ -100,38 +100,40 @@ function index({}: Props) {
                 video call with cappy
               </span>
             </div>
-            <button
-              type="button"
-              className="flex items-center gap-x-2 md:text-[28px] md:leading-8 font-ADLaM text-chocoBrown border-2 border-chocoBrown px-4 md:py-3.5 py-1.5 w-full md:max-w-max max-w-[224px] justify-between rounded-lg bg-white"
-              onClick={() => setDateMenu(!dateMenu)}
-            >
-              {date}
-              <DropdownIcon className={`${dateMenu ? "rotate-180" : ""}`} />
-            </button>
-            {dateMenu ? (
-              <div className="absolute right-0 max-w-fit flex flex-col bg-white w-full text-chocoBrown top-[70px] rounded-lg p-2">
-                <button
-                  type="button"
-                  className={optionsStyle}
-                  onClick={() => {
-                    setDate("Date 1");
-                    setDateMenu(!dateMenu);
-                  }}
-                >
-                  Date 1
-                </button>
-                <button
-                  type="button"
-                  className={optionsStyle}
-                  onClick={() => {
-                    setDate("Date 2");
-                    setDateMenu(!dateMenu);
-                  }}
-                >
-                  Date 2
-                </button>
-              </div>
-            ) : null}
+            <div className="relative">
+              <button
+                type="button"
+                className="relative flex items-center gap-x-2 md:text-[28px] md:leading-8 font-ADLaM text-chocoBrown border-2 border-chocoBrown px-4 md:py-3.5 py-1.5 w-full md:max-w-max max-w-[224px] justify-between rounded-lg bg-white"
+                onClick={() => setDateMenu(!dateMenu)}
+              >
+                {date}
+                <DropdownIcon className={`${dateMenu ? 'rotate-180' : ''}`} />
+              </button>
+              {dateMenu ? (
+                <div className="absolute z-30 right-0 max-w-fit flex flex-col bg-white w-full text-chocoBrown md:top-[70px] top-11 rounded-lg p-2">
+                  <button
+                    type="button"
+                    className={optionsStyle}
+                    onClick={() => {
+                      setDate('Date 1');
+                      setDateMenu(!dateMenu);
+                    }}
+                  >
+                    Date 1
+                  </button>
+                  <button
+                    type="button"
+                    className={optionsStyle}
+                    onClick={() => {
+                      setDate('Date 2');
+                      setDateMenu(!dateMenu);
+                    }}
+                  >
+                    Date 2
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
           <div className="lg:max-w-5xl flex justify-center mx-auto mt-10">
             <LivepeerPlayer streamId="fa7ahoikpf19u1e0" title="Magnus" />

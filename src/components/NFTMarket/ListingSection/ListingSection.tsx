@@ -48,7 +48,7 @@ export default function ListingSection({}: Props) {
   const optionsStyle = 'text-left text-lg p-2';
 
   return (
-    <div className="lg:pt-10 py-8 lg:px-40 px-4 lg:pb-20 flex flex-col lg:gap-y-10 gap-y-6 items-center">
+    <div className="lg:pt-10 py-8 lg:px-40 px-4 pb-20 flex flex-col lg:gap-y-10 gap-y-6 items-center">
       <div className="max-w-[1260px] flex lg:flex-row flex-col gap-y-4 justify-between items-end w-full">
         <div className="w-full flex-1">
           <span className="font-ADLaM text-xl text-chocoBrown">
@@ -95,8 +95,8 @@ export default function ListingSection({}: Props) {
         </div>
       </div>
       <div className="grid lg:grid-cols-4 grid-cols-2 max-[390px]:grid-cols-1 gap-x-11 gap-y-10">
-        {[...nftCards, ...nftCards, ...nftCards]?.map((card) => (
-          <NFTCard key={card?.id} data={card} />
+        {[...nftCards, ...nftCards, ...nftCards]?.map((card, idx) => (
+          <NFTCard key={idx} data={{ ...card, id: idx + 1 }} />
         ))}
       </div>
     </div>

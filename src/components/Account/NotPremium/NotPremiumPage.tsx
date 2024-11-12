@@ -1,3 +1,4 @@
+import React from 'react';
 import { PencilIcon } from '../Icons';
 import NftSection from '../NoLoginPage/NftSection';
 import WalletSection from '../WalletSection/WalletSection';
@@ -5,8 +6,20 @@ import WalletSection from '../WalletSection/WalletSection';
 type Props = {};
 
 export default function NotPremiumPage({}: Props) {
+  const handleScrollTop = () => {
+    const ele = document.getElementById('no-premium0-section');
+    ele?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+
+  React.useEffect(() => {
+    handleScrollTop();
+    return () => {
+      handleScrollTop();
+    };
+  }, []);
+
   return (
-    <div>
+    <div id="no-premium0-section">
       <div className="bg-grassGreen md:pt-20 md:pb-16 py-8 md:px-0 px-4 flex flex-col justify-center items-center md:gap-y-6 gap-y-4">
         <h1 className="font-hanaleiFill md:text-titleSize text-titleSizeSM text-darkGreen">
           My account

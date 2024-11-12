@@ -8,10 +8,10 @@ type Props = {
 
 function SelectedCharacterCard({ handleClick }: Props) {
   return (
-    <div className="bg-babyCronYellow md:pt-6 pt-4 md:pb-8 pb-4 md:px-12 px-4 shadow-characterCard lg:max-w-[312px] flex lg:flex-col flex-row items-center gap-y-12 md:gap-x-0 gap-x-2 h-fit">
+    <div className="bg-babyCronYellow md:pt-6 pt-4 md:pb-8 pb-4 md:px-12 px-4 shadow-characterCard lg:max-w-[312px] flex lg:flex-col flex-row items-center md:gap-y-12 gap-y-6 md:gap-x-0 gap-x-2 h-fit sm:flex-nowrap flex-wrap md:justify-between justify-center">
       <div className="flex gap-x-2 items-center">
         <DownRightArrowIcon clx="md:max-w-auto max-w-[34px]" />
-        <span className="md:text-[56px] text-titleSizeSM font-hanaleiFill text-chocoBrown">
+        <span className="md:text-[56px] md:mr-0 mr-6 text-titleSizeSM font-hanaleiFill text-chocoBrown">
           ELON
         </span>
       </div>

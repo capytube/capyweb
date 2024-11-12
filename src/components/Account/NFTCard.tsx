@@ -51,7 +51,7 @@ function NFTCard({ data }: Props) {
         </span>
         {pathName === 'shop' ? (
           <Link
-            to="/shop/1"
+            to={`/shop/${data?.id}`}
             className="border-4 max-w-[106px] md:self-end self-center border-chocoBrown rounded-lg shadow-buttonShadow bg-babyCronYellow font-ADLaM sm:py-2 py-1 px-4 text-chocoBrown sm:text-3xl text-base max-h-[57px]"
           >
             Buy

@@ -45,7 +45,7 @@ function GameSection({ handleSectionChange }: Props) {
       <div className="max-w-[1100px] my-0 mx-auto flex gap-x-10 lg:flex-row flex-col justify-center">
         {!thanksActive ? (
           <>
-            <div className="sticky h-fit top-0">
+            <div className="sticky z-10 h-fit top-0">
               <SelectedCharacterCard handleClick={handleSectionChange} />
             </div>
             <div className="flex flex-col gap-y-10 lg:pt-0 pt-10">
