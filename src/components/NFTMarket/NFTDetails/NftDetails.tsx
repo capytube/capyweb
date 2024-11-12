@@ -1,10 +1,14 @@
 import { CoinCurrency, ShareIcon, XIcon } from '../../Account/Icons';
+import ActivityTable from './ActivityTable';
+import OfferTable from './OfferTable';
+import Fb from '/src/assets/play/fb.png';
+import IG from '/src/assets/play/ig.png';
 
 type Props = {};
 
 function NftDetails({}: Props) {
   return (
-    <div className='lg:w-fit w-full'>
+    <div className="lg:w-fit w-full flex flex-col gap-y-12">
       <div className="flex flex-col gap-y-6 border-b pb-12 border-chocoBrown">
         <span className="font-dynapuff text-[44px] leading-[52px] text-chocoBrown">
           Capy #1234
@@ -20,14 +24,14 @@ function NftDetails({}: Props) {
           <CoinCurrency className="max-h-8" />
           8.5 ($100.00)
         </span>
-        <button className="bg-darkGreen text-white lg:shadow-loginShadow shadow-buttonShadow rounded-lg text-3xl lg:py-2 lg:px-4 max-w-[158px]">
+        <button className="bg-darkGreen font-ADLaM text-white lg:shadow-loginShadow shadow-buttonShadow rounded-lg lg:text-3xl text-2xl lg:py-2 lg:px-4 py-2 max-w-[158px]">
           Buy now
         </button>
         <div className="flex gap-x-6">
-          <button className="bg-avacadoCream border border-darkGreen text-chocoBrown lg:shadow-loginShadow shadow-buttonShadow rounded-lg text-3xl lg:py-2 lg:px-4 ">
+          <button className="bg-avacadoCream font-ADLaM border border-darkGreen text-chocoBrown lg:shadow-loginShadow shadow-buttonShadow rounded-lg lg:text-3xl text-2xl lg:py-2 lg:px-4 p-2">
             Make an offer
           </button>
-          <button className="bg-avacadoCream border border-darkGreen text-chocoBrown lg:shadow-loginShadow shadow-buttonShadow rounded-lg text-3xl lg:py-2 lg:px-4 ">
+          <button className="bg-avacadoCream font-ADLaM border border-darkGreen text-chocoBrown lg:shadow-loginShadow shadow-buttonShadow rounded-lg lg:text-3xl text-2xl lg:py-2 lg:px-4 p-2">
             Offer a trade
           </button>
         </div>
@@ -37,29 +41,33 @@ function NftDetails({}: Props) {
           </p>
           <div className="flex justify-start gap-x-7 items-center">
             <img
-              src="/src/assets/play/fb.png"
+              src={Fb}
               alt="facebook-icon"
               className="md:max-w-max max-w-8"
               width={56}
             />
-            <XIcon />
+            <XIcon clx="max-w-14" />
             <img
-              src="/src/assets/play/ig.png"
+              src={IG}
               alt="instagram-icon"
               className="md:max-w-max max-w-8"
               width={56}
             />
-            <ShareIcon />
+            <ShareIcon clx="max-w-14" />
           </div>
         </div>
       </div>
-      <div>
-        <h3 className="text-chocoBrown font-ADLaM text-[28px] leading-8">
+      <div className="overflow-x-auto">
+        <h3 className="text-chocoBrown font-ADLaM text-[28px] leading-8 mb-6">
           Activity
         </h3>
-        <h3 className="text-chocoBrown font-ADLaM text-[28px] leading-8">
+        <ActivityTable />
+      </div>
+      <div className="overflow-x-auto md:pb-0 pb-12">
+        <h3 className="text-chocoBrown font-ADLaM text-[28px] leading-8 mb-6">
           Offers
         </h3>
+        <OfferTable />
       </div>
     </div>
   );

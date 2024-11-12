@@ -6,8 +6,8 @@ type Props = {};
 export default function Navbar({}: Props) {
   const pathName = useLocation()?.pathname?.slice(1);
 
-  return (
-    <>
+  return pathName.includes('shop') ? null : (
+    <nav className="navlinks-container">
       <Link to="/" className="navLink" title="Home">
         <HomeIcon
           className="navIcon"
@@ -38,6 +38,6 @@ export default function Navbar({}: Props) {
           fill={pathName === 'profile' ? '#FFB26F' : '#FFEEE2'}
         />
       </Link>
-    </>
+    </nav>
   );
 }

@@ -3,27 +3,31 @@ import { DropdownIcon } from '../../Play/Icons';
 import { SearchIcon } from '../../Icons/Icons';
 import NFTCard from '../../Account/NFTCard';
 
+import BrownCapy from '/src/assets/account/brownRat.png';
+import PinkCapy from '/src/assets/account/pinkRat.png';
+import SlateCapy from '/src/assets/account/slateRat.png';
+
 type Props = {};
 
 const nftCards = [
   {
     id: 1,
     title: '#12345678',
-    image: 'src/assets/account/brownRat.png',
+    image: BrownCapy,
     tag: 'ultra rare',
     price: 8.5,
   },
   {
     id: 2,
     title: '#12345678',
-    image: 'src/assets/account/pinkRat.png',
+    image: PinkCapy,
     tag: 'rare',
     price: 8.5,
   },
   {
     id: 3,
     title: '#12345678',
-    image: 'src/assets/account/slateRat.png',
+    image: SlateCapy,
     tag: 'epic',
     price: 8.5,
   },
@@ -44,7 +48,7 @@ export default function ListingSection({}: Props) {
   const optionsStyle = 'text-left text-lg p-2';
 
   return (
-    <div className="lg:pt-10 py-8 lg:px-40 px-4 lg:pb-20 flex flex-col lg:gap-y-10 gap-y-6 items-center">
+    <div className="lg:pt-10 py-8 lg:px-40 px-4 pb-20 flex flex-col lg:gap-y-10 gap-y-6 items-center">
       <div className="max-w-[1260px] flex lg:flex-row flex-col gap-y-4 justify-between items-end w-full">
         <div className="w-full flex-1">
           <span className="font-ADLaM text-xl text-chocoBrown">
@@ -91,8 +95,8 @@ export default function ListingSection({}: Props) {
         </div>
       </div>
       <div className="grid lg:grid-cols-4 grid-cols-2 max-[390px]:grid-cols-1 gap-x-11 gap-y-10">
-        {[...nftCards, ...nftCards, ...nftCards]?.map((card) => (
-          <NFTCard key={card?.id} data={card} />
+        {[...nftCards, ...nftCards, ...nftCards]?.map((card, idx) => (
+          <NFTCard key={idx} data={{ ...card, id: idx + 1 }} />
         ))}
       </div>
     </div>

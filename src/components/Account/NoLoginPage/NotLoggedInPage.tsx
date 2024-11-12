@@ -1,15 +1,13 @@
 import LoginSection from './LoginSection';
 import NftSection from './NftSection';
 
-type Props = {
-  setLoggedIn: Function;
-};
+type Props = {};
 
-export default function NotLoggedInPage({ setLoggedIn }: Props) {
+export default function NotLoggedInPage({}: Props) {
   return (
     <>
-      <LoginSection setLoggedIn={setLoggedIn} />
-      <NftSection clx="pb-20" />
+      <LoginSection />
+      <NftSection clx="!pb-20" />
     </>
   );
 }

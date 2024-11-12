@@ -8,6 +8,7 @@ import {
 } from '../Account/Icons';
 import { ClockIcon } from './Icons';
 import RulesPopup from './RulesPopup/RulesPopup';
+import CapySafari from '/src/assets/play/capy-safari.png';
 
 type Props = {
   handleSubmit: Function;
@@ -47,7 +48,7 @@ function CapySafariCard({ handleSubmit }: Props) {
       </div>
       <div className="md:py-9 py-6 flex justify-center">
         <img
-          src="/src/assets/play/capy-safari.png"
+          src={CapySafari}
           alt="capy-table"
           className="md:max-w-max max-w-[262px]"
         />

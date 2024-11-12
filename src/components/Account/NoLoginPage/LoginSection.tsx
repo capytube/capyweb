@@ -1,8 +1,10 @@
-type Props = {
-  setLoggedIn: Function;
-};
+import PlayCapy from '/src/assets/account/noLogin/play-cappys.png';
+import WindowCapy from '/src/assets/account/noLogin/capy-window.png';
+import CapyCoin from '/src/assets/account/noLogin/capycoin.png';
 
-function LoginSection({ setLoggedIn }: Props) {
+type Props = {};
+
+function LoginSection({}: Props) {
   return (
     <div className="bg-grassGreen md:pt-10 md:pb-20 py-8 md:px-0 px-4">
       <div className="max-w-[1328px] flex flex-col justify-center items-center md:gap-y-14 gap-y-4 mx-auto">
@@ -11,7 +13,7 @@ function LoginSection({ setLoggedIn }: Props) {
         </h1>
         <div className="md:max-w-max max-w-[305px]">
           <img
-            src="/src/assets/account/noLogin/play-cappys.png"
+            src={PlayCapy}
             alt="play"
             className="md:max-h-max max-h-[150px]"
           />
@@ -29,7 +31,7 @@ function LoginSection({ setLoggedIn }: Props) {
         <div className="flex md:flex-row flex-col md:gap-x-14">
           <div className="px-4 max-w-md">
             <img
-              src="/src/assets/account/noLogin/capy-window.png"
+              src={WindowCapy}
               alt="winodw"
               className="md:max-h-max max-h-[150px] mx-auto"
             />
@@ -45,7 +47,7 @@ function LoginSection({ setLoggedIn }: Props) {
           <div className="px-4 max-w-md">
             <img
               className="mx-auto md:max-h-max max-h-[150px]"
-              src="/src/assets/account/noLogin/capycoin.png"
+              src={CapyCoin}
               alt="capycoin"
             />
             <p className="md:pt-10 pt-4 font-ADLaM md:text-[28px] md:leading-8 text-sm text-center text-chocoBrown font-semibold md:pb-10 pb-6">
@@ -60,7 +62,7 @@ function LoginSection({ setLoggedIn }: Props) {
         <button
           type="button"
           className="rotate-1 bg-darkGreen font-ADLaM text-white md:text-3xl md:py-2.5 py-1 px-4 rounded-lg md:shadow-loginShadow shadow-buttonShadow"
-          onClick={() => setLoggedIn(true)}
+          // onClick={() => setLoggedIn(true)}
         >
           Log in or Create account
         </button>

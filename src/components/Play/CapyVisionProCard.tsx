@@ -8,6 +8,7 @@ import {
 } from '../Account/Icons';
 import { ClockIcon } from './Icons';
 import RulesPopup from './RulesPopup/RulesPopup';
+import VisionCapy from '/src/assets/play/visionCat.png';
 
 type Props = {
   handleSubmit: Function;
@@ -44,7 +45,7 @@ function CapyVisionProCard({ handleSubmit }: Props) {
       </div>
       <div className="md:py-10 py-6 flex justify-center">
         <img
-          src="/src/assets/play/visionCat.png"
+          src={VisionCapy}
           alt="capy-table"
           className="md:max-w-max max-w-[196px]"
         />

@@ -1,8 +1,25 @@
+import React from 'react';
 import { CapyCoin, CoinCurrency, PencilIcon, UnLinkedIcon } from '../Icons';
+import { useAccount } from 'wagmi';
+import { useTokenBalances } from '@dynamic-labs/sdk-react-core';
 
 function WalletSection({ premium = false }: { premium?: boolean }) {
+  const { isConnected, address } = useAccount();
+  const token = useTokenBalances();
+
+  console.log("tokenBalances", token.tokenBalances)
+
+  const [walletAddress, setWalletAddress] = React.useState<
+    `0x${string}` | undefined
+  >();
   const btnStyle =
     'sm:text-3xl text-base font-ADLaM text-white shadow-buttonShadow rounded-lg sm:py-2.5 py-1.5 sm:px-5 px-[18px]';
+
+  React.useEffect(() => {
+    if (isConnected) {
+      setWalletAddress(address);
+    }
+  }, []);
 
   return (
     <div className="sm:pt-10 pt-8 sm:pb-20 pb-20 sm:px-40 px-6 flex flex-col sm:gap-y-10 gap-y-6 justify-center items-center">
@@ -29,7 +46,7 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
               Wallet address:
             </label>
             <div className="flex gap-x-4 items-center">
-              <div className="flex gap-x-2 items-center border-2 border-chocoBrown rounded-[4px] text-chocoBrown outline-none px-3 sm:py-2.5 py-1.5 font-commissioner max-h-11 w-full lg:min-w-[316px] lg:max-w-[316px] max-w-[266px]">
+              <div className="flex gap-x-2 items-center border-2 border-chocoBrown rounded-[4px] text-chocoBrown outline-none px-3 sm:py-2.5 py-1.5 font-commissioner max-h-11 lg:min-w-[316px]">
                 {!premium ? (
                   <>
                     <UnLinkedIcon />
@@ -45,7 +62,9 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
                   <input
                     name="walletAddress"
                     type="text"
-                    className="outline-none"
+                    value={walletAddress}
+                    disabled={!!walletAddress}
+                    className="outline-none w-full"
                   />
                 )}
               </div>
