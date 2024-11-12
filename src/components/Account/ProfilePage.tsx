@@ -9,6 +9,8 @@ import WalletSection from './WalletSection/WalletSection';
 import Footer from '../Footer/Footer';
 import NotLoggedInPage from './NoLoginPage/NotLoggedInPage';
 import NotPremiumPage from './NotPremium/NotPremiumPage';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+import { useAccount } from 'wagmi';
 
 interface UserProfile {
   username: string;
@@ -18,9 +20,13 @@ interface UserProfile {
 }
 
 const ProfilePage: React.FC = () => {
+  const isLoggedIn = useIsLoggedIn();
+  const { isConnected } = useAccount();
+
+  console.log('isLoggedIn', isLoggedIn);
+
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [loggedIn, setLoggedIn] = React.useState(false);
-  const [premium] = React.useState(false);
+  // const [premium] = React.useState(false);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
 
@@ -51,8 +57,8 @@ const ProfilePage: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-  return loggedIn ? (
-    premium ? (
+  return isLoggedIn ? (
+    isConnected ? (
       <>
         <div className="bg-grassGreen lg:py-10 py-8">
           <h1 className="font-hanaleiFill text-darkGreen md:text-titleSize text-titleSizeSM text-center md:pb-6 pb-4">
@@ -78,7 +84,7 @@ const ProfilePage: React.FC = () => {
           </form>
         </div>
         <NftSection />
-        <WalletSection premium={premium} />
+        <WalletSection premium={isConnected} />
         {!isMobile && <Footer />}
       </>
     ) : (
@@ -89,7 +95,7 @@ const ProfilePage: React.FC = () => {
     )
   ) : (
     <>
-      <NotLoggedInPage setLoggedIn={setLoggedIn} />
+      <NotLoggedInPage />
       {!isMobile && <Footer />}
     </>
   );

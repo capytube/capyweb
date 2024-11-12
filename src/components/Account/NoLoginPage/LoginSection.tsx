@@ -2,11 +2,9 @@ import PlayCapy from '/src/assets/account/noLogin/play-cappys.png';
 import WindowCapy from '/src/assets/account/noLogin/capy-window.png';
 import CapyCoin from '/src/assets/account/noLogin/capycoin.png';
 
-type Props = {
-  setLoggedIn: Function;
-};
+type Props = {};
 
-function LoginSection({ setLoggedIn }: Props) {
+function LoginSection({}: Props) {
   return (
     <div className="bg-grassGreen md:pt-10 md:pb-20 py-8 md:px-0 px-4">
       <div className="max-w-[1328px] flex flex-col justify-center items-center md:gap-y-14 gap-y-4 mx-auto">
@@ -64,7 +62,7 @@ function LoginSection({ setLoggedIn }: Props) {
         <button
           type="button"
           className="rotate-1 bg-darkGreen font-ADLaM text-white md:text-3xl md:py-2.5 py-1 px-4 rounded-lg md:shadow-loginShadow shadow-buttonShadow"
-          onClick={() => setLoggedIn(true)}
+          // onClick={() => setLoggedIn(true)}
         >
           Log in or Create account
         </button>
