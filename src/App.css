@@ -30,32 +30,6 @@ h1 {
   min-height: 100vh;
 }
 
-.headerContainer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(180deg, #fffcc8 0%, #d0e591 100%);
-  padding: 0 10rem;
-  height: 130px;
-}
-
-.capyMainIcon {
-  width: 435px;
-  min-width: 203px;
-  margin-right: 4px;
-}
-
-.logoAndSignoutButton {
-  width: 120px;
-  min-width: 100px;
-}
-
-.custom-login-button {
-  background: none !important;
-  border: none !important;
-  padding: 0 !important;
-}
-
 .navlinks-container {
   display: flex;
   justify-content: center;
@@ -65,28 +39,19 @@ h1 {
   padding: 1rem 0;
 }
 
-.navLink {
-  color: #000000;
-  text-decoration: none;
-}
 .navIcon {
   width: 150px;
   height: 78px;
 }
 
 @media screen and (max-width: 900px) {
-  .headerContainer {
-    padding: 4rem;
-  }
   .navlinks-container {
     padding: 1rem;
+    gap: 5px;
   }
 }
 
 @media screen and (max-width: 640px) {
-  .headerContainer {
-    padding: 1rem 2rem;
-  }
   .navIcon {
     width: 120px;
     height: 58px;
@@ -94,13 +59,6 @@ h1 {
 }
 
 @media screen and (max-width: 500px) {
-  .headerContainer {
-    padding: 1rem;
-  }
-  .capyMainIcon {
-    min-width: 170px;
-    margin-right: 2px;
-  }
   .navlinks-container {
     display: none;
   }

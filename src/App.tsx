@@ -1,8 +1,8 @@
 // src/App.tsx
 import React, { useEffect, useState } from 'react';
-import { DynamicWidget, useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 import { useAccount, useBalance } from 'wagmi';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import DeletionInstructions from './components/DeletionInstructions';
@@ -18,8 +18,7 @@ import NFTDetails from './components/NFTMarket/NFTDetails/index';
 // import FullScreenStream from "./components/Streaming/FullScreenStream";
 import WatchRoom from './components/Watch/WatchRoom/WatchRoom';
 import FooterNavbar from './components/FooterNavbar/FooterNavbar';
-import capytube from './assets/capytube.svg';
-import loginIcon from './assets/newlogin.png';
+import Header from './components/Header/Header';
 import Navbar from './components/Navbar/Navbar';
 import PlayPage from './components/Play/index';
 
@@ -50,17 +49,7 @@ const App: React.FC = () => {
       <main>
         <div className="mainContainer">
           <header className="mainContent">
-            <div className="headerContainer">
-              <Link to="/" className="navLink" title="Home">
-                <img src={capytube} alt="CapyTube" className="capyMainIcon" />
-              </Link>
-              <div className="logoAndSignoutButton">
-                <DynamicWidget
-                  buttonClassName="custom-login-button"
-                  innerButtonComponent={<img src={loginIcon} alt="login" />}
-                />
-              </div>
-            </div>
+            <Header />
             <Navbar />
             {isMobile && <FooterNavbar />}
 
