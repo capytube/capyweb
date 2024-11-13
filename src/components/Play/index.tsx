@@ -6,11 +6,12 @@ import GameSection from './GameSection';
 import Footer from '../Footer/Footer';
 import LivepeerPlayer from '../LivepeerPlayer';
 import Modal from '../Modal/Modal';
+import { CapyCoin } from '../Account/Icons';
 
 type Props = {};
 
 function index({}: Props) {
-  const coins = 0;
+  const coins = 10;
   const [selection, setSelection] = React.useState(1);
   const [selectedCapy, setSelectedCapy] = React.useState<{
     name: string;
@@ -169,37 +170,46 @@ function index({}: Props) {
       <Modal
         isOpen={isTopupModal}
         onClose={() => setTopupModal(false)}
-        width="400px"
+        className='md:max-w-[350px] max-w-[240px] shadow-characterCard'
       >
-        <h4>Not enough coins</h4>
-        <img />
-        <h5>Top up your coins</h5>
-        <div className='flex'>
-          {[
-            { value: 20, price: 10 },
-            { value: 50, price: 20 },
-            { value: 100, price: 30 },
-          ]?.map((item) => (
-            <>
-              <input
-                type="radio"
-                name="topup"
-                value={item.value}
-                className="mt-1 text-chocoBrown accent-chocoBrown size-7"
-              />
-              <label htmlFor="topup">
-                {item?.value} coins ({item?.price} USD)
-              </label>
-            </>
-          ))}
-        </div>
+        <div className="flex flex-col md:gap-y-6 gap-y-4 items-center justify-center">
+          <h4 className="font-ADLaM md:text-[28px] md:leading-8 text-chocoBrown">
+            Not enough coins
+          </h4>
+          <CapyCoin clx="size-20" />
+          <h5 className="font-ADLaM md:text-[28px] md:leading-8 text-chocoBrown">
+            Top up your coins
+          </h5>
+          <div className="flex flex-col md:gap-y-6 gap-y-2 w-full">
+            {[
+              { value: 20, price: 10 },
+              { value: 50, price: 20 },
+              { value: 100, price: 30 },
+            ]?.map((item) => (
+              <div className="flex gap-x-4 items-center w-full">
+                <input
+                  type="radio"
+                  name="topup"
+                  value={item.value}
+                  className="text-chocoBrown accent-chocoBrown size-6"
+                />
+                <label
+                  htmlFor="topup"
+                  className="md:text-2xl text-sm text-chocoBrown font-commissioner"
+                >
+                  {item?.value} coins ({item?.price} USD)
+                </label>
+              </div>
+            ))}
+          </div>
 
-        <button
-          type="submit"
-          className="rounded-lg text-white font-ADLaM text-3xl px-4 py-2.5 bg-darkOrange shadow-buttonShadow"
-        >
-          Top up
-        </button>
+          <button
+            type="submit"
+            className="rounded-lg text-white font-ADLaM text-3xl px-4 py-2.5 bg-darkOrange shadow-buttonShadow max-w-[129px]"
+          >
+            Top up
+          </button>
+        </div>
 
         {/* <YourProfile /> */}
       </Modal>

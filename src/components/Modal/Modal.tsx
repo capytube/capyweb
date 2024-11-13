@@ -7,16 +7,17 @@ interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   width?: string;
+  className?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, width }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, width, className }) => {
   if (!isOpen) return null;
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal} style={{ width }}>
+      <div className={`${styles.modal} ${className}`} style={{ width }}>
         <button className={styles.closeButton} onClick={onClose}>
-          <img src={closeIcon} alt="close" />
+          <img src={closeIcon} alt="close" width={16} />
         </button>
         <div className={styles.modalContent}>{children}</div>
       </div>
