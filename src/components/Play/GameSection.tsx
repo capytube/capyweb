@@ -6,10 +6,11 @@ import SnackCard from './SnackCard';
 import ThanksSection from './ThanksSection/ThanksSection';
 
 type Props = {
+  capy: { name: string; image: string };
   handleSectionChange: MouseEventHandler<HTMLElement>;
 };
 
-function GameSection({ handleSectionChange }: Props) {
+function GameSection({ capy, handleSectionChange }: Props) {
   const [thanksActive, setThanksActive] = React.useState<boolean>(false);
   const [voteType, setVoteType] = React.useState<boolean>(false);
   const [bidType, setBidType] = React.useState<string>('');
@@ -46,7 +47,10 @@ function GameSection({ handleSectionChange }: Props) {
         {!thanksActive ? (
           <>
             <div className="sticky z-10 h-fit top-0">
-              <SelectedCharacterCard handleClick={handleSectionChange} />
+              <SelectedCharacterCard
+                capy={capy}
+                handleClick={handleSectionChange}
+              />
             </div>
             <div className="flex flex-col gap-y-10 lg:pt-0 pt-10">
               <SnackCard handleSubmit={handleSubmit} />

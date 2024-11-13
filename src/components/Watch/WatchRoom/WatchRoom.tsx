@@ -19,6 +19,8 @@ const WatchRoom = () => {
   }>();
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
+  const [watchCoins] = useState(0);
+  const [activeCam, setActiveCam] = useState(0);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 500);
@@ -32,17 +34,26 @@ const WatchRoom = () => {
         <h1>{streamTitle}’ ROOM</h1>
         <div className={styles.watchRoomContent}>
           <div className={styles.roomCamsContainer}>
-            <button className={styles.selected}>
+            <button
+              className={activeCam === 0 ? styles.selected : ""}
+              onClick={() => setActiveCam(0)}
+            >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
               {""}
               main cam
             </button>
-            <button>
+            <button
+              className={activeCam === 1 ? styles.selected : ""}
+              onClick={() => setActiveCam(1)}
+            >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
               {""}
               food cam
             </button>
-            <button>
+            <button
+              className={activeCam === 2 ? styles.selected : ""}
+              onClick={() => setActiveCam(2)}
+            >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
               {""}
               bedroom cam
@@ -65,7 +76,13 @@ const WatchRoom = () => {
               ></div>
             </div>
 
-            <button className={styles.collectButton}>Collect</button>
+            <button
+              className={`${styles.collectButton} ${
+                watchCoins === 10 ? "animate-pulse" : ""
+              }`}
+            >
+              {watchCoins === 10 ? "Collect now" : "Collect"}
+            </button>
 
             <div className={styles.streamShareIcons}>
               <img src={fbIcon} alt="fb" />
@@ -86,13 +103,13 @@ const WatchRoom = () => {
             </div>
             <div className={styles.commentSection}>
               <div className={styles.emojiRatingWrapper__mobile}>
-                <EmojiRating />
+                <EmojiRating streamId={streamId ?? ""} />
               </div>
               <ChatRoom />
             </div>
           </div>
           <div className={styles.emojiRatingWrapper}>
-            <EmojiRating />
+            <EmojiRating streamId={streamId ?? ""} />
           </div>
         </div>
       </div>

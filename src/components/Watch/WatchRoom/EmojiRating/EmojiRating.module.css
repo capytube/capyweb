@@ -9,6 +9,7 @@
 }
 
 .emojiRatingButton {
+  width: 3rem;
   background: none;
   border: none;
   cursor: pointer;

@@ -30,7 +30,7 @@ const CapyProfile = (props: CapyProfileProps) => {
           </button>
         </div>
         <p className={styles.streamCount}>
-          <div className={styles.greenCircle} /> {data?.streamCount} available
+          <span className={styles.greenCircle} /> {data?.streamCount} available
           streams
         </p>
         <button

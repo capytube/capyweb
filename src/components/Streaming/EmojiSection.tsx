@@ -21,11 +21,11 @@ const EmojiSection: React.FC<EmojiSectionProps> = ({
   console.log(address);
 
   const emojis = [
+    { name: "capylove", icon: capylove },
+    { name: "capylike", icon: capylike },
+    { name: "capywow", icon: capywow },
     { name: "capyangry", icon: capyangry },
     { name: "capyfire", icon: capyfire },
-    { name: "capylike", icon: capylike },
-    { name: "capylove", icon: capylove },
-    { name: "capywow", icon: capywow },
   ];
 
   return (
