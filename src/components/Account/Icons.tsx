@@ -63,7 +63,7 @@ export function PencilIcon() {
   );
 }
 
-export function CapyCoin() {
+export function CapyCoin({ clx }: { clx?: string }) {
   return (
     <svg
       width="184"
@@ -71,6 +71,7 @@ export function CapyCoin() {
       viewBox="0 0 184 185"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className={clx}
     >
       <g clipPath="url(#clip0_226_17720)">
         <rect
