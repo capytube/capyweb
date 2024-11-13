@@ -22,7 +22,7 @@ function CharacterCard({ data, handleCapySelection }: Props) {
   return (
     <div
       className="flex flex-col justify-between items-center cursor-pointer "
-      onClick={(e) => handleCapySelection(e, data?.name)}
+      onClick={(e) => handleCapySelection(e, data)}
     >
       <img src={data?.image} alt={data?.name} />
       <div

@@ -1,17 +1,26 @@
-import React from "react";
-import { DropdownIcon } from "./Icons";
+import React from 'react';
+import { DropdownIcon } from './Icons';
 // import Footer from '../Footer/Footer';
-import ChooseCapySection from "./ChooseCapySection";
-import GameSection from "./GameSection";
-import Footer from "../Footer/Footer";
-import LivepeerPlayer from "../LivepeerPlayer";
+import ChooseCapySection from './ChooseCapySection';
+import GameSection from './GameSection';
+import Footer from '../Footer/Footer';
+import LivepeerPlayer from '../LivepeerPlayer';
+import Modal from '../Modal/Modal';
 
 type Props = {};
 
 function index({}: Props) {
+  const coins = 0;
   const [selection, setSelection] = React.useState(1);
+  const [selectedCapy, setSelectedCapy] = React.useState<{
+    name: string;
+    image: string;
+  }>({ name: '', image: '' });
+
   const [openMenu, setOpenMenu] = React.useState(false);
-  const [date, setDate] = React.useState("5 Nov 2024");
+
+  const [isTopupModal, setTopupModal] = React.useState(false);
+  const [date, setDate] = React.useState('5 Nov 2024');
   const [dateMenu, setDateMenu] = React.useState(false);
   const [section, setSection] = React.useState(1);
 
@@ -19,16 +28,23 @@ function index({}: Props) {
 
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 500);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const optionsStyle = "text-left text-lg p-2";
+  const optionsStyle = 'text-left text-lg p-2';
 
-  const handleSection = (e: any, selection: string) => {
+  const handleSection = (
+    e: any,
+    selection: { name: string; image: string }
+  ) => {
     e.preventDefault();
-    console.log(selection);
-    setSection(2);
+    if (coins) {
+      setSelectedCapy({ name: selection?.name, image: selection?.image });
+      setSection(2);
+    } else {
+      setTopupModal(true);
+    }
   };
 
   return (
@@ -48,11 +64,11 @@ function index({}: Props) {
           >
             <input
               type="text"
-              value={selection === 1 ? "Today’s session" : "Past session"}
+              value={selection === 1 ? 'Today’s session' : 'Past session'}
               disabled
               className="pr-2 outline-none md:max-w-[210px] max-w-44 text-chocoBrown font-ADLaM md:text-[28px] md:leading-8 text-base"
             />
-            <DropdownIcon className={`${openMenu ? "rotate-180" : ""}`} />
+            <DropdownIcon className={`${openMenu ? 'rotate-180' : ''}`} />
           </button>
           {openMenu ? (
             <div className="absolute z-40 flex flex-col bg-white w-full text-chocoBrown md:top-[70px] top-11 rounded-lg p-2">
@@ -84,7 +100,10 @@ function index({}: Props) {
         section !== 2 ? (
           <ChooseCapySection handleCapySelection={handleSection} />
         ) : (
-          <GameSection handleSectionChange={() => setSection(1)} />
+          <GameSection
+            capy={{ name: selectedCapy?.name, image: selectedCapy?.image }}
+            handleSectionChange={() => setSection(1)}
+          />
         )
       ) : (
         <div id="past-session" className="md:py-20 md:px-20 2xl:px-80">
@@ -107,7 +126,7 @@ function index({}: Props) {
                 onClick={() => setDateMenu(!dateMenu)}
               >
                 {date}
-                <DropdownIcon className={`${dateMenu ? "rotate-180" : ""}`} />
+                <DropdownIcon className={`${dateMenu ? 'rotate-180' : ''}`} />
               </button>
               {dateMenu ? (
                 <div className="absolute z-30 right-0 max-w-fit flex flex-col bg-white w-full text-chocoBrown md:top-[70px] top-11 rounded-lg p-2">
@@ -115,7 +134,7 @@ function index({}: Props) {
                     type="button"
                     className={optionsStyle}
                     onClick={() => {
-                      setDate("Date 1");
+                      setDate('Date 1');
                       setDateMenu(!dateMenu);
                     }}
                   >
@@ -125,7 +144,7 @@ function index({}: Props) {
                     type="button"
                     className={optionsStyle}
                     onClick={() => {
-                      setDate("Date 2");
+                      setDate('Date 2');
                       setDateMenu(!dateMenu);
                     }}
                   >
@@ -147,6 +166,43 @@ function index({}: Props) {
       )}
 
       {!isMobile ? <Footer /> : null}
+      <Modal
+        isOpen={isTopupModal}
+        onClose={() => setTopupModal(false)}
+        width="400px"
+      >
+        <h4>Not enough coins</h4>
+        <img />
+        <h5>Top up your coins</h5>
+        <div className='flex'>
+          {[
+            { value: 20, price: 10 },
+            { value: 50, price: 20 },
+            { value: 100, price: 30 },
+          ]?.map((item) => (
+            <>
+              <input
+                type="radio"
+                name="topup"
+                value={item.value}
+                className="mt-1 text-chocoBrown accent-chocoBrown size-7"
+              />
+              <label htmlFor="topup">
+                {item?.value} coins ({item?.price} USD)
+              </label>
+            </>
+          ))}
+        </div>
+
+        <button
+          type="submit"
+          className="rounded-lg text-white font-ADLaM text-3xl px-4 py-2.5 bg-darkOrange shadow-buttonShadow"
+        >
+          Top up
+        </button>
+
+        {/* <YourProfile /> */}
+      </Modal>
     </div>
   );
 }

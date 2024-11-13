@@ -86,13 +86,13 @@ function ThanksSection({
               <img
                 src={Fb}
                 alt="facebook-icon"
-                className="md:max-w-max max-w-8"
+                className="md:max-w-14 max-w-8"
               />
               <XIcon />
               <img
                 src={Ig}
                 alt="instagram-icon"
-                className="md:max-w-max max-w-8"
+                className="md:max-w-14 max-w-8"
               />
               <ShareIcon />
             </div>
@@ -136,13 +136,13 @@ function ThanksSection({
               <img
                 src={Fb}
                 alt="facebook-icon"
-                className="md:max-w-max max-w-8"
+                className="md:max-w-14 max-w-8"
               />
               <XIcon />
               <img
                 src={Ig}
                 alt="instagram-icon"
-                className="md:max-w-max max-w-8"
+                className="md:max-w-14 max-w-8"
               />
               <ShareIcon />
             </div>

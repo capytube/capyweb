@@ -461,7 +461,7 @@ export function ShareIcon({ clx }: { clx?: string }) {
       viewBox="0 0 65 65"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`md:max-w-max max-w-8 md:max-h-max max-h-8 ${clx}`}
+      className={`md:max-w-14 max-w-8 md:max-h-14 max-h-8 ${clx}`}
     >
       <circle cx="32.5859" cy="32.3096" r="32" fill="#7A3F3E" />
       <path
@@ -482,7 +482,7 @@ export function XIcon({ clx }: { clx?: string }) {
       viewBox="0 0 65 65"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`md:max-w-max max-w-8 md:max-h-max max-h-8 ${clx}`}
+      className={`md:max-w-14 max-w-8 md:max-h-14 max-h-8 ${clx}`}
     >
       <mask
         id="path-1-outside-1_375_9667"

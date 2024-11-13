@@ -37,7 +37,7 @@ export default function index({}: Props) {
       >
         <Link
           to="/shop"
-          className="flex md:gap-x-4 gap-x-3 md:text-2xl text-base text-chocoBrown font-commissioner items-center md:pb-10 pb-6"
+          className="flex md:gap-x-4 gap-x-3 md:text-2xl text-base text-chocoBrown font-commissioner items-center md:pb-10 pb-6 w-fit"
         >
           <LeftArrowIcon />
           Back

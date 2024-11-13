@@ -43,14 +43,14 @@ function NftDetails({}: Props) {
             <img
               src={Fb}
               alt="facebook-icon"
-              className="md:max-w-max max-w-8"
+              className="md:max-w-14 max-w-8"
               width={56}
             />
             <XIcon clx="max-w-14" />
             <img
               src={IG}
               alt="instagram-icon"
-              className="md:max-w-max max-w-8"
+              className="md:max-w-14 max-w-8"
               width={56}
             />
             <ShareIcon clx="max-w-14" />

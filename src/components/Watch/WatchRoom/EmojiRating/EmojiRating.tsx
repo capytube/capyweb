@@ -1,17 +1,17 @@
-import styles from "./EmojiRating.module.css";
-import capyangry from "../../../../assets/capyangry.svg";
-import capyfire from "../../../../assets/capyfire.svg";
-import capylike from "../../../../assets/capylike.svg";
-import capylove from "../../../../assets/capylove.svg";
-import capywow from "../../../../assets/capywow.svg";
+import styles from './EmojiRating.module.css';
+import capyangry from '../../../../assets/capyangry.svg';
+import capyfire from '../../../../assets/capyfire.svg';
+import capylike from '../../../../assets/capylike.svg';
+import capylove from '../../../../assets/capylove.svg';
+import capywow from '../../../../assets/capywow.svg';
 
 const EmojiRating = () => {
   const emojis = [
-    { name: "capyangry", icon: capyangry },
-    { name: "capyfire", icon: capyfire },
-    { name: "capylike", icon: capylike },
-    { name: "capylove", icon: capylove },
-    { name: "capywow", icon: capywow },
+    { name: 'capylove', icon: capylove },
+    { name: 'capylike', icon: capylike },
+    { name: 'capywow', icon: capywow },
+    { name: 'capyangry', icon: capyangry },
+    { name: 'capyfire', icon: capyfire },
   ];
 
   return (
