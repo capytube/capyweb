@@ -1,7 +1,7 @@
 import { Livepeer } from "livepeer";
 
 const livepeer = new Livepeer({
-  apiKey: "3e2c0df0-f6bd-4a0b-8b1f-57fee7f68661",
+  apiKey: "7f09548e-4e52-4744-9c85-6f00eb999b62",
 });
 
 export async function getViewershipData(playbackId: string) {

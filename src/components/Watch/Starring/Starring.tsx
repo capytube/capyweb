@@ -1,6 +1,8 @@
 import CapyCards from "./CapyCards/CapyCards";
 import styles from "./Starring.module.css";
 import starringMagnus from "../../../assets/starringMagnus.jpg";
+import starringElon from "../../../assets/magst1.jpeg";
+import starringEinstein from "../../../assets/magst2.jpeg";
 
 export interface StarringData {
   id: number;
@@ -25,7 +27,7 @@ const capyData: StarringData[] = [
   {
     id: 2,
     streamId: "fa7ahoikpf19u1e0",
-    image: starringMagnus,
+    image: starringElon,
     name: "Elon",
     bio: "This fearless bad boy doesn’t afraid of anything. Chatty and full of energy. A truely socialised capy.",
     url: "#",
@@ -34,7 +36,7 @@ const capyData: StarringData[] = [
   {
     id: 3,
     streamId: "fa7ahoikpf19u1e0",
-    image: starringMagnus,
+    image: starringEinstein,
     name: "Einstein",
     bio: "The youngest and shy baby loves to plan a prison break. Brainy of the boys. The mastermind capy lord.",
     url: "#",
