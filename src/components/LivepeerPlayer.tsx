@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { Src } from "@livepeer/react";
 import { generateClient } from "aws-amplify/api";
+import { useLocation } from "react-router-dom";
 import LiveStream from "./Streaming/LiveStream";
 import { Schema } from "../../amplify/data/resource";
 import vidFrame from "../assets/vidFrame.svg";
@@ -12,6 +13,8 @@ interface LivepeerPlayerProps {
 }
 
 const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({ streamId, title }) => {
+  const { pathname } = useLocation();
+  const isHomePage = pathname === "/";
   const { address, isConnected } = useAccount();
   const [vodSource, setVodSource] = useState<Src[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +82,7 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({ streamId, title }) => {
 
   return (
     <div>
-      {isConnected ? (
+      {isHomePage || isConnected ? (
         <LiveStream vodSource={vodSource} title={title} viewerId={viewerId} />
       ) : (
         <div style={{ position: "relative" }}>
