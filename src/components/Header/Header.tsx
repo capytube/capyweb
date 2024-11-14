@@ -1,28 +1,35 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   DynamicWidget,
   useDynamicContext,
   useIsLoggedIn,
-} from "@dynamic-labs/sdk-react-core";
-import { useAccount } from "wagmi";
-import { Link } from "react-router-dom";
+} from '@dynamic-labs/sdk-react-core';
+import { useAccount } from 'wagmi';
+import { Link } from 'react-router-dom';
 
-import styles from "./Header.module.css";
-import capytube from "../../assets/capytube.svg";
-import capyOnlyLogo from "../../assets/footerlogo.svg";
-import loginIcon from "../../assets/newlogin.png";
-import capyCoinIcon from "../../assets/icons/coin.svg";
-import walletLinkIcon from "../../assets/icons/link.svg";
-import nonNFTprofile from "../../assets/nonNFTprofile.svg";
-import NFTprofile from "../../assets/NFTprofile.svg";
-import Modal from "../Modal/Modal";
-import YourProfile from "./YourProfile/YourProfile";
+import styles from './Header.module.css';
+import capytube from '../../assets/capytube.svg';
+import capyOnlyLogo from '../../assets/footerlogo.svg';
+import loginIcon from '../../assets/newlogin.png';
+import capyCoinIcon from '../../assets/icons/coin.svg';
+import walletLinkIcon from '../../assets/icons/link.svg';
+import nonNFTprofile from '../../assets/nonNFTprofile.svg';
+import NFTprofile from '../../assets/NFTprofile.svg';
+import Modal from '../Modal/Modal';
+import YourProfile from './YourProfile/YourProfile';
+import { useAtom } from 'jotai';
+import { loadingAtom, userAtom } from '../../atoms/atom';
+import { getUserProfile } from '../../utils/api';
 
 const Header = () => {
+  const isNftProfile = true;
+
   const isLoggedIn = useIsLoggedIn();
   const { address, isConnected } = useAccount();
   const { setShowDynamicUserProfile } = useDynamicContext();
-  const isNftProfile = true;
+
+  const [user] = useAtom(userAtom);
+  const [, setLoading] = useAtom(loadingAtom);
 
   const [isSetProfileModalOpen, setIsSetProfileModalOpen] = useState(false);
 
@@ -30,11 +37,30 @@ const Header = () => {
     setShowDynamicUserProfile(true);
   };
 
+  const getProfile = async () => {
+    setLoading(true);
+    if (address && isLoggedIn) {
+      const response = await getUserProfile(address);
+      if (!response?.data?.id) {
+        setIsSetProfileModalOpen(true);
+      } else {
+        setIsSetProfileModalOpen(false);
+      }
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && address) {
+      getProfile();
+    }
+  }, [address, isLoggedIn]);
+
   // overriding dynamic widget styling
-  const host = document.getElementById("dynamic-widget");
+  const host = document.getElementById('dynamic-widget');
   useEffect(() => {
     if (host) {
-      const style = document.createElement("style");
+      const style = document.createElement('style');
       style.innerHTML = `.${styles.customLoginButton} { background: none !important; border: none !important;padding: 0 !important; box-shadow: none !important}`;
       host?.shadowRoot?.appendChild(style);
     }
@@ -61,7 +87,7 @@ const Header = () => {
         </Link>
         <div
           className={styles.logoAndSignoutButton}
-          style={{ display: isLoggedIn ? "none" : "initial" }}
+          style={{ display: isLoggedIn ? 'none' : 'initial' }}
         >
           <DynamicWidget
             buttonClassName={styles.customLoginButton}
@@ -85,7 +111,7 @@ const Header = () => {
                 <img src={nonNFTprofile} alt="user" />
               )}
               <div className={styles.profile__nameAndAddress}>
-                <p>Hi, Doe</p>
+                <p>Hi, {user?.name || '...'}</p>
                 {isConnected ? (
                   <div className={styles.profile__walletAddress}>
                     <img src={walletLinkIcon} alt="link" />
@@ -106,8 +132,14 @@ const Header = () => {
         isOpen={isSetProfileModalOpen}
         onClose={() => setIsSetProfileModalOpen(false)}
         width="400px"
+        hideClose={true}
       >
-        <YourProfile />
+        <YourProfile
+          onClose={() => {
+            setIsSetProfileModalOpen(false);
+            getProfile();
+          }}
+        />
       </Modal>
     </>
   );

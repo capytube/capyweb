@@ -1,6 +1,8 @@
 // src/components/ProfilePage.tsx
 
 import React, { useEffect, useState } from 'react';
+import { useAtom } from 'jotai';
+import { useAccount } from 'wagmi';
 
 import { PencilIcon } from './Icons';
 
@@ -10,24 +12,17 @@ import Footer from '../Footer/Footer';
 import NotLoggedInPage from './NoLoginPage/NotLoggedInPage';
 import NotPremiumPage from './NotPremium/NotPremiumPage';
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
-import { useAccount } from 'wagmi';
-
-interface UserProfile {
-  username: string;
-  email: string;
-  fullName: string;
-  avatarUrl?: string;
-}
+import { userAtom } from '../../atoms/atom';
+import Modal from '../Modal/Modal';
+import UpdateProfile from './UpdateProfile/UpdateProfile';
 
 const ProfilePage: React.FC = () => {
   const isLoggedIn = useIsLoggedIn();
   const { isConnected } = useAccount();
 
-  console.log('isLoggedIn', isLoggedIn);
+  const [userData] = useAtom(userAtom);
 
-  const [user, setUser] = useState<UserProfile | null>(null);
-  // const [premium] = React.useState(false);
-
+  const [openNameModal, setOpenNameModal] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
 
   useEffect(() => {
@@ -36,27 +31,9 @@ const ProfilePage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Simulate fetching user data from an API (or use AWS Cognito to fetch user attributes)
-  useEffect(() => {
-    // Replace with real data fetching logic
-    const fetchUserData = async () => {
-      // Simulate an API call
-      const userData: UserProfile = {
-        username: 'johndoe',
-        email: 'johndoe@example.com',
-        fullName: 'John Doe',
-        avatarUrl: 'https://example.com/avatar.png', // Optional avatar
-      };
-      setUser(userData);
-    };
-
-    fetchUserData();
-  }, []);
-
-  if (!user) {
-    return <div>Loading...</div>;
-  }
-
+  // if (isLoggedIn) {
+  //   return <div>Loading...</div>;
+  // }
   return isLoggedIn ? (
     isConnected ? (
       <>
@@ -76,9 +53,13 @@ const ProfilePage: React.FC = () => {
                 <input
                   name="displayName"
                   type="text"
-                  className="border-2 border-chocoBrown rounded-[4px] outline-none px-3 sm:py-2.5 py-1.5 font-commissioner max-h-11 w-full lg:min-w-[316px] lg:max-w-[316px] max-w-[266px]"
+                  disabled={!!userData?.name}
+                  defaultValue={userData?.name || ''}
+                  className="border-2 bg-white border-chocoBrown rounded-[4px] outline-none px-3 sm:py-2.5 py-1.5 font-commissioner max-h-11 w-full lg:min-w-[316px] lg:max-w-[316px] max-w-[266px]"
                 />
-                <PencilIcon />
+                <button type="button" onClick={() => setOpenNameModal(true)}>
+                  <PencilIcon />
+                </button>
               </div>
             </div>
           </form>
@@ -86,6 +67,17 @@ const ProfilePage: React.FC = () => {
         <NftSection />
         <WalletSection premium={isConnected} />
         {!isMobile && <Footer />}
+        <Modal
+          isOpen={openNameModal}
+          onClose={() => setOpenNameModal(false)}
+          width="400px"
+        >
+          <UpdateProfile
+            onClose={() => {
+              setOpenNameModal(false);
+            }}
+          />
+        </Modal>
       </>
     ) : (
       <>

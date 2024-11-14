@@ -24,6 +24,13 @@ const schema = a.schema({
       content: a.string(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
+  displayName: a
+    .model({
+      name: a.string(),
+      walletId: a.string(),
+      createdAt: a.timestamp(),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
   // Comment: a
   //   .model({
   //     streamId: a.string(),
@@ -39,7 +46,7 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: "apiKey",
+    defaultAuthorizationMode: 'apiKey',
     // API Key is used for a.allow.public() rules
     apiKeyAuthorizationMode: {
       expiresInDays: 30,

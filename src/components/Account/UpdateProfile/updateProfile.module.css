@@ -1,0 +1,61 @@
+.yourProfileContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    color: #7a3f3e;
+  }
+  
+  .yourProfileContainer > h2 {
+    font-family: ADLaM Display, sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 26.4px;
+  }
+  
+  .yourProfile__inputBox {
+    width: 100%;
+  }
+  
+  .yourProfile__inputBox > p {
+    font-family: ADLaM Display, sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 14.4px;
+  }
+  
+  .yourProfile__inputBox > input {
+    margin-top: 0.5rem;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #7a3f3e;
+    border-radius: 5px;
+    outline: none;
+  
+    font-family: Commissioner, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 16.8px;
+    color: #7a3f3e;
+  }
+  
+  .yourProfile__inputBox > input::placeholder {
+    color: #7a3f3e;
+  }
+  
+  .profileSaveBtn {
+    background-color: #488029;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+  
+    font-family: ADLaM Display, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 19.2px;
+  
+    transform: rotate(-3deg);
+    box-shadow: 5px 5px 0px #7a3f3e;
+  }
+  

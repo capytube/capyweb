@@ -54,7 +54,7 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
                       name="walletAddress"
                       type="text"
                       disabled={!premium}
-                      value={(!premium && 'No wallet linked') || ''}
+                      defaultValue={(!premium && 'No wallet linked') || ''}
                       className="outline-none"
                     />
                   </>
@@ -62,7 +62,7 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
                   <input
                     name="walletAddress"
                     type="text"
-                    value={walletAddress}
+                    defaultValue={walletAddress}
                     disabled={!!walletAddress}
                     className="outline-none w-full"
                   />
