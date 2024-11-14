@@ -35,7 +35,7 @@ const WatchRoom = () => {
         <div className={styles.watchRoomContent}>
           <div className={styles.roomCamsContainer}>
             <button
-              className={activeCam === 0 ? styles.selected : ""}
+              className={activeCam === 0 ? styles.selected : ''}
               onClick={() => setActiveCam(0)}
             >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
@@ -43,7 +43,7 @@ const WatchRoom = () => {
               main cam
             </button>
             <button
-              className={activeCam === 1 ? styles.selected : ""}
+              className={activeCam === 1 ? styles.selected : ''}
               onClick={() => setActiveCam(1)}
             >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
@@ -51,7 +51,7 @@ const WatchRoom = () => {
               food cam
             </button>
             <button
-              className={activeCam === 2 ? styles.selected : ""}
+              className={activeCam === 2 ? styles.selected : ''}
               onClick={() => setActiveCam(2)}
             >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
@@ -77,8 +77,9 @@ const WatchRoom = () => {
             </div>
 
             <button
+              disabled={watchCoins < 10}
               className={`${styles.collectButton} ${
-                watchCoins === 10 ? "animate-pulse" : ""
+                watchCoins === 10 ? 'animate-pulse' : 'bg-siteGreen cursor-not-allowed'
               }`}
             >
               {watchCoins === 10 ? "Collect now" : "Collect"}

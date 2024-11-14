@@ -1,31 +1,29 @@
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
+import { useAtom } from 'jotai';
 
-import { generateClient } from 'aws-amplify/api';
-import { Schema } from '../../../../amplify/data/resource';
-import styles from './YourProfile.module.css';
+import { userAtom } from '../../../atoms/atom';
+import { updateUserProfile } from '../../../utils/api';
 
-const YourProfile = ({ onClose }: { onClose: Function }) => {
-  const client = generateClient<Schema>();
+import styles from './updateProfile.module.css';
+
+const UpdateProfile = ({ onClose }: { onClose: Function }) => {
   const { address, isConnected } = useAccount();
 
-  const [name, setName] = useState('');
+  const [user] = useAtom(userAtom);
+  const [name, setName] = useState(user?.name || '');
 
-  const createProfile = async (name: string, walletId: string) => {
-    const response = await client.models.displayName.create({
-      id: walletId,
-      name: name,
-      walletId: walletId,
-      createdAt: new Date().getTime(),
-    });
-    if (response?.data?.name) {
+  const updateProfile = async (name: string, walletId: string) => {
+    const response = await updateUserProfile({ name, userId: walletId });
+    console.log('response', response);
+    if (response?.data) {
       onClose();
     }
   };
 
   const onSaveHandler = () => {
     if (isConnected && address) {
-      createProfile(name, address);
+      updateProfile(name, address);
       setName('');
     }
   };
@@ -50,4 +48,4 @@ const YourProfile = ({ onClose }: { onClose: Function }) => {
   );
 };
 
-export default YourProfile;
+export default UpdateProfile;

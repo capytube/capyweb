@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "ap-southeast-1_eVE35NaNJ",
+    "user_pool_id": "ap-southeast-1_WqhKijSl2",
     "aws_region": "ap-southeast-1",
-    "user_pool_client_id": "5g5r3q6gs0gpn95j07t8aotquh",
-    "identity_pool_id": "ap-southeast-1:f60be63c-b95f-4d94-9641-d6612c29c1af",
+    "user_pool_client_id": "176qa3kif4i0a1pq6g9k2ngqtr",
+    "identity_pool_id": "ap-southeast-1:132e4a06-4357-43a6-a498-fc8898dee2b9",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email"
@@ -13,6 +13,18 @@
     ],
     "user_verification_types": [
       "email"
+    ],
+    "groups": [
+      {
+        "Admins": {
+          "precedence": 0
+        }
+      },
+      {
+        "Users": {
+          "precedence": 1
+        }
+      }
     ],
     "mfa_configuration": "NONE",
     "password_policy": {
@@ -43,14 +55,14 @@
         "profile",
         "aws.cognito.signin.user.admin"
       ],
-      "domain": "92c020da0cfab8c69313.auth.ap-southeast-1.amazoncognito.com"
+      "domain": "957bd32237f02e8d71a7.auth.ap-southeast-1.amazoncognito.com"
     },
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://63jizqot2vbwbfxqqbxbcbr2m4.appsync-api.ap-southeast-1.amazonaws.com/graphql",
+    "url": "https://hixatho3ofcuzmae3jvqngv4ty.appsync-api.ap-southeast-1.amazonaws.com/graphql",
     "aws_region": "ap-southeast-1",
-    "api_key": "da2-f3qhyoaivzf3zexonqcpzkznqq",
+    "api_key": "da2-jhzbho3fqnh3zpslldnphhunji",
     "default_authorization_type": "API_KEY",
     "authorization_types": [
       "AMAZON_COGNITO_USER_POOLS",
@@ -124,8 +136,8 @@
             "sortKeyFieldNames": []
           }
         },
-        "Comment": {
-          "name": "Comment",
+        "displayName": {
+          "name": "displayName",
           "fields": {
             "id": {
               "name": "id",
@@ -134,22 +146,15 @@
               "isRequired": true,
               "attributes": []
             },
-            "streamId": {
-              "name": "streamId",
+            "name": {
+              "name": "name",
               "isArray": false,
               "type": "String",
               "isRequired": false,
               "attributes": []
             },
-            "content": {
-              "name": "content",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "userId": {
-              "name": "userId",
+            "walletId": {
+              "name": "walletId",
               "isArray": false,
               "type": "String",
               "isRequired": false,
@@ -172,7 +177,7 @@
             }
           },
           "syncable": true,
-          "pluralName": "Comments",
+          "pluralName": "displayNames",
           "attributes": [
             {
               "type": "model",
@@ -219,9 +224,23 @@
               "isRequired": false
             }
           }
+        },
+        "getViewership": {
+          "name": "getViewership",
+          "isArray": false,
+          "type": "AWSJSON",
+          "isRequired": false,
+          "arguments": {
+            "streamId": {
+              "name": "streamId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
         }
       }
     }
   },
-  "version": "1.1"
+  "version": "1.3"
 }

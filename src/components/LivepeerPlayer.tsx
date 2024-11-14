@@ -5,7 +5,6 @@ import { generateClient } from "aws-amplify/api";
 import LiveStream from "./Streaming/LiveStream";
 import { Schema } from "../../amplify/data/resource";
 import vidFrame from "../assets/vidFrame.svg";
-// import { getViewershipData } from "../utils/livepeerService";
 
 interface LivepeerPlayerProps {
   streamId: string;
@@ -18,49 +17,24 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({ streamId, title }) => {
   const [error, setError] = useState<string | null>(null);
   const [viewerId, setViewerId] = useState("");
 
-  // const [watchTime, setWatchTime] = useState(0); // in minutes
-  // const [earnedCoins, setEarnedCoins] = useState(0);
-  // const [viewCount, setViewCount] = useState(0);
+  // Fetch viewership data when connected and streamId or address changes
+  useEffect(() => {
+    if (isConnected && address) {
+      const fetchData = async () => {
+        try {
+          const client = generateClient<Schema>();
+          const data = (await client.queries.getViewership({ streamId })).data!;
+          const parsedData = JSON.parse(String(data));
+          const viewerShipData = parsedData?.data?.[0];
+          console.log("==========viewerShipData", viewerShipData);
+        } catch (error) {
+          console.log("error", error);
+        }
+      };
 
-  // // Fetch viewership data when connected and streamId or address changes
-  // useEffect(() => {
-  //   if (isConnected && address) {
-  //     const fetchData = async () => {
-  //       const metrics = await getViewershipData(streamId);
-
-  //       console.log("==========metrics", metrics);
-  //       if (metrics) {
-  //         const playbackData = metrics.find(
-  //           (metric) => metric.viewerId === address
-  //         );
-  //         if (playbackData) {
-  //           setWatchTime(playbackData.playtimeMins);
-  //           setViewCount(playbackData.viewCount);
-
-  //           // Calculate earned coins based on watch time, up to daily limit
-  //           const calculatedCoins = Math.min(
-  //             playbackData.playtimeMins,
-  //             dailyCoinLimit
-  //           );
-  //           setEarnedCoins(calculatedCoins);
-  //         }
-  //       }
-  //     };
-
-  //     fetchData();
-  //   }
-  // }, [isConnected, address, streamId]);
-
-  //   // Handle CapyCoin collection
-  //   const handleCollectCoins = () => {
-  //     if (earnedCoins >= dailyCoinLimit) {
-  //       // Trigger smart contract function to update CapyCoin balance in wallet
-  //       // (e.g., using a Wagmi contract write function)
-  //       console.log("Collecting CapyCoins...");
-  //       // Reset daily cap to simulate a new day or reset after collection
-  //       setEarnedCoins(0);
-  //     }
-  //   };
+      fetchData();
+    }
+  }, [isConnected, address, streamId]);
 
   useEffect(() => {
     if (isConnected && address) {
