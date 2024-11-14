@@ -1,5 +1,6 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 import { getStream } from "../functions/getStream/resource";
+import { getViewership } from "../functions/getViewership/resource";
 
 const schema = a.schema({
   getStream: a
@@ -10,7 +11,14 @@ const schema = a.schema({
     .returns(a.string())
     .handler(a.handler.function(getStream))
     .authorization((allow) => [allow.publicApiKey()]),
-
+  getViewership: a
+    .query()
+    .arguments({
+      streamId: a.string(),
+    })
+    .returns(a.json())
+    .handler(a.handler.function(getViewership))
+    .authorization((allow) => [allow.publicApiKey()]),
   Todo: a
     .model({
       content: a.string(),
