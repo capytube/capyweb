@@ -21,24 +21,30 @@ import FooterNavbar from './components/FooterNavbar/FooterNavbar';
 import Header from './components/Header/Header';
 import Navbar from './components/Navbar/Navbar';
 import PlayPage from './components/Play/index';
+import { useAtom } from 'jotai';
+import { walletAtom } from './atoms/atom';
 
 const App: React.FC = () => {
   const isLoggedIn = useIsLoggedIn();
 
   const { address, isConnected } = useAccount();
+
   const wagmiBalanceResult = useBalance({ address });
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
+  const [, setWalletId] = useAtom(walletAtom);
 
   console.log('dynamic___isLoggedIn', isLoggedIn);
-  console.log('wagmi___address', address);
-  console.log('wagmi___isConnected', isConnected);
+
   if (wagmiBalanceResult?.isSuccess) {
     const balanceData = wagmiBalanceResult?.data;
     console.log('balanceData', balanceData);
   }
 
   useEffect(() => {
+    if (isConnected && address) {
+      setWalletId(address);
+    }
     const handleResize = () => setIsMobile(window.innerWidth < 500);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
