@@ -1,14 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   EnterFullscreenIcon,
   ExitFullscreenIcon,
   PauseIcon,
   PlayIcon,
-} from "@livepeer/react/assets";
-import * as Player from "@livepeer/react/player";
-import { Src } from "@livepeer/react";
-import { useLocation } from "react-router-dom";
-import "./LiveStream.css";
+} from '@livepeer/react/assets';
+import { useAtom } from 'jotai';
+import { Src } from '@livepeer/react';
+import { useLocation } from 'react-router-dom';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+
+import { userAtom } from '../../atoms/atom';
+import * as Player from '@livepeer/react/player';
+import { updateUserCoins } from '../../utils/api';
+import { isFirstDateBeforeSecond } from '../../utils/function';
+
+import './LiveStream.css';
 
 interface LiveStreamProps {
   vodSource: Src[];
@@ -16,79 +23,85 @@ interface LiveStreamProps {
   viewerId: string;
 }
 
-const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
-  const videoRef = React.useRef<any>(null);
-  const { pathname } = useLocation();
-  const isHomePage = pathname === "/";
+const dailyLimit = 10;
 
-  const dailyLimit = 10;
+const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
+  const { pathname } = useLocation();
+  const isHomePage = pathname === '/';
+  const [user] = useAtom(userAtom);
+  const isloggedIn = useIsLoggedIn();
+
+  const videoRef = React.useRef<any>(null);
+
+  const [previousDay, setPreviousDay] = useState(false);
 
   const [playTime, setPlayTime] = useState<number>(() => {
-    const savedPlayTime = localStorage.getItem("playTime");
+    const savedPlayTime = localStorage.getItem('playTime');
     return savedPlayTime ? parseInt(savedPlayTime, 10) : 0;
   });
 
-  const [coins, setCoins] = useState<number>(() => {
-    const savedCoins = localStorage.getItem("coins");
-    return savedCoins ? parseInt(savedCoins, 10) : 0;
-  });
+  const coins =
+    (user?.todayEarnedCoins ? user?.todayEarnedCoins?.coins : 0) ?? 0;
 
-  const [isCoinRedeemable, setIsCoinRedeemable] = useState<boolean>(() => {
-    const savedRedeemable = localStorage.getItem("isCoinRedeemable");
-    return savedRedeemable ? JSON.parse(savedRedeemable) : false;
-  });
-
-  const [isCoinRedeemed] = useState<boolean>(() => {
-    const savedRedeemed = localStorage.getItem("isCoinRedeemed");
-    return savedRedeemed ? JSON.parse(savedRedeemed) : false;
-  });
-
-  useEffect(() => {
-    // Save playTime and coins to localStorage when they change
-    localStorage.setItem("playTime", playTime.toString());
-    localStorage.setItem("coins", coins.toString());
-  }, [playTime, coins]);
-
-  useEffect(() => {
-    localStorage.setItem("isCoinRedeemable", JSON.stringify(isCoinRedeemable));
-    localStorage.setItem("isCoinRedeemed", JSON.stringify(isCoinRedeemed));
-  }, [isCoinRedeemable, isCoinRedeemed]);
+  console.log('time', playTime);
 
   const handleTimeUpdate = () => {
-    if (videoRef.current && !videoRef.current.paused && !isCoinRedeemable) {
+    if (
+      isloggedIn &&
+      videoRef.current &&
+      !videoRef.current.paused &&
+      !pathname?.includes('play') &&
+      coins < dailyLimit
+    ) {
       setPlayTime((prev) => prev + 1); // Increment playTime by 1 second
     }
   };
 
   useEffect(() => {
-    if (playTime >= 60 && !isCoinRedeemable) {
+    if (playTime >= 180 && coins < dailyLimit && isloggedIn && user?.totalEarnedCoins) {
       // Increment coins per minute watched
-      setCoins((prevCoins) => prevCoins + 1);
+      updateUserCoins({
+        userId: viewerId,
+        timeStamp: new Date().getTime(),
+        earnedCoins: coins + 1,
+        totalCoins: user?.totalEarnedCoins + 1,
+      });
+
       setPlayTime(0); // Reset playTime after earning a coin
     }
-  }, [playTime, isCoinRedeemable]);
+  }, [playTime]);
 
   useEffect(() => {
-    if (coins >= dailyLimit) {
-      // can collect coins now
-      setIsCoinRedeemable(true);
+    if (user?.todayEarnedCoins?.coins && user?.todayEarnedCoins?.timeStamp) {
+      const isPreviousDay = isFirstDateBeforeSecond(
+        user?.todayEarnedCoins?.timeStamp,
+        new Date().getTime()
+      );
+      setPreviousDay(isPreviousDay);
     }
-  }, [coins]);
+  }, [user]);
+
+  useEffect(() => {
+    if (previousDay && user?.totalEarnedCoins) {
+      updateUserCoins({
+        userId: viewerId,
+        earnedCoins: 0,
+        totalCoins: user?.totalEarnedCoins,
+        timeStamp: new Date().getTime(),
+      });
+    }
+  }, [previousDay]);
 
   useEffect(() => {
     const handlePauseVid = () => {
-      if (
-        document.hidden &&
-        videoRef?.current &&
-        !isHomePage
-      ) {
+      if (document.hidden && videoRef?.current && !isHomePage) {
         videoRef.current.pause();
       }
     };
-    document.addEventListener("visibilitychange", handlePauseVid);
+    document.addEventListener('visibilitychange', handlePauseVid);
 
     return () => {
-      document.removeEventListener("visibilitychange", handlePauseVid);
+      document.removeEventListener('visibilitychange', handlePauseVid);
     };
   }, [isHomePage, pathname]);
 
@@ -98,12 +111,12 @@ const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
         <Player.Video
           ref={videoRef}
           title={title}
-          style={{ height: "100%", width: "100%" }}
+          style={{ height: '100%', width: '100%' }}
           onTimeUpdate={handleTimeUpdate}
         />
         <Player.FullscreenTrigger
           style={{
-            position: "absolute",
+            position: 'absolute',
             left: 20,
             bottom: 20,
             width: 25,
@@ -121,7 +134,7 @@ const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
           <Player.Controls
             style={{
               background:
-                "linear-gradient(to bottom, rgba(90, 90, 90, 0.2), rgba(82, 82, 82, 0.365))",
+                'linear-gradient(to bottom, rgba(90, 90, 90, 0.2), rgba(82, 82, 82, 0.365))',
             }}
             className="py-2 px-4 flex flex-col-reverse gap-5 justify-center items-center inset-0"
           >

@@ -9,11 +9,23 @@ const defaultStore = getDefaultStore();
 const user = defaultStore.get(userAtom);
 
 export async function getUserProfile(userId: string) {
-  const response = await client.models.User.get({
-    id: userId,
-  });
+  const response = await client.models.User.get(
+    {
+      id: userId,
+    },
+    {
+      selectionSet: [
+        'id',
+        'name',
+        'totalEarnedCoins',
+        'todayEarnedCoins.*',
+        'createdAt',
+      ],
+    }
+  );
 
   if (response?.data?.id) {
+    console.log('user', response);
     defaultStore.set(userAtom, response?.data ?? { ...user });
   }
 
@@ -30,6 +42,32 @@ export async function updateUserProfile({
   const response = await client.models.User.update({
     id: userId,
     name: name,
+  });
+  if (response?.data?.name) {
+    await getUserProfile(userId);
+  }
+
+  return response;
+}
+
+export async function updateUserCoins({
+  totalCoins,
+  earnedCoins,
+  timeStamp,
+  userId,
+}: {
+  totalCoins: number;
+  earnedCoins: number;
+  timeStamp: number;
+  userId: string;
+}) {
+  const response = await client.models.User.update({
+    id: userId,
+    totalEarnedCoins: totalCoins,
+    todayEarnedCoins: {
+      coins: earnedCoins,
+      timeStamp,
+    },
   });
   if (response?.data?.name) {
     await getUserProfile(userId);

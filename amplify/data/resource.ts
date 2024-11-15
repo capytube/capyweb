@@ -29,7 +29,7 @@ const schema = a.schema({
       name: a.string(),
       createdAt: a.timestamp(),
       todayEarnedCoins: a.customType({
-        coins: a.string(),
+        coins: a.integer(),
         timeStamp: a.timestamp(),
       }),
       totalEarnedCoins: a.integer(),
