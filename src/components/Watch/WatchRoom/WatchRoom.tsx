@@ -19,8 +19,37 @@ const WatchRoom = () => {
   }>();
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
-  const [watchCoins] = useState(0);
+  const dailyLimit = 10;
+
+  const savedCoins = localStorage.getItem("coins");
+  const [watchCoins, setWatchCoins] = useState(() => {
+    return savedCoins ? parseInt(savedCoins, 10) : 0;
+  });
   const [activeCam, setActiveCam] = useState(0);
+
+  const onCollectButtonHandler = () => {
+    localStorage.setItem("isCoinRedeemable", JSON.stringify(false));
+    localStorage.setItem("isCoinRedeemed", JSON.stringify(true));
+
+    // localStorage.setItem("coins", "0");
+    // setWatchCoins(0);
+  };
+
+  useEffect(() => {
+    const fetchCoinsFromLocalStorage = () => {
+      const storedCoins = localStorage.getItem("coins");
+      if (storedCoins) {
+        setWatchCoins(JSON.parse(storedCoins));
+      }
+    };
+
+    const intervalId = setInterval(fetchCoinsFromLocalStorage, 30000);
+    fetchCoinsFromLocalStorage();
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 500);
@@ -35,7 +64,7 @@ const WatchRoom = () => {
         <div className={styles.watchRoomContent}>
           <div className={styles.roomCamsContainer}>
             <button
-              className={activeCam === 0 ? styles.selected : ''}
+              className={activeCam === 0 ? styles.selected : ""}
               onClick={() => setActiveCam(0)}
             >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
@@ -43,7 +72,7 @@ const WatchRoom = () => {
               main cam
             </button>
             <button
-              className={activeCam === 1 ? styles.selected : ''}
+              className={activeCam === 1 ? styles.selected : ""}
               onClick={() => setActiveCam(1)}
             >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
@@ -51,7 +80,7 @@ const WatchRoom = () => {
               food cam
             </button>
             <button
-              className={activeCam === 2 ? styles.selected : ''}
+              className={activeCam === 2 ? styles.selected : ""}
               onClick={() => setActiveCam(2)}
             >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
@@ -65,24 +94,29 @@ const WatchRoom = () => {
               <span className={styles.coinsStatus__title}>Watch-to-earn:</span>
               <div className={styles.coinsStatus__value__div}>
                 <img src={coinIcon} alt="coin" />
-                <span className={styles.coinsStatus__value}>8/10</span>
+                <span className={styles.coinsStatus__value}>
+                  {watchCoins}/{dailyLimit}
+                </span>
               </div>
             </div>
 
             <div className={styles.progressContainer}>
               <div
                 className={styles.progressBar}
-                style={{ width: `${50}%` }}
+                style={{ width: `${(watchCoins / dailyLimit) * 100}%` }}
               ></div>
             </div>
 
             <button
-              disabled={watchCoins < 10}
+              disabled={watchCoins < dailyLimit}
               className={`${styles.collectButton} ${
-                watchCoins === 10 ? 'animate-pulse' : 'bg-siteGreen cursor-not-allowed'
+                watchCoins === 10
+                  ? "animate-pulse"
+                  : "bg-siteGreen cursor-not-allowed"
               }`}
+              onClick={onCollectButtonHandler}
             >
-              {watchCoins === 10 ? "Collect now" : "Collect"}
+              {watchCoins === dailyLimit ? "Collect now" : "Collect"}
             </button>
 
             <div className={styles.streamShareIcons}>
