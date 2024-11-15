@@ -1,6 +1,6 @@
-import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
-import { getStream } from "../functions/getStream/resource";
-import { getViewership } from "../functions/getViewership/resource";
+import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
+import { getStream } from '../functions/getStream/resource';
+import { getViewership } from '../functions/getViewership/resource';
 
 const schema = a.schema({
   getStream: a
@@ -24,21 +24,27 @@ const schema = a.schema({
       content: a.string(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
-  displayName: a
+  User: a
     .model({
       name: a.string(),
-      walletId: a.string(),
+      createdAt: a.timestamp(),
+      todayEarnedCoins: a.customType({
+        coins: a.string(),
+        timeStamp: a.timestamp(),
+      }),
+      totalEarnedCoins: a.integer(),
+      comment: a.hasMany('Comment', 'userId'),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+  Comment: a
+    .model({
+      streamId: a.id(),
+      userId: a.id(),
+      user: a.belongsTo('User', 'userId'),
+      content: a.string(),
       createdAt: a.timestamp(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
-  // Comment: a
-  //   .model({
-  //     streamId: a.string(),
-  //     content: a.string(),
-  //     userId: a.string(),
-  //     createdAt: a.timestamp(),
-  //   })
-  //   .authorization((allow) => [allow.publicApiKey()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

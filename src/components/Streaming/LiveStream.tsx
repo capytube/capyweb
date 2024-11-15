@@ -24,7 +24,7 @@ const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
   React.useEffect(() => {
     const handlePauseVid = () => {
       if (
-        document.visibilityState !== "visible" &&
+        document.hidden &&
         videoRef?.current &&
         !isHomePage
       ) {
