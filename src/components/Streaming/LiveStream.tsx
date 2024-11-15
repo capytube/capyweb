@@ -1,13 +1,20 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   EnterFullscreenIcon,
   ExitFullscreenIcon,
   PauseIcon,
   PlayIcon,
 } from "@livepeer/react/assets";
-import * as Player from "@livepeer/react/player";
+import { useAtom } from "jotai";
 import { Src } from "@livepeer/react";
 import { useLocation } from "react-router-dom";
+import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
+
+import { userAtom } from "../../atoms/atom";
+import * as Player from "@livepeer/react/player";
+import { updateUserCoins } from "../../utils/api";
+import { isFirstDateBeforeSecond } from "../../utils/function";
+
 import "./LiveStream.css";
 
 interface LiveStreamProps {
@@ -16,18 +23,78 @@ interface LiveStreamProps {
   viewerId: string;
 }
 
+const dailyLimit = 10;
+
 const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
-  const videoRef = React.useRef<any>(null);
   const { pathname } = useLocation();
   const isHomePage = pathname === "/";
+  const [user] = useAtom(userAtom);
+  const isloggedIn = useIsLoggedIn();
 
-  React.useEffect(() => {
+  const videoRef = React.useRef<any>(null);
+
+  const [previousDay, setPreviousDay] = useState(false);
+
+  const [playTime, setPlayTime] = useState<number>(() => {
+    const savedPlayTime = localStorage.getItem("playTime");
+    return savedPlayTime ? parseInt(savedPlayTime, 10) : 0;
+  });
+
+  const coins =
+    (user?.todayEarnedCoins ? user?.todayEarnedCoins?.coins : 0) ?? 0;
+
+  console.log("time", playTime);
+
+  const handleTimeUpdate = () => {
+    if (
+      isloggedIn &&
+      videoRef.current &&
+      !videoRef.current.paused &&
+      !pathname?.includes("play") &&
+      coins < dailyLimit
+    ) {
+      setPlayTime((prev) => prev + 1); // Increment playTime by 1 second
+    }
+  };
+
+  useEffect(() => {
+    if (playTime >= 180 && coins < dailyLimit && isloggedIn) {
+      // Increment coins per minute watched
+      updateUserCoins({
+        userId: viewerId,
+        timeStamp: new Date().getTime(),
+        earnedCoins: coins + 1,
+        totalCoins: (user?.totalEarnedCoins ?? 0) + 1,
+      });
+
+      setPlayTime(0); // Reset playTime after earning a coin
+    }
+  }, [playTime]);
+
+  useEffect(() => {
+    if (user?.todayEarnedCoins?.coins && user?.todayEarnedCoins?.timeStamp) {
+      const isPreviousDay = isFirstDateBeforeSecond(
+        user?.todayEarnedCoins?.timeStamp,
+        new Date().getTime()
+      );
+      setPreviousDay(isPreviousDay);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (previousDay && user?.totalEarnedCoins) {
+      updateUserCoins({
+        userId: viewerId,
+        earnedCoins: 0,
+        totalCoins: user?.totalEarnedCoins,
+        timeStamp: new Date().getTime(),
+      });
+    }
+  }, [previousDay]);
+
+  useEffect(() => {
     const handlePauseVid = () => {
-      if (
-        document.visibilityState !== "visible" &&
-        videoRef?.current &&
-        !isHomePage
-      ) {
+      if (document.hidden && videoRef?.current && !isHomePage) {
         videoRef.current.pause();
       }
     };
@@ -45,7 +112,7 @@ const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
           ref={videoRef}
           title={title}
           style={{ height: "100%", width: "100%" }}
-          // onTimeUpdate={(e) => console.log(e)}
+          onTimeUpdate={handleTimeUpdate}
         />
         <Player.FullscreenTrigger
           style={{

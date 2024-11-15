@@ -12,10 +12,9 @@ const YourProfile = ({ onClose }: { onClose: Function }) => {
   const [name, setName] = useState('');
 
   const createProfile = async (name: string, walletId: string) => {
-    const response = await client.models.displayName.create({
+    const response = await client.models.User.create({
       id: walletId,
       name: name,
-      walletId: walletId,
       createdAt: new Date().getTime(),
     });
     if (response?.data?.name) {

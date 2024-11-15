@@ -1,31 +1,47 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import styles from "./WatchRoom.module.css";
-import LivepeerPlayer from "../../LivepeerPlayer";
-import ChatRoom from "./ChatRoom/ChatRoom";
-import EmojiRating from "./EmojiRating/EmojiRating";
-import Footer from "../../Footer/Footer";
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import styles from './WatchRoom.module.css';
+import LivepeerPlayer from '../../LivepeerPlayer';
+import ChatRoom from './ChatRoom/ChatRoom';
+import EmojiRating from './EmojiRating/EmojiRating';
+import Footer from '../../Footer/Footer';
 
-import coinIcon from "../../../assets/icons/coin.svg";
-import fbIcon from "../../../assets/icons/fb.svg";
-import twitterIcon from "../../../assets/icons/twitter.svg";
-import instaIcon from "../../../assets/icons/insta.svg";
-import shareIcon from "../../../assets/icons/share.svg";
+import coinIcon from '../../../assets/icons/coin.svg';
+import fbIcon from '../../../assets/icons/fb.svg';
+import twitterIcon from '../../../assets/icons/twitter.svg';
+import instaIcon from '../../../assets/icons/insta.svg';
+import shareIcon from '../../../assets/icons/share.svg';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../../atoms/atom';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+
+const dailyLimit = 10;
 
 const WatchRoom = () => {
   const { streamId, streamTitle } = useParams<{
     streamId: string;
     streamTitle: string;
   }>();
-
+  const isLoggedIn = useIsLoggedIn();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
-  const [watchCoins] = useState(0);
+
+  const [user] = useAtom(userAtom);
+  const watchCoins =
+    (() => {
+      if (isLoggedIn) {
+        if (user?.todayEarnedCoins) {
+          return user?.todayEarnedCoins?.coins;
+        }
+      }
+      return 0;
+    })() ?? 0;
+
   const [activeCam, setActiveCam] = useState(0);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 500);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
@@ -39,7 +55,7 @@ const WatchRoom = () => {
               onClick={() => setActiveCam(0)}
             >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
-              {""}
+              {''}
               main cam
             </button>
             <button
@@ -47,7 +63,7 @@ const WatchRoom = () => {
               onClick={() => setActiveCam(1)}
             >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
-              {""}
+              {''}
               food cam
             </button>
             <button
@@ -55,7 +71,7 @@ const WatchRoom = () => {
               onClick={() => setActiveCam(2)}
             >
               <span className={styles.hideInMobile}>{streamTitle}’ </span>
-              {""}
+              {''}
               bedroom cam
             </button>
           </div>
@@ -65,24 +81,28 @@ const WatchRoom = () => {
               <span className={styles.coinsStatus__title}>Watch-to-earn:</span>
               <div className={styles.coinsStatus__value__div}>
                 <img src={coinIcon} alt="coin" />
-                <span className={styles.coinsStatus__value}>8/10</span>
+                <span className={styles.coinsStatus__value}>
+                  {watchCoins}/{dailyLimit}
+                </span>
               </div>
             </div>
 
             <div className={styles.progressContainer}>
               <div
                 className={styles.progressBar}
-                style={{ width: `${50}%` }}
+                style={{ width: `${(watchCoins / dailyLimit) * 100}%` }}
               ></div>
             </div>
 
             <button
-              disabled={watchCoins < 10}
+              disabled={watchCoins < dailyLimit}
               className={`${styles.collectButton} ${
-                watchCoins === 10 ? 'animate-pulse' : 'bg-siteGreen cursor-not-allowed'
+                watchCoins === 10
+                  ? 'animate-pulse'
+                  : 'bg-siteGreen cursor-not-allowed'
               }`}
             >
-              {watchCoins === 10 ? "Collect now" : "Collect"}
+              {watchCoins === dailyLimit ? 'Collect now' : 'Collect'}
             </button>
 
             <div className={styles.streamShareIcons}>
@@ -98,19 +118,19 @@ const WatchRoom = () => {
           <div className={styles.videoAndCommentSection}>
             <div className={styles.videoSection}>
               <LivepeerPlayer
-                streamId={streamId ?? "fa7ahoikpf19u1e0"}
-                title={streamTitle ?? "magstream1"}
+                streamId={streamId ?? 'fa7ahoikpf19u1e0'}
+                title={streamTitle ?? 'magstream1'}
               />
             </div>
             <div className={styles.commentSection}>
               <div className={styles.emojiRatingWrapper__mobile}>
-                <EmojiRating streamId={streamId ?? ""} />
+                <EmojiRating streamId={streamId ?? ''} />
               </div>
               <ChatRoom />
             </div>
           </div>
           <div className={styles.emojiRatingWrapper}>
-            <EmojiRating streamId={streamId ?? ""} />
+            <EmojiRating streamId={streamId ?? ''} />
           </div>
         </div>
       </div>

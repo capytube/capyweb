@@ -1,24 +1,43 @@
-import { useState } from "react";
-import styles from "./ChatRoom.module.css";
-import sendBtn from "../../../../assets/sendBtn.svg";
+import React, { useState } from 'react';
+import styles from './ChatRoom.module.css';
+import sendBtn from '../../../../assets/sendBtn.svg';
+import { useAtom } from 'jotai';
+import { commentsAtom } from '../../../../atoms/atom';
+import { addComment, getListOfComments } from '../../../../utils/api';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+import { useAccount } from 'wagmi';
 
 const ChatRoom = () => {
-  const [messages, setMessages] = useState([
-    "Great stream!",
-    "Love the content!",
-    "Can't wait for the next one!",
-    "helloooo there",
-  ]);
-  const [input, setInput] = useState("");
+  const isLoggedIn = useIsLoggedIn();
+  const [input, setInput] = useState('');
+  const [comments] = useAtom(commentsAtom);
+  const { address } = useAccount();
+
+  const getComments = async () => {
+    await getListOfComments({ streamId: 'fa7ahoikpf19u1e9' });
+  };
+
+  React.useEffect(() => {
+    if (isLoggedIn) getComments();
+  }, [isLoggedIn]);
 
   const handleInputChange = (e: any) => {
     setInput(e.target.value);
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (input.trim()) {
-      setMessages([...messages, input]);
-      setInput("");
+      if (address) {
+        const response = await addComment({
+          streamId: 'fa7ahoikpf19u1e9',
+          content: input,
+          userId: address,
+        });
+        if (response?.data?.id) {
+          await getComments();
+        }
+      }
+      setInput('');
     }
   };
 
@@ -26,18 +45,25 @@ const ChatRoom = () => {
     <div className={styles.chatRoom}>
       <div className={styles.chatHeader}>Chat room</div>
       <div className={styles.messages}>
-        {messages.map((msg, index) => (
-          <div key={index} className={styles.message}>
-            <span className={styles.username}>username1:</span> {msg}
-          </div>
-        ))}
+        {isLoggedIn
+          ? comments?.length > 0 && comments?.[0]?.id
+            ? comments?.map((comment) => (
+                <div key={comment?.id} className={styles.message}>
+                  <span className={styles.username}>
+                    {comment?.user?.name}:{' '}
+                  </span>
+                  {comment?.content}
+                </div>
+              ))
+            : 'Be the first one to comment!'
+          : 'Please login to view comments'}
       </div>
       <div className={styles.inputContainer}>
         <input
           type="text"
           value={input}
           onChange={handleInputChange}
-          placeholder="helloooo there"
+          placeholder="Enter Text here..."
           className={styles.input}
         />
         <button onClick={handleSendMessage} className={styles.sendButton}>
