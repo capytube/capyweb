@@ -31,6 +31,13 @@
 
 @media screen and (max-width: 500px) {
   .emojiRatingWrapper {
-    padding: 20px;
+    padding: 10px;
+    gap: 1rem;
+  }
+}
+@media screen and (max-width: 350px) {
+  .emojiRatingWrapper {
+    padding: 10px 2px;
+    gap: 0.5rem;
   }
 }

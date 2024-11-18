@@ -1,4 +1,4 @@
-import { atom } from 'jotai';
+import { atom } from "jotai";
 
 interface userType {
   id: string | null;
@@ -23,9 +23,20 @@ interface commentsType {
   };
 }
 
+interface RatingsAtom {
+  id: string | null;
+  ratingCounts: {
+    capylove: number | null;
+    capylike: number | null;
+    capywow: number | null;
+    capyangry: number | null;
+    capyfire: number | null;
+  };
+}
+
 export const userAtom = atom<userType>({
-  id: '',
-  name: '',
+  id: "",
+  name: "",
   createdAt: 0,
   totalEarnedCoins: 0,
   todayEarnedCoins: {
@@ -50,3 +61,14 @@ export const commentsAtom = atom<Array<commentsType> | []>([
     },
   },
 ]);
+
+export const ratingsAtom = atom<RatingsAtom>({
+  id: "",
+  ratingCounts: {
+    capylove: null,
+    capylike: null,
+    capywow: null,
+    capyangry: null,
+    capyfire: null,
+  },
+});

@@ -81,6 +81,33 @@
   background-color: #ffffff;
   border-radius: 20px;
   border: 2px solid #7a3f3e;
+  overflow: hidden;
+  position: relative;
+}
+
+.progressBarWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  background: linear-gradient(
+    90deg,
+    rgba(233, 75, 14, 0.1) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  z-index: 1;
+  animation: pulsate 3s infinite;
+}
+
+@keyframes pulsate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .progressBar {
@@ -88,6 +115,7 @@
   background-color: #e94b0e;
   border-radius: 10px;
   transition: width 0.3s ease;
+  z-index: 2;
 }
 
 .collectButton {

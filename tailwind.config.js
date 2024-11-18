@@ -22,6 +22,7 @@ module.exports = {
         commissioner: ['Commissioner', 'sans-serif'],
         dynapuff: ['DynaPuff', 'sans-serif'],
         Mulish: ['Mulish', 'sans-serif'],
+        comic: ['Comic Neue', 'sans-serif'],
       },
       fontSize: {
         titleSize: ['80px', '96px'],

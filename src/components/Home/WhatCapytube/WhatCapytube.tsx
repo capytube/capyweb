@@ -1,7 +1,9 @@
 import styles from "./WhatCapytube.module.css";
 import capyCoinImage from "../../../assets/capyCoin.svg";
+import { useNavigate } from "react-router-dom";
 
 const WhatCapytube = () => {
+  const navigate = useNavigate();
   return (
     <div className={styles.whatCapytubeWrapper}>
       <h1>What is Capytube?</h1>
@@ -41,7 +43,14 @@ const WhatCapytube = () => {
         </div>
       </div>
 
-      <button className={styles.earnCapyButton}>Watch & Earn $CAPY</button>
+      <button
+        className={styles.earnCapyButton}
+        onClick={() => {
+          navigate("/watch");
+        }}
+      >
+        Watch & Earn XP
+      </button>
     </div>
   );
 };

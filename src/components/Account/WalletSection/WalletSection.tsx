@@ -1,23 +1,23 @@
-import React from 'react';
-import { useAtom } from 'jotai';
-import { useAccount } from 'wagmi';
-import { useTokenBalances } from '@dynamic-labs/sdk-react-core';
+import React from "react";
+import { useAtom } from "jotai";
+import { useAccount } from "wagmi";
+import { useTokenBalances } from "@dynamic-labs/sdk-react-core";
 
-import { userAtom } from '../../../atoms/atom';
-import { CapyCoin, CoinCurrency, PencilIcon, UnLinkedIcon } from '../Icons';
+import { userAtom } from "../../../atoms/atom";
+import { CapyCoin, CoinCurrency, PencilIcon, UnLinkedIcon } from "../Icons";
 
 function WalletSection({ premium = false }: { premium?: boolean }) {
   const { isConnected, address } = useAccount();
   const [user] = useAtom(userAtom);
   const token = useTokenBalances();
 
-  console.log('tokenBalances', token.tokenBalances);
+  console.log("tokenBalances", token.tokenBalances);
 
   const [walletAddress, setWalletAddress] = React.useState<
     `0x${string}` | undefined
   >();
   const btnStyle =
-    'sm:text-3xl text-base font-ADLaM text-white shadow-buttonShadow rounded-lg sm:py-2.5 py-1.5 sm:px-5 px-[18px]';
+    "sm:text-3xl text-base font-ADLaM text-white shadow-buttonShadow rounded-lg sm:py-2.5 py-1.5 sm:px-5 px-[18px]";
 
   React.useEffect(() => {
     if (isConnected) {
@@ -33,16 +33,28 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
       <div className="flex sm:flex-row flex-col gap-x-14 sm:gap-y-0 gap-y-6 items-center md:w-max w-full">
         <CapyCoin />
         <div className="md:w-max w-full">
-          <div className="flex items-center md:justify-start justify-center sm:mb-4 mb-2">
+          <div className="flex gap-x-2 items-center md:justify-start justify-center">
             <CoinCurrency />
             <span className="sm:text-[64px] text-[45px] sm:leading-[76px] leading-[54px] font-ADLaM text-chocoBrown">
               {user?.totalEarnedCoins || 0}
             </span>
           </div>
-          <span className="sm:text-2xl text-sm text-chocoBrown font-commissioner flex md:justify-start justify-center">
-            My current balance
-          </span>
-          <div className="flex flex-col gap-y-2 md:mt-4 mt-2 w-full">
+          <div className="flex gap-x-2 items-center md:justify-start justify-center sm:mb-4 mb-3">
+            <span className="sm:text-2xl text-sm text-chocoBrown font-commissioner flex md:justify-start justify-center">
+              Unclaimed Capy Coins
+            </span>
+            <button
+              disabled={(user?.totalEarnedCoins ?? 0) < 10}
+              className={`bg-siteGreen ${btnStyle} sm:text-xl sm:py-1.5 py-1 sm:px-3 px-[15px] ${
+                (user?.totalEarnedCoins ?? 0) > 10
+                  ? "animate-pulse"
+                  : "cursor-not-allowed"
+              }`}
+            >
+              Claim Now
+            </button>
+          </div>
+          <div className="flex items-center sm:items-start flex-col gap-y-2 md:mt-4 mt-2 w-full">
             <label
               htmlFor="walletAddress"
               className="text-chocoBrown font-ADLaM sm:text-xl text-xs"
@@ -58,7 +70,7 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
                       name="walletAddress"
                       type="text"
                       disabled={!premium}
-                      defaultValue={(!premium && 'No wallet linked') || ''}
+                      defaultValue={(!premium && "No wallet linked") || ""}
                       className="outline-none"
                     />
                   </>
