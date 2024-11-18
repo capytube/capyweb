@@ -133,6 +133,7 @@ const Header = () => {
         onClose={() => setIsSetProfileModalOpen(false)}
         width="400px"
         hideClose={true}
+        className="md:max-w-[550px] max-w-[300px] shadow-characterCard"
       >
         <YourProfile
           onClose={() => {

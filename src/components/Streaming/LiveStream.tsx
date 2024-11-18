@@ -21,17 +21,25 @@ interface LiveStreamProps {
   vodSource: Src[];
   title: string;
   viewerId: string;
+  videoRef: React.MutableRefObject<any>;
+  setIsCapyCoinIncrementing?: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsResumeStreamConfirmation?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const dailyLimit = 10;
 
-const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
+const LiveStream = ({
+  vodSource,
+  title,
+  viewerId,
+  videoRef,
+  setIsCapyCoinIncrementing,
+  setIsResumeStreamConfirmation,
+}: LiveStreamProps) => {
   const { pathname } = useLocation();
   const isHomePage = pathname === "/";
   const [user] = useAtom(userAtom);
   const isloggedIn = useIsLoggedIn();
-
-  const videoRef = React.useRef<any>(null);
 
   const [previousDay, setPreviousDay] = useState(false);
 
@@ -50,10 +58,14 @@ const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
       isloggedIn &&
       videoRef.current &&
       !videoRef.current.paused &&
+      !isHomePage &&
       !pathname?.includes("play") &&
       coins < dailyLimit
     ) {
       setPlayTime((prev) => prev + 1); // Increment playTime by 1 second
+      setIsCapyCoinIncrementing?.(true);
+    } else {
+      setIsCapyCoinIncrementing?.(false);
     }
   };
 
@@ -94,8 +106,14 @@ const LiveStream = ({ vodSource, title, viewerId }: LiveStreamProps) => {
 
   useEffect(() => {
     const handlePauseVid = () => {
-      if (document.hidden && videoRef?.current && !isHomePage) {
+      if (
+        document.hidden &&
+        videoRef?.current &&
+        !videoRef.current.paused &&
+        !isHomePage
+      ) {
         videoRef.current.pause();
+        setIsResumeStreamConfirmation?.(true);
       }
     };
     document.addEventListener("visibilitychange", handlePauseVid);

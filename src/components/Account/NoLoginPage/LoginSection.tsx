@@ -11,7 +11,6 @@ function LoginSection({}: Props) {
   const host = document.querySelectorAll('#dynamic-widget')[1];
   React.useEffect(() => {
     if (host) {
-      console.log('host', host);
       const style = document.createElement('style');
       style.innerHTML = '.custom-btn { width: 100%;}';
       host?.shadowRoot?.appendChild(style);

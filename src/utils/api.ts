@@ -1,12 +1,13 @@
 import { getDefaultStore } from 'jotai';
 import { generateClient } from 'aws-amplify/api';
 
-import { commentsAtom, userAtom } from '../atoms/atom';
-import { Schema } from '../../amplify/data/resource';
+import { commentsAtom, ratingsAtom, userAtom } from "../atoms/atom";
+import { Schema } from "../../amplify/data/resource";
 
 const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
 const user = defaultStore.get(userAtom);
+const ratings = defaultStore.get(ratingsAtom);
 
 export async function getUserProfile(userId: string) {
   const response = await client.models.User.get(
@@ -145,4 +146,32 @@ export async function deleteComment(commentId: string) {
   return await client.models.Comment.delete({
     id: commentId,
   });
+}
+
+export async function getRatings(streamId: string) {
+  const response = await client.models.Ratings.get({
+    id: streamId,
+  });
+
+  if (response?.data) {
+    // @ts-ignore
+    defaultStore.set(ratingsAtom, response?.data ?? { ...ratings });
+  }
+
+  return response;
+}
+
+export async function updateRatings(streamId: string, countData: any) {
+  const response = await client.models.Ratings.update({
+    id: streamId,
+    ratingCounts: {
+      ...countData,
+    },
+  });
+
+  if (response?.data?.id) {
+    await getRatings(streamId);
+  }
+
+  return response;
 }
