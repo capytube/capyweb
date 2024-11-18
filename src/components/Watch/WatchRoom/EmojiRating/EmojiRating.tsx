@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
 import { useAtom } from "jotai";
+import { generateClient } from "aws-amplify/api";
+import { Schema } from "../../../../../amplify/data/resource";
 import styles from "./EmojiRating.module.css";
 import capyangry from "../../../../assets/capyangry.svg";
 import capyfire from "../../../../assets/capyfire.svg";
@@ -24,6 +26,7 @@ const emojis = [
 
 const EmojiRating = ({ streamId }: EmojiRatingProps) => {
   const isLoggedIn = useIsLoggedIn();
+  const client = generateClient<Schema>();
 
   const [savedRatings] = useAtom(ratingsAtom);
 
@@ -53,7 +56,19 @@ const EmojiRating = ({ streamId }: EmojiRatingProps) => {
 
   useEffect(() => {
     const fetchRatingsOnce = async () => {
-      await getRatings(streamId);
+      const response = await getRatings(streamId);
+      if (!response?.data) {
+        await client.models.Ratings.create({
+          id: streamId,
+          ratingCounts: {
+            capylove: 0,
+            capylike: 0,
+            capywow: 0,
+            capyangry: 0,
+            capyfire: 0,
+          },
+        });
+      }
     };
 
     if (isLoggedIn && streamId) {
