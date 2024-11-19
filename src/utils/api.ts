@@ -26,7 +26,6 @@ export async function getUserProfile(userId: string) {
   );
 
   if (response?.data?.id) {
-    console.log('user', response);
     defaultStore.set(userAtom, response?.data ?? { ...user });
   }
 
@@ -149,12 +148,16 @@ export async function deleteComment(commentId: string) {
 }
 
 export async function getRatings(streamId: string) {
-  const response = await client.models.Ratings.get({
-    id: streamId,
-  });
+  const response = await client.models.Ratings.get(
+    {
+      id: streamId,
+    },
+    {
+      selectionSet: ["id", "ratingCounts.*"],
+    }
+  );
 
   if (response?.data) {
-    // @ts-ignore
     defaultStore.set(ratingsAtom, response?.data ?? { ...ratings });
   }
 

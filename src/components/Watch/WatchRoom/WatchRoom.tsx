@@ -1,31 +1,31 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
-import { useAtom } from "jotai";
-import styles from "./WatchRoom.module.css";
-import LivepeerPlayer from "../../LivepeerPlayer";
-import ChatRoom from "./ChatRoom/ChatRoom";
-import EmojiRating from "./EmojiRating/EmojiRating";
-import Footer from "../../Footer/Footer";
-import { userAtom } from "../../../atoms/atom";
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+import { useAtom } from 'jotai';
+import styles from './WatchRoom.module.css';
+import LivepeerPlayer from '../../LivepeerPlayer';
+import ChatRoom from './ChatRoom/ChatRoom';
+import EmojiRating from './EmojiRating/EmojiRating';
+import Footer from '../../Footer/Footer';
+import { userAtom } from '../../../atoms/atom';
 
-import coinIcon from "../../../assets/icons/coin.svg";
-import fbIcon from "../../../assets/icons/fb.svg";
-import twitterIcon from "../../../assets/icons/twitter.svg";
-import instaIcon from "../../../assets/icons/insta.svg";
-import shareIcon from "../../../assets/icons/share.svg";
+import coinIcon from '../../../assets/icons/coin.svg';
+import fbIcon from '../../../assets/icons/fb.svg';
+import twitterIcon from '../../../assets/icons/twitter.svg';
+import instaIcon from '../../../assets/icons/insta.svg';
+import shareIcon from '../../../assets/icons/share.svg';
 
 const dailyLimit = 10;
 
 const WatchRoom = () => {
+  const navigate = useNavigate();
   const { streamId, streamTitle } = useParams<{
     streamId: string;
     streamTitle: string;
   }>();
   const isLoggedIn = useIsLoggedIn();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
-  const [isCapyCoinIncrementing, setIsCapyCoinIncrementing] =
-    useState<boolean>(false);
+  const [isCapyCoinIncrementing, setIsCapyCoinIncrementing] = useState<boolean>(false);
 
   const [user] = useAtom(userAtom);
   const watchCoins =
@@ -42,8 +42,8 @@ const WatchRoom = () => {
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 500);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
@@ -52,30 +52,24 @@ const WatchRoom = () => {
         <h1>{streamTitle}’ ROOM</h1>
         <div className={styles.watchRoomContent}>
           <div className={styles.roomCamsContainer}>
-            <button
-              className={activeCam === 0 ? styles.selected : ""}
-              onClick={() => setActiveCam(0)}
-            >
-              <span className={styles.hideInMobile}>{streamTitle}’ </span>
-              {""}
-              main cam
-            </button>
-            <button
-              className={activeCam === 1 ? styles.selected : ""}
-              onClick={() => setActiveCam(1)}
-            >
-              <span className={styles.hideInMobile}>{streamTitle}’ </span>
-              {""}
-              food cam
-            </button>
-            <button
-              className={activeCam === 2 ? styles.selected : ""}
-              onClick={() => setActiveCam(2)}
-            >
-              <span className={styles.hideInMobile}>{streamTitle}’ </span>
-              {""}
-              bedroom cam
-            </button>
+            {[
+              { camName: 'main', streamId: 'fa7ahoikpf19u1e0' },
+              { camName: 'food', streamId: 'fa7ahoikpf19u1e0' },
+              { camName: 'bedroom', streamId: 'fa7ahoikpf19u1e0' },
+            ].map(({ camName, streamId }, index) => (
+              <button
+                key={camName}
+                className={activeCam === index ? styles.selected : ''}
+                onClick={() => {
+                  setActiveCam(index);
+                  navigate(`/stream/${streamId}/${streamTitle}`, { replace: true });
+                }}
+              >
+                <span className={styles.hideInMobile}>{streamTitle}’ </span>
+                {''}
+                {camName} cam
+              </button>
+            ))}
           </div>
 
           <div className={styles.streamToolbarContainer}>
@@ -90,20 +84,11 @@ const WatchRoom = () => {
             </div>
             <div className="flex flex-col md:flex-row items-center gap-2">
               <div className={styles.progressContainer}>
-                <div
-                  className={
-                    isCapyCoinIncrementing ? styles.progressBarWrapper : ""
-                  }
-                />
-                <div
-                  className={styles.progressBar}
-                  style={{ width: `${(watchCoins / dailyLimit) * 100}%` }}
-                />
+                <div className={isCapyCoinIncrementing ? styles.progressBarWrapper : ''} />
+                <div className={styles.progressBar} style={{ width: `${(watchCoins / dailyLimit) * 100}%` }} />
               </div>
               {watchCoins === dailyLimit ? (
-                <span className="font-commissioner text-lg text-chocoBrown font-normal">
-                  daily limit reached!
-                </span>
+                <span className="font-commissioner text-lg text-chocoBrown font-normal">daily limit reached!</span>
               ) : null}
             </div>
 
@@ -131,20 +116,20 @@ const WatchRoom = () => {
           <div className={styles.videoAndCommentSection}>
             <div className={styles.videoSection}>
               <LivepeerPlayer
-                streamId={streamId ?? "fa7ahoikpf19u1e0"}
-                title={streamTitle ?? "Magnus"}
+                streamId={streamId ?? ''}
+                title={streamTitle ?? ''}
                 setIsCapyCoinIncrementing={setIsCapyCoinIncrementing}
               />
             </div>
             <div className={styles.commentSection}>
               <div className={styles.emojiRatingWrapper__mobile}>
-                <EmojiRating streamId={streamId ?? ""} />
+                <EmojiRating streamId={streamId ?? ''} />
               </div>
-              <ChatRoom streamId={streamId ?? "fa7ahoikpf19u1e0"} />
+              <ChatRoom streamId={streamId ?? ''} />
             </div>
           </div>
           <div className={styles.emojiRatingWrapper}>
-            <EmojiRating streamId={streamId ?? ""} />
+            <EmojiRating streamId={streamId ?? ''} />
           </div>
         </div>
       </div>

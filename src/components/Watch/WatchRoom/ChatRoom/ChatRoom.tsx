@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import styles from "./ChatRoom.module.css";
-import sendBtn from "../../../../assets/sendBtn.svg";
-import { useAtom } from "jotai";
-import { commentsAtom } from "../../../../atoms/atom";
-import { addComment, getListOfComments } from "../../../../utils/api";
-import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
-import { useAccount } from "wagmi";
+import React, { useState } from 'react';
+import styles from './ChatRoom.module.css';
+import sendBtn from '../../../../assets/sendBtn.svg';
+import { useAtom } from 'jotai';
+import { commentsAtom } from '../../../../atoms/atom';
+import { addComment, getListOfComments } from '../../../../utils/api';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+import { useAccount } from 'wagmi';
 
 interface ChatRoomProps {
   streamId: string;
@@ -13,7 +13,7 @@ interface ChatRoomProps {
 
 const ChatRoom = ({ streamId }: ChatRoomProps) => {
   const isLoggedIn = useIsLoggedIn();
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [comments] = useAtom(commentsAtom);
   const { address } = useAccount();
 
@@ -41,16 +41,24 @@ const ChatRoom = ({ streamId }: ChatRoomProps) => {
         });
         if (response?.data?.id) {
           await getComments();
+
+          // scroll to the latest comment
+          setTimeout(() => {
+            const messagesContainer = document.getElementById('messages-container');
+            if (messagesContainer) {
+              messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+          }, 800);
         }
       }
-      setInput("");
+      setInput('');
     }
   };
 
   return (
     <div className={styles.chatRoom}>
       <div className={styles.chatHeader}>Chat room</div>
-      <div className={styles.messages}>
+      <div className={styles.messages} id="messages-container">
         {isLoggedIn ? (
           comments?.length > 0 && comments?.[0]?.id ? (
             comments?.map((comment) => (
