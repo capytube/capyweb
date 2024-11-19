@@ -88,10 +88,7 @@ const EmojiRating = ({ streamId }: EmojiRatingProps) => {
           key={emoji.name}
           className={`${styles.emojiRatingButton} disabled:cursor-not-allowed`}
           onClick={() => handleEmojiClick(streamId, emoji.name)}
-          disabled={
-            /* @ts-ignore */
-            !isLoggedIn || emojiCounts[streamId][emoji.name] >= 1
-          }
+          disabled={!isLoggedIn || emojiCounts[streamId][emoji.name] >= 1}
         >
           <img src={emoji.icon} alt={emoji.name} className={styles.emojiIcon} />
           <span className={styles.emojiCount}>

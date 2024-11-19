@@ -1,6 +1,7 @@
 .chatRoom {
   width: 400px;
   height: 100%;
+  max-height: 428px;
   border: 2px solid #7a3f3e;
   border-radius: 10px;
   background-color: #fafad2;
@@ -26,6 +27,8 @@
   overflow-y: auto;
   padding-left: 10px;
   min-height: 230px;
+  scrollbar-width: thin;
+  scrollbar-color: #7a3f3e #fafad2;
 }
 
 .message {

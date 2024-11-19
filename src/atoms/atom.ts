@@ -31,7 +31,7 @@ interface RatingsAtom {
     capywow: number | null;
     capyangry: number | null;
     capyfire: number | null;
-  };
+  } | null;
 }
 
 export const userAtom = atom<userType>({
