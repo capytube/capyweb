@@ -15,6 +15,8 @@ module.exports = {
         persimmon: 'var(--persimmon)',
         tomatoRed: 'var(--tomato-red)',
         avacadoCream: 'var(--avacado-green)',
+        buttonDisabled: 'var(--button-disabled)',
+        buttonDisabledShadow: 'var(--button-disabled-shadow)',
       },
       fontFamily: {
         hanaleiFill: ['Hanalei Fill', 'sans-serif'],

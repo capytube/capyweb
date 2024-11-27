@@ -14,6 +14,7 @@ import fbIcon from '../../../assets/icons/fb.svg';
 import twitterIcon from '../../../assets/icons/twitter.svg';
 import instaIcon from '../../../assets/icons/insta.svg';
 import shareIcon from '../../../assets/icons/share.svg';
+import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
 
 const dailyLimit = 10;
 
@@ -72,7 +73,8 @@ const WatchRoom = () => {
             ))}
           </div>
 
-          <div className={styles.streamToolbarContainer}>
+          <div className={`${styles.streamToolbarContainer} sm:px-24 px-8 py-4 relative overflow-hidden`}>
+            <TopCrossRibbon />
             <div className={styles.coinsStatus}>
               <span className={styles.coinsStatus__title}>Watch-to-earn:</span>
               <div className={styles.coinsStatus__value__div}>

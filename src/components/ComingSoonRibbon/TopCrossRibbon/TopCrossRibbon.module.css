@@ -1,0 +1,25 @@
+.glassPanel {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  overflow: hidden;
+  backdrop-filter: blur(3px);
+  z-index: 3;
+  cursor: not-allowed;
+}
+.topCrossRibbon {
+  position: absolute;
+  background: var(--tomato-red);
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 13px;
+  font-family: ADLaM Display, sans-serif;
+  padding: 7px 50px;
+  top: 12px;
+  right: -50px;
+  transform: rotate(35deg);
+  border: 1px dashed #fff;
+  box-shadow: 0 0 0 3px var(--tomato-red);
+}

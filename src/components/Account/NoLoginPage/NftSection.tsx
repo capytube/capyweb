@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import FrameCapy from '/src/assets/account/noLogin/frame-capy.png';
 import TVRemote from '/src/assets/account/noLogin/tv-remote.png';
 import ExclusiveCapy from '/src/assets/account/noLogin/exclusive-capy.png';
+import CrossShadowRibbon from '../../ComingSoonRibbon/CrossShadowRibbon';
 
 type Props = { clx?: string };
 
@@ -36,9 +37,7 @@ function NftSection({ clx }: Props) {
       id="login-nft-section"
       className={`md:pt-10 md:pb-20 md:px-[152px] py-8 pb-8 ${clx}  px-4 flex flex-col justify-center items-center md:gap-y-10 gap-y-4`}
     >
-      <h2 className="font-hanaleiFill md:text-titleSize text-titleSizeSM text-chocoBrown">
-        Premium NFT membership
-      </h2>
+      <h2 className="font-hanaleiFill md:text-titleSize text-titleSizeSM text-chocoBrown">Premium NFT membership</h2>
       <div>
         <h4 className="text-center font-ADLaM text-chocoBrown md:text-4xl text-xl font-semibold pb-6">
           Unlock the Ultimate Capytube Experience
@@ -50,11 +49,7 @@ function NftSection({ clx }: Props) {
       <div className="flex md:flex-row flex-col gap-x-10 gap-y-6">
         {cards?.map((card) => (
           <div key={card?.id} className="md:px-4 max-w-md">
-            <img
-              src={card?.img}
-              alt="winodw"
-              className="mx-auto md:max-h-max max-h-[150px]"
-            />
+            <img src={card?.img} alt="winodw" className="mx-auto md:max-h-max max-h-[150px]" />
             <p className="md:pt-10 pt-4 font-ADLaM md:text-[28px] md:leading-8 text-base text-center text-chocoBrown font-semibold md:pb-10 pb-6">
               {card?.title}
             </p>
@@ -64,13 +59,14 @@ function NftSection({ clx }: Props) {
           </div>
         ))}
       </div>
-      <Link
-        to="/shop"
-        target="_blank"
-        rel="noreferrer"
-        className="md:-rotate-1 bg-darkOrange font-ADLaM text-white md:text-3xl md:py-2.5 py-1 px-4 rounded-lg md:shadow-loginShadow shadow-buttonShadow"
-      >
-        Buy NFT & Join Premium ✨
+      <Link to="/shop" target="_blank" rel="noreferrer">
+        <button
+          className="md:-rotate-1 bg-darkOrange font-ADLaM text-white md:text-3xl md:py-2.5 py-1 px-4 rounded-lg md:shadow-loginShadow shadow-buttonShadow relative disabled:cursor-not-allowed disabled:bg-buttonDisabled disabled:shadow-buttonDisabledShadow"
+          disabled
+        >
+          <CrossShadowRibbon />
+          Buy NFT & Join Premium ✨
+        </button>
       </Link>
     </div>
   );
