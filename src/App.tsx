@@ -71,7 +71,7 @@ const App: React.FC = () => {
               <Route path="/" element={<Home />} />
               <Route path="/watch" element={<Watch />} />
               <Route
-                path="/stream/:streamId/:streamTitle"
+                path="/stream/:capyId"
                 element={<WatchRoom />}
               />
               <Route path="/profile" element={<ProfilePage />} />
