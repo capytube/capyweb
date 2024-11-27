@@ -59,7 +59,7 @@ function NftSection({ clx }: Props) {
           </div>
         ))}
       </div>
-      <Link to="/shop" target="_blank" rel="noreferrer">
+      <Link to="#" target="_blank" rel="noreferrer">
         <button
           className="md:-rotate-1 bg-darkOrange font-ADLaM text-white md:text-3xl md:py-2.5 py-1 px-4 rounded-lg md:shadow-loginShadow shadow-buttonShadow relative disabled:cursor-not-allowed disabled:bg-buttonDisabled disabled:shadow-buttonDisabledShadow"
           disabled

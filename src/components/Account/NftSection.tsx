@@ -50,7 +50,7 @@ export default function NftSection() {
         ))}
       </div>
       <div className="flex sm:gap-x-10 gap-x-4 justify-center items-center">
-        <Link to="/shop" target="_blank" rel="noreferrer">
+        <Link to="#" target="_blank" rel="noreferrer">
           <button className={`bg-darkGreen lg:shadow-loginShadow ${btnStyle}`} disabled>
             <CrossShadowRibbon />
             Go to NFT Marketplace

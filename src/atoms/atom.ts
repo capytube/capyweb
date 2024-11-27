@@ -1,4 +1,4 @@
-import { atom } from "jotai";
+import { atom } from 'jotai';
 
 interface userType {
   id: string | null;
@@ -34,9 +34,32 @@ interface RatingsAtom {
   } | null;
 }
 
+interface CapyList {
+  id: string | null;
+  capyName: string | null;
+  capyDescription: string | null;
+  availableCameras: {
+    mainCam: string | null;
+    foodCam: string | null;
+    bedroomCam: string | null;
+  } | null;
+  createdAt: string | null;
+}
+
+interface CapybaraAtom {
+  id: string | null;
+  capyName: string | null;
+  availableCameras: {
+    mainCam: string | null;
+    foodCam: string | null;
+    bedroomCam: string | null;
+  } | null;
+  createdAt: string | null;
+}
+
 export const userAtom = atom<userType>({
-  id: "",
-  name: "",
+  id: '',
+  name: '',
   createdAt: 0,
   totalEarnedCoins: 0,
   todayEarnedCoins: {
@@ -63,12 +86,37 @@ export const commentsAtom = atom<Array<commentsType> | []>([
 ]);
 
 export const ratingsAtom = atom<RatingsAtom>({
-  id: "",
+  id: '',
   ratingCounts: {
     capylove: null,
     capylike: null,
     capywow: null,
     capyangry: null,
     capyfire: null,
+  },
+});
+
+export const capyListAtom = atom<Array<CapyList> | []>([
+  {
+    id: null,
+    capyName: null,
+    capyDescription: null,
+    availableCameras: {
+      mainCam: null,
+      foodCam: null,
+      bedroomCam: null,
+    },
+    createdAt: null,
+  },
+]);
+
+export const capybaraAtom = atom<CapybaraAtom>({
+  id: null,
+  capyName: null,
+  createdAt: null,
+  availableCameras: {
+    mainCam: null,
+    foodCam: null,
+    bedroomCam: null,
   },
 });
