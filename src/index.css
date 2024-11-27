@@ -12,6 +12,8 @@
   --persimmon: #ffb26f;
   --tomato-red: #f23434;
   --avacado-green: #d7e7c3;
+  --button-disabled: #b1b1b1;
+  --button-disabled-shadow: #909090;
 }
 
 /* src/index.css */

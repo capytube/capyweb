@@ -1,13 +1,15 @@
 import { getDefaultStore } from 'jotai';
 import { generateClient } from 'aws-amplify/api';
 
-import { commentsAtom, ratingsAtom, userAtom } from "../atoms/atom";
-import { Schema } from "../../amplify/data/resource";
+import { capybaraAtom, capyListAtom, commentsAtom, ratingsAtom, userAtom } from '../atoms/atom';
+import { Schema } from '../../amplify/data/resource';
 
 const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
 const user = defaultStore.get(userAtom);
 const ratings = defaultStore.get(ratingsAtom);
+const capybara = defaultStore.get(capybaraAtom);
+const capyList = defaultStore.get(capyListAtom);
 
 export async function getUserProfile(userId: string) {
   const response = await client.models.User.get(
@@ -15,14 +17,8 @@ export async function getUserProfile(userId: string) {
       id: userId,
     },
     {
-      selectionSet: [
-        'id',
-        'name',
-        'totalEarnedCoins',
-        'todayEarnedCoins.*',
-        'createdAt',
-      ],
-    }
+      selectionSet: ['id', 'name', 'totalEarnedCoins', 'todayEarnedCoins.*', 'createdAt'],
+    },
   );
 
   if (response?.data?.id) {
@@ -32,13 +28,7 @@ export async function getUserProfile(userId: string) {
   return response;
 }
 
-export async function updateUserProfile({
-  name,
-  userId,
-}: {
-  name: string;
-  userId: string;
-}) {
+export async function updateUserProfile({ name, userId }: { name: string; userId: string }) {
   const response = await client.models.User.update({
     id: userId,
     name: name,
@@ -107,8 +97,7 @@ export async function getListOfComments({ streamId }: { streamId: string }) {
 
   if (response?.data?.length) {
     const sortedData = response?.data?.sort(
-      (a: { createdAt: number | null }, b: { createdAt: number | null }) =>
-        (a?.createdAt ?? 0) - (b?.createdAt ?? 0)
+      (a: { createdAt: number | null }, b: { createdAt: number | null }) => (a?.createdAt ?? 0) - (b?.createdAt ?? 0),
     );
     defaultStore.set(
       commentsAtom,
@@ -133,8 +122,8 @@ export async function getListOfComments({ streamId }: { streamId: string }) {
             id: comment.user?.id ?? '',
             updatedAt: comment.user?.updatedAt ?? '',
           },
-        })
-      ) ?? []
+        }),
+      ) ?? [],
     );
   }
 
@@ -153,8 +142,8 @@ export async function getRatings(streamId: string) {
       id: streamId,
     },
     {
-      selectionSet: ["id", "ratingCounts.*"],
-    }
+      selectionSet: ['id', 'ratingCounts.*'],
+    },
   );
 
   if (response?.data) {
@@ -174,6 +163,71 @@ export async function updateRatings(streamId: string, countData: any) {
 
   if (response?.data?.id) {
     await getRatings(streamId);
+  }
+
+  return response;
+}
+
+export async function getCapyList() {
+  const response = await client.models.CapyList.list({
+    selectionSet: ['id', 'capyName', 'capyDescription', 'availableCameras.*', 'createdAt'],
+  });
+
+  if (response?.data) {
+    const sortedData = response?.data
+      .sort(function (a, b) {
+        const x = a?.capyName?.toLowerCase() ?? '';
+        const y = b?.capyName?.toLowerCase() ?? '';
+        if (x > y) {
+          return 1;
+        }
+        if (x < y) {
+          return -1;
+        }
+        return 0;
+      })
+      ?.reverse();
+
+    defaultStore.set(capyListAtom, sortedData ?? { ...capyList });
+  }
+
+  return response;
+}
+
+export async function createCapy({
+  capyName,
+  capyDescription,
+  availableCameras,
+}: {
+  capyName: string;
+  capyDescription: string;
+  availableCameras: {
+    mainCam: string;
+    foodCam: string;
+    bedroomCam: string;
+  };
+}) {
+  const response = await client.models.CapyList.create({ capyName, capyDescription, availableCameras });
+  return response;
+}
+
+export async function deleteCapy({ id }: { id: string }) {
+  const response = await client.models.CapyList.delete({ id });
+  return response;
+}
+
+export async function getCapybara(id: string) {
+  const response = await client.models.CapyList.get(
+    {
+      id,
+    },
+    {
+      selectionSet: ['id', 'createdAt', 'capyName', 'availableCameras.*'],
+    },
+  );
+
+  if (response?.data) {
+    defaultStore.set(capybaraAtom, response?.data ?? { ...capybara });
   }
 
   return response;

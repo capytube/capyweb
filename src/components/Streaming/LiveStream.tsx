@@ -1,21 +1,16 @@
-import React, { useEffect, useState } from "react";
-import {
-  EnterFullscreenIcon,
-  ExitFullscreenIcon,
-  PauseIcon,
-  PlayIcon,
-} from "@livepeer/react/assets";
-import { useAtom } from "jotai";
-import { Src } from "@livepeer/react";
-import { useLocation } from "react-router-dom";
-import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
+import React, { useEffect, useState } from 'react';
+import { EnterFullscreenIcon, ExitFullscreenIcon, PauseIcon, PlayIcon } from '@livepeer/react/assets';
+import { useAtom } from 'jotai';
+import { Src } from '@livepeer/react';
+import { useLocation } from 'react-router-dom';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 
-import { userAtom } from "../../atoms/atom";
-import * as Player from "@livepeer/react/player";
-import { updateUserCoins } from "../../utils/api";
-import { isFirstDateBeforeSecond } from "../../utils/function";
+import { userAtom } from '../../atoms/atom';
+import * as Player from '@livepeer/react/player';
+import { updateUserCoins } from '../../utils/api';
+import { isFirstDateBeforeSecond } from '../../utils/function';
 
-import "./LiveStream.css";
+import './LiveStream.css';
 
 interface LiveStreamProps {
   vodSource: Src[];
@@ -37,21 +32,21 @@ const LiveStream = ({
   setIsResumeStreamConfirmation,
 }: LiveStreamProps) => {
   const { pathname } = useLocation();
-  const isHomePage = pathname === "/";
+  const isHomePage = pathname === '/';
   const [user] = useAtom(userAtom);
   const isloggedIn = useIsLoggedIn();
 
   const [previousDay, setPreviousDay] = useState(false);
 
   const [playTime, setPlayTime] = useState<number>(() => {
-    const savedPlayTime = localStorage.getItem("playTime");
+    const savedPlayTime = localStorage.getItem('playTime');
     return savedPlayTime ? parseInt(savedPlayTime, 10) : 0;
   });
 
-  const coins =
-    (user?.todayEarnedCoins ? user?.todayEarnedCoins?.coins : 0) ?? 0;
+  const coins = (user?.todayEarnedCoins ? user?.todayEarnedCoins?.coins : 0) ?? 0;
 
-  console.log("time", playTime);
+  console.log('time', playTime);
+  const isCoinUpdateEnabled = false;
 
   const handleTimeUpdate = () => {
     if (
@@ -59,8 +54,9 @@ const LiveStream = ({
       videoRef.current &&
       !videoRef.current.paused &&
       !isHomePage &&
-      !pathname?.includes("play") &&
-      coins < dailyLimit
+      !pathname?.includes('play') &&
+      coins < dailyLimit &&
+      isCoinUpdateEnabled
     ) {
       setPlayTime((prev) => prev + 1); // Increment playTime by 1 second
       setIsCapyCoinIncrementing?.(true);
@@ -85,10 +81,7 @@ const LiveStream = ({
 
   useEffect(() => {
     if (user?.todayEarnedCoins?.coins && user?.todayEarnedCoins?.timeStamp) {
-      const isPreviousDay = isFirstDateBeforeSecond(
-        user?.todayEarnedCoins?.timeStamp,
-        new Date().getTime()
-      );
+      const isPreviousDay = isFirstDateBeforeSecond(user?.todayEarnedCoins?.timeStamp, new Date().getTime());
       setPreviousDay(isPreviousDay);
     }
   }, [user]);
@@ -106,20 +99,15 @@ const LiveStream = ({
 
   useEffect(() => {
     const handlePauseVid = () => {
-      if (
-        document.hidden &&
-        videoRef?.current &&
-        !videoRef.current.paused &&
-        !isHomePage
-      ) {
+      if (document.hidden && videoRef?.current && !videoRef.current.paused && !isHomePage) {
         videoRef.current.pause();
         setIsResumeStreamConfirmation?.(true);
       }
     };
-    document.addEventListener("visibilitychange", handlePauseVid);
+    document.addEventListener('visibilitychange', handlePauseVid);
 
     return () => {
-      document.removeEventListener("visibilitychange", handlePauseVid);
+      document.removeEventListener('visibilitychange', handlePauseVid);
     };
   }, [isHomePage, pathname]);
 
@@ -129,12 +117,12 @@ const LiveStream = ({
         <Player.Video
           ref={videoRef}
           title={title}
-          style={{ height: "100%", width: "100%" }}
+          style={{ height: '100%', width: '100%' }}
           onTimeUpdate={handleTimeUpdate}
         />
         <Player.FullscreenTrigger
           style={{
-            position: "absolute",
+            position: 'absolute',
             left: 20,
             bottom: 20,
             width: 25,
@@ -151,8 +139,7 @@ const LiveStream = ({
         {!isHomePage ? (
           <Player.Controls
             style={{
-              background:
-                "linear-gradient(to bottom, rgba(90, 90, 90, 0.2), rgba(82, 82, 82, 0.365))",
+              background: 'linear-gradient(to bottom, rgba(90, 90, 90, 0.2), rgba(82, 82, 82, 0.365))',
             }}
             className="py-2 px-4 flex flex-col-reverse gap-5 justify-center items-center inset-0"
           >

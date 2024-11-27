@@ -4,6 +4,7 @@ import NFTCard from './NFTCard';
 import BrownCapy from '/src/assets/account/brownRat.png';
 import PinkCapy from '/src/assets/account/pinkRat.png';
 import SlateCapy from '/src/assets/account/slateRat.png';
+import CrossShadowRibbon from '../ComingSoonRibbon/CrossShadowRibbon';
 
 const nftCards = [
   {
@@ -31,7 +32,7 @@ const nftCards = [
 
 export default function NftSection() {
   const btnStyle =
-    'sm:text-3xl text-base font-ADLaM text-white shadow-buttonShadow rounded-lg py-2 px-4';
+    'sm:text-3xl text-base font-ADLaM text-white shadow-buttonShadow rounded-lg py-2 px-4 relative disabled:cursor-not-allowed disabled:bg-buttonDisabled disabled:shadow-buttonDisabledShadow';
 
   return (
     <div
@@ -49,13 +50,11 @@ export default function NftSection() {
         ))}
       </div>
       <div className="flex sm:gap-x-10 gap-x-4 justify-center items-center">
-        <Link
-          to="/shop"
-          target="_blank"
-          rel="noreferrer"
-          className={`bg-darkGreen lg:shadow-loginShadow ${btnStyle}`}
-        >
-          Go to NFT Marketplace
+        <Link to="#" target="_blank" rel="noreferrer">
+          <button className={`bg-darkGreen lg:shadow-loginShadow ${btnStyle}`} disabled>
+            <CrossShadowRibbon />
+            Go to NFT Marketplace
+          </button>
         </Link>
       </div>
     </div>

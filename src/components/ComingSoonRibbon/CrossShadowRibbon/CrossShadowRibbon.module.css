@@ -1,0 +1,41 @@
+.crossShadowRibbon {
+  position: absolute;
+  background: var(--tomato-red);
+  color: white;
+  text-transform: uppercase;
+  padding: 0 8px;
+  right: 0;
+  top: -15px;
+  margin-right: 0px;
+  border-radius: 0 5px 5px 5px;
+
+  font-size: 13px;
+  line-height: 28px;
+}
+.crossShadowRibbon:before {
+  content: '';
+  position: absolute;
+  left: -15px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border-bottom: 15px solid #8d0202;
+  border-left: 15px solid transparent;
+}
+
+@media screen and (max-width: 768px) {
+  .crossShadowRibbon {
+    padding: 0 5px;
+    top: -10px;
+
+    font-size: 10px;
+    line-height: 20px;
+  }
+  .crossShadowRibbon:before {
+    left: -10px;
+    border-bottom: 10px solid #8d0202;
+    border-left: 10px solid transparent;
+  }
+}
