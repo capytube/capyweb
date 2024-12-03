@@ -56,20 +56,20 @@ function LoginSection({}: Props) {
               feed, so you never miss a moment.
             </p>
           </div>
-          <div className="px-4 max-w-md">
-            <img
-              className="mx-auto md:max-h-max max-h-[150px]"
-              src={CapyCoin}
-              alt="capycoin"
-            />
-            <p className="md:pt-10 pt-4 font-ADLaM md:text-[28px] md:leading-8 text-sm text-center text-chocoBrown font-semibold md:pb-10 pb-6">
-              Earn Capy Coins
-            </p>
-            <p className="font-commissioner md:text-titleSizeSM text-sm text-center text-chocoBrown">
-              Connect your wallet to start earning Capy Coins just by watching!
-              Use your coins to join fun games and interact with the capybaras.
-            </p>
-          </div>
+          {/*<div className="px-4 max-w-md">*/}
+          {/*  <img*/}
+          {/*    className="mx-auto md:max-h-max max-h-[150px]"*/}
+          {/*    src={CapyCoin}*/}
+          {/*    alt="capycoin"*/}
+          {/*  />*/}
+          {/*  <p className="md:pt-10 pt-4 font-ADLaM md:text-[28px] md:leading-8 text-sm text-center text-chocoBrown font-semibold md:pb-10 pb-6">*/}
+          {/*    Earn Capy Coins*/}
+          {/*  </p>*/}
+          {/*  <p className="font-commissioner md:text-titleSizeSM text-sm text-center text-chocoBrown">*/}
+          {/*    Connect your wallet to start earning Capy Coins just by watching!*/}
+          {/*    Use your coins to join fun games and interact with the capybaras.*/}
+          {/*  </p>*/}
+          {/*</div>*/}
         </div>
         <button
           type="button"
