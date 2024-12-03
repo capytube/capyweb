@@ -1,6 +1,6 @@
 import PlayCapy from '/src/assets/account/noLogin/play-cappys.png';
 import WindowCapy from '/src/assets/account/noLogin/capy-window.png';
-import CapyCoin from '/src/assets/account/noLogin/capycoin.png';
+// import CapyCoin from '/src/assets/account/noLogin/capycoin.png';
 import { DynamicWidget } from '@dynamic-labs/sdk-react-core';
 import React from 'react';
 

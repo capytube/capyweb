@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+// import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 import { useAtom } from 'jotai';
 
-import { capybaraAtom, userAtom } from '../../../atoms/atom';
+import { capybaraAtom } from '../../../atoms/atom';
+// import { capybaraAtom, userAtom } from '../../../atoms/atom';
 import { getCapybara } from '../../../utils/api';
 
 import Footer from '../../Footer/Footer';
@@ -11,15 +12,15 @@ import ChatRoom from './ChatRoom/ChatRoom';
 import LivepeerPlayer from '../../LivepeerPlayer';
 import EmojiRating from './EmojiRating/EmojiRating';
 
-import coinIcon from '../../../assets/icons/coin.svg';
-import fbIcon from '../../../assets/icons/fb.svg';
-import twitterIcon from '../../../assets/icons/twitter.svg';
-import instaIcon from '../../../assets/icons/insta.svg';
-import shareIcon from '../../../assets/icons/share.svg';
+// import coinIcon from '../../../assets/icons/coin.svg';
+// import fbIcon from '../../../assets/icons/fb.svg';
+// import twitterIcon from '../../../assets/icons/twitter.svg';
+// import instaIcon from '../../../assets/icons/insta.svg';
+// import shareIcon from '../../../assets/icons/share.svg';
 import styles from './WatchRoom.module.css';
-import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
+// import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
 
-const dailyLimit = 10;
+// const dailyLimit = 10;
 
 const WatchRoom = () => {
   // const navigate = useNavigate();
@@ -27,22 +28,23 @@ const WatchRoom = () => {
     capyId: string;
   }>();
 
-  const isLoggedIn = useIsLoggedIn();
+  // const isLoggedIn = useIsLoggedIn();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
-  const [isCapyCoinIncrementing, setIsCapyCoinIncrementing] = useState<boolean>(false);
+  const [, setIsCapyCoinIncrementing] = useState<boolean>(false);
+  // const [isCapyCoinIncrementing, setIsCapyCoinIncrementing] = useState<boolean>(false);
 
-  const [user] = useAtom(userAtom);
+  // const [user] = useAtom(userAtom);
   const [capybara] = useAtom(capybaraAtom);
 
-  const watchCoins =
-    (() => {
-      if (isLoggedIn) {
-        if (user?.todayEarnedCoins) {
-          return user?.todayEarnedCoins?.coins;
-        }
-      }
-      return 0;
-    })() ?? 0;
+  // const watchCoins =
+  //   (() => {
+  //     if (isLoggedIn) {
+  //       if (user?.todayEarnedCoins) {
+  //         return user?.todayEarnedCoins?.coins;
+  //       }
+  //     }
+  //     return 0;
+  //   })() ?? 0;
 
   const [activeCam, setActiveCam] = useState(0);
   const [streamId, setStreamId] = useState('');
