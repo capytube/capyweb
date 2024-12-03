@@ -34,7 +34,7 @@ const Watch = () => {
 
   return (
     <div>
-      <WatchCapy />
+      {/*<WatchCapy />*/}
       <Starring />
       {!isMobile && <Footer />}
     </div>

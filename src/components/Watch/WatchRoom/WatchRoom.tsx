@@ -103,45 +103,45 @@ const WatchRoom = () => {
                 })}
               </div>
 
-          <div className={`${styles.streamToolbarContainer} sm:px-24 px-8 py-4 relative overflow-hidden`}>
-            <TopCrossRibbon />
-            <div className={styles.coinsStatus}>
-              <span className={styles.coinsStatus__title}>Watch-to-earn:</span>
-              <div className={styles.coinsStatus__value__div}>
-                <img src={coinIcon} alt="coin" />
-                <span className={styles.coinsStatus__value}>
-                  {watchCoins}/{dailyLimit}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-col md:flex-row items-center gap-2">
-              <div className={styles.progressContainer}>
-                <div className={isCapyCoinIncrementing ? styles.progressBarWrapper : ''} />
-                <div className={styles.progressBar} style={{ width: `${(watchCoins / dailyLimit) * 100}%` }} />
-              </div>
-              {watchCoins === dailyLimit ? (
-                <span className="font-commissioner text-lg text-chocoBrown font-normal">daily limit reached!</span>
-              ) : null}
-            </div>
+          {/*<div className={`${styles.streamToolbarContainer} sm:px-24 px-8 py-4 relative overflow-hidden`}>*/}
+          {/*  <TopCrossRibbon />*/}
+          {/*  <div className={styles.coinsStatus}>*/}
+          {/*    <span className={styles.coinsStatus__title}>Watch-to-earn:</span>*/}
+          {/*    <div className={styles.coinsStatus__value__div}>*/}
+          {/*      <img src={coinIcon} alt="coin" />*/}
+          {/*      <span className={styles.coinsStatus__value}>*/}
+          {/*        {watchCoins}/{dailyLimit}*/}
+          {/*      </span>*/}
+          {/*    </div>*/}
+          {/*  </div>*/}
+          {/*  <div className="flex flex-col md:flex-row items-center gap-2">*/}
+          {/*    <div className={styles.progressContainer}>*/}
+          {/*      <div className={isCapyCoinIncrementing ? styles.progressBarWrapper : ''} />*/}
+          {/*      <div className={styles.progressBar} style={{ width: `${(watchCoins / dailyLimit) * 100}%` }} />*/}
+          {/*    </div>*/}
+          {/*    {watchCoins === dailyLimit ? (*/}
+          {/*      <span className="font-commissioner text-lg text-chocoBrown font-normal">daily limit reached!</span>*/}
+          {/*    ) : null}*/}
+          {/*  </div>*/}
 
-                {/* <button
-              disabled={watchCoins < dailyLimit}
-              className={`${styles.collectButton} ${
-                watchCoins === 10
-                  ? "animate-pulse"
-                  : "bg-siteGreen cursor-not-allowed"
-              }`}
-            >
-              {watchCoins === dailyLimit ? "Collect now" : "Collect"}
-            </button> */}
+          {/*      /!* <button*/}
+          {/*    disabled={watchCoins < dailyLimit}*/}
+          {/*    className={`${styles.collectButton} ${*/}
+          {/*      watchCoins === 10*/}
+          {/*        ? "animate-pulse"*/}
+          {/*        : "bg-siteGreen cursor-not-allowed"*/}
+          {/*    }`}*/}
+          {/*  >*/}
+          {/*    {watchCoins === dailyLimit ? "Collect now" : "Collect"}*/}
+          {/*  </button> *!/*/}
 
-                <div className={styles.streamShareIcons}>
-                  <img src={fbIcon} alt="fb" />
-                  <img src={twitterIcon} alt="X" />
-                  <img src={instaIcon} alt="Insta" />
-                  <img src={shareIcon} alt="Share" />
-                </div>
-              </div>
+          {/*      <div className={styles.streamShareIcons}>*/}
+          {/*        <img src={fbIcon} alt="fb" />*/}
+          {/*        <img src={twitterIcon} alt="X" />*/}
+          {/*        <img src={instaIcon} alt="Insta" />*/}
+          {/*        <img src={shareIcon} alt="Share" />*/}
+          {/*      </div>*/}
+          {/*    </div>*/}
             </div>
 
             <div className={styles.videoMainContainer}>

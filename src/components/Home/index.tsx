@@ -19,7 +19,7 @@ const Home = () => {
     <div>
       <PublicStream />
       <PremiumStream />
-      <WhatCapytube />
+      {/*<WhatCapytube />*/}
       <OurCapybaras />
       <CapyGallery />
       {!isMobile && <Footer />}
