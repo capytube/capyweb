@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+// import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 import { useAtom } from 'jotai';
 
-import { capybaraAtom, userAtom } from '../../../atoms/atom';
+import { capybaraAtom } from '../../../atoms/atom';
+// import { capybaraAtom, userAtom } from '../../../atoms/atom';
 import { getCapybara } from '../../../utils/api';
 
 import Footer from '../../Footer/Footer';
@@ -11,15 +12,15 @@ import ChatRoom from './ChatRoom/ChatRoom';
 import LivepeerPlayer from '../../LivepeerPlayer';
 import EmojiRating from './EmojiRating/EmojiRating';
 
-import coinIcon from '../../../assets/icons/coin.svg';
-import fbIcon from '../../../assets/icons/fb.svg';
-import twitterIcon from '../../../assets/icons/twitter.svg';
-import instaIcon from '../../../assets/icons/insta.svg';
-import shareIcon from '../../../assets/icons/share.svg';
+// import coinIcon from '../../../assets/icons/coin.svg';
+// import fbIcon from '../../../assets/icons/fb.svg';
+// import twitterIcon from '../../../assets/icons/twitter.svg';
+// import instaIcon from '../../../assets/icons/insta.svg';
+// import shareIcon from '../../../assets/icons/share.svg';
 import styles from './WatchRoom.module.css';
-import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
+// import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
 
-const dailyLimit = 10;
+// const dailyLimit = 10;
 
 const WatchRoom = () => {
   // const navigate = useNavigate();
@@ -27,22 +28,23 @@ const WatchRoom = () => {
     capyId: string;
   }>();
 
-  const isLoggedIn = useIsLoggedIn();
+  // const isLoggedIn = useIsLoggedIn();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
-  const [isCapyCoinIncrementing, setIsCapyCoinIncrementing] = useState<boolean>(false);
+  const [, setIsCapyCoinIncrementing] = useState<boolean>(false);
+  // const [isCapyCoinIncrementing, setIsCapyCoinIncrementing] = useState<boolean>(false);
 
-  const [user] = useAtom(userAtom);
+  // const [user] = useAtom(userAtom);
   const [capybara] = useAtom(capybaraAtom);
 
-  const watchCoins =
-    (() => {
-      if (isLoggedIn) {
-        if (user?.todayEarnedCoins) {
-          return user?.todayEarnedCoins?.coins;
-        }
-      }
-      return 0;
-    })() ?? 0;
+  // const watchCoins =
+  //   (() => {
+  //     if (isLoggedIn) {
+  //       if (user?.todayEarnedCoins) {
+  //         return user?.todayEarnedCoins?.coins;
+  //       }
+  //     }
+  //     return 0;
+  //   })() ?? 0;
 
   const [activeCam, setActiveCam] = useState(0);
   const [streamId, setStreamId] = useState('');
@@ -103,45 +105,45 @@ const WatchRoom = () => {
                 })}
               </div>
 
-          <div className={`${styles.streamToolbarContainer} sm:px-24 px-8 py-4 relative overflow-hidden`}>
-            <TopCrossRibbon />
-            <div className={styles.coinsStatus}>
-              <span className={styles.coinsStatus__title}>Watch-to-earn:</span>
-              <div className={styles.coinsStatus__value__div}>
-                <img src={coinIcon} alt="coin" />
-                <span className={styles.coinsStatus__value}>
-                  {watchCoins}/{dailyLimit}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-col md:flex-row items-center gap-2">
-              <div className={styles.progressContainer}>
-                <div className={isCapyCoinIncrementing ? styles.progressBarWrapper : ''} />
-                <div className={styles.progressBar} style={{ width: `${(watchCoins / dailyLimit) * 100}%` }} />
-              </div>
-              {watchCoins === dailyLimit ? (
-                <span className="font-commissioner text-lg text-chocoBrown font-normal">daily limit reached!</span>
-              ) : null}
-            </div>
+          {/*<div className={`${styles.streamToolbarContainer} sm:px-24 px-8 py-4 relative overflow-hidden`}>*/}
+          {/*  <TopCrossRibbon />*/}
+          {/*  <div className={styles.coinsStatus}>*/}
+          {/*    <span className={styles.coinsStatus__title}>Watch-to-earn:</span>*/}
+          {/*    <div className={styles.coinsStatus__value__div}>*/}
+          {/*      <img src={coinIcon} alt="coin" />*/}
+          {/*      <span className={styles.coinsStatus__value}>*/}
+          {/*        {watchCoins}/{dailyLimit}*/}
+          {/*      </span>*/}
+          {/*    </div>*/}
+          {/*  </div>*/}
+          {/*  <div className="flex flex-col md:flex-row items-center gap-2">*/}
+          {/*    <div className={styles.progressContainer}>*/}
+          {/*      <div className={isCapyCoinIncrementing ? styles.progressBarWrapper : ''} />*/}
+          {/*      <div className={styles.progressBar} style={{ width: `${(watchCoins / dailyLimit) * 100}%` }} />*/}
+          {/*    </div>*/}
+          {/*    {watchCoins === dailyLimit ? (*/}
+          {/*      <span className="font-commissioner text-lg text-chocoBrown font-normal">daily limit reached!</span>*/}
+          {/*    ) : null}*/}
+          {/*  </div>*/}
 
-                {/* <button
-              disabled={watchCoins < dailyLimit}
-              className={`${styles.collectButton} ${
-                watchCoins === 10
-                  ? "animate-pulse"
-                  : "bg-siteGreen cursor-not-allowed"
-              }`}
-            >
-              {watchCoins === dailyLimit ? "Collect now" : "Collect"}
-            </button> */}
+          {/*      /!* <button*/}
+          {/*    disabled={watchCoins < dailyLimit}*/}
+          {/*    className={`${styles.collectButton} ${*/}
+          {/*      watchCoins === 10*/}
+          {/*        ? "animate-pulse"*/}
+          {/*        : "bg-siteGreen cursor-not-allowed"*/}
+          {/*    }`}*/}
+          {/*  >*/}
+          {/*    {watchCoins === dailyLimit ? "Collect now" : "Collect"}*/}
+          {/*  </button> *!/*/}
 
-                <div className={styles.streamShareIcons}>
-                  <img src={fbIcon} alt="fb" />
-                  <img src={twitterIcon} alt="X" />
-                  <img src={instaIcon} alt="Insta" />
-                  <img src={shareIcon} alt="Share" />
-                </div>
-              </div>
+          {/*      <div className={styles.streamShareIcons}>*/}
+          {/*        <img src={fbIcon} alt="fb" />*/}
+          {/*        <img src={twitterIcon} alt="X" />*/}
+          {/*        <img src={instaIcon} alt="Insta" />*/}
+          {/*        <img src={shareIcon} alt="Share" />*/}
+          {/*      </div>*/}
+          {/*    </div>*/}
             </div>
 
             <div className={styles.videoMainContainer}>

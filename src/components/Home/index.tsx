@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import PublicStream from "./PublicStream/PublicStream";
 import PremiumStream from "./PremiumStream/PremiumStream";
-import WhatCapytube from "./WhatCapytube/WhatCapytube";
+// import WhatCapytube from "./WhatCapytube/WhatCapytube";
 import OurCapybaras from "./OurCapybaras/OurCapybaras";
 import CapyGallery from "./CapyGallery/CapyGallery";
 import Footer from "../Footer/Footer";
@@ -19,7 +19,7 @@ const Home = () => {
     <div>
       <PublicStream />
       <PremiumStream />
-      <WhatCapytube />
+      {/*<WhatCapytube />*/}
       <OurCapybaras />
       <CapyGallery />
       {!isMobile && <Footer />}

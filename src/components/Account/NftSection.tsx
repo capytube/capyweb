@@ -1,34 +1,34 @@
 import { Link } from 'react-router-dom';
-import NFTCard from './NFTCard';
+// import NFTCard from './NFTCard';
 
-import BrownCapy from '/src/assets/account/brownRat.png';
-import PinkCapy from '/src/assets/account/pinkRat.png';
-import SlateCapy from '/src/assets/account/slateRat.png';
+// import BrownCapy from '/src/assets/account/brownRat.png';
+// import PinkCapy from '/src/assets/account/pinkRat.png';
+// import SlateCapy from '/src/assets/account/slateRat.png';
 import CrossShadowRibbon from '../ComingSoonRibbon/CrossShadowRibbon';
 
-const nftCards = [
-  {
-    id: 1,
-    title: '#12345678',
-    image: BrownCapy,
-    tag: 'ultra rare',
-    price: 8.5,
-  },
-  {
-    id: 2,
-    title: '#12345678',
-    image: PinkCapy,
-    tag: 'ultra rare',
-    price: 8.5,
-  },
-  {
-    id: 3,
-    title: '#12345678',
-    image: SlateCapy,
-    tag: 'ultra rare',
-    price: 8.5,
-  },
-];
+// const nftCards = [
+//   {
+//     id: 1,
+//     title: '#12345678',
+//     image: BrownCapy,
+//     tag: 'ultra rare',
+//     price: 8.5,
+//   },
+//   {
+//     id: 2,
+//     title: '#12345678',
+//     image: PinkCapy,
+//     tag: 'ultra rare',
+//     price: 8.5,
+//   },
+//   {
+//     id: 3,
+//     title: '#12345678',
+//     image: SlateCapy,
+//     tag: 'ultra rare',
+//     price: 8.5,
+//   },
+// ];
 
 export default function NftSection() {
   const btnStyle =
@@ -41,14 +41,14 @@ export default function NftSection() {
         background: 'linear-gradient(180deg, #D0E591 0%, #FFFFFF 100%)',
       }}
     >
-      <h1 className="uppercase text-chocoBrown font-hanaleiFill text-titleSizeSM md:text-titleSize sm:pb-10 pb-6 text-center">
-        MY NFT
-      </h1>
-      <div className="sm:flex grid auto-cols-smallCard grid-cols-2 sm:gap-x-10 sm:gap-y-10 gap-x-4 gap-y-4 justify-center pb-10">
-        {nftCards?.map((card) => (
-          <NFTCard key={card?.id} data={card} />
-        ))}
-      </div>
+      {/*<h1 className="uppercase text-chocoBrown font-hanaleiFill text-titleSizeSM md:text-titleSize sm:pb-10 pb-6 text-center">*/}
+      {/*  MY NFT*/}
+      {/*</h1>*/}
+      {/*<div className="sm:flex grid auto-cols-smallCard grid-cols-2 sm:gap-x-10 sm:gap-y-10 gap-x-4 gap-y-4 justify-center pb-10">*/}
+      {/*  {nftCards?.map((card) => (*/}
+      {/*    <NFTCard key={card?.id} data={card} />*/}
+      {/*  ))}*/}
+      {/*</div>*/}
       <div className="flex sm:gap-x-10 gap-x-4 justify-center items-center">
         <Link to="#" target="_blank" rel="noreferrer">
           <button className={`bg-darkGreen lg:shadow-loginShadow ${btnStyle}`} disabled>
