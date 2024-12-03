@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getCapyList } from '../../utils/api';
 
-import WatchCapy from './WatchCapy/WatchCapy';
+// import WatchCapy from './WatchCapy/WatchCapy';
 import Starring from './Starring/Starring';
 import Footer from '../Footer/Footer';
 
@@ -34,7 +34,7 @@ const Watch = () => {
 
   return (
     <div>
-      <WatchCapy />
+      {/*<WatchCapy />*/}
       <Starring />
       {!isMobile && <Footer />}
     </div>
