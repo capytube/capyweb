@@ -1,34 +1,34 @@
 import { Link } from 'react-router-dom';
-import NFTCard from './NFTCard';
+// import NFTCard from './NFTCard';
 
-import BrownCapy from '/src/assets/account/brownRat.png';
-import PinkCapy from '/src/assets/account/pinkRat.png';
-import SlateCapy from '/src/assets/account/slateRat.png';
+// import BrownCapy from '/src/assets/account/brownRat.png';
+// import PinkCapy from '/src/assets/account/pinkRat.png';
+// import SlateCapy from '/src/assets/account/slateRat.png';
 import CrossShadowRibbon from '../ComingSoonRibbon/CrossShadowRibbon';
 
-const nftCards = [
-  {
-    id: 1,
-    title: '#12345678',
-    image: BrownCapy,
-    tag: 'ultra rare',
-    price: 8.5,
-  },
-  {
-    id: 2,
-    title: '#12345678',
-    image: PinkCapy,
-    tag: 'ultra rare',
-    price: 8.5,
-  },
-  {
-    id: 3,
-    title: '#12345678',
-    image: SlateCapy,
-    tag: 'ultra rare',
-    price: 8.5,
-  },
-];
+// const nftCards = [
+//   {
+//     id: 1,
+//     title: '#12345678',
+//     image: BrownCapy,
+//     tag: 'ultra rare',
+//     price: 8.5,
+//   },
+//   {
+//     id: 2,
+//     title: '#12345678',
+//     image: PinkCapy,
+//     tag: 'ultra rare',
+//     price: 8.5,
+//   },
+//   {
+//     id: 3,
+//     title: '#12345678',
+//     image: SlateCapy,
+//     tag: 'ultra rare',
+//     price: 8.5,
+//   },
+// ];
 
 export default function NftSection() {
   const btnStyle =
