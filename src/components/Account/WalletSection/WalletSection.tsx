@@ -25,7 +25,7 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
   }, []);
 
   return (
-    <div className="sm:pt-10 pt-8 sm:pb-20 pb-20 sm:px-40 px-6 flex flex-col sm:gap-y-10 gap-y-6 justify-center items-center relative">
+    <div className="max-w-screen-lg mx-auto mb-10 sm:pt-10 pt-8 sm:pb-20 pb-20 sm:px-40 px-6 flex flex-col sm:gap-y-10 gap-y-6 justify-center items-center relative">
       <TopCrossRibbon glass_clsx="!backdrop-blur-[5px]" ribbon_clsx="!text-[17px] !top-[25px]" />
       <span className="font-hanaleiFill sm:text-titleSize text-titleSizeSM text-darkOrange">My capycoin wallet</span>
       <div className="flex sm:flex-row flex-col gap-x-14 sm:gap-y-0 gap-y-6 items-center md:w-max w-full">
