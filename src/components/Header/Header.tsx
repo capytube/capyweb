@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  DynamicWidget,
-  useDynamicContext,
-  useIsLoggedIn,
-} from '@dynamic-labs/sdk-react-core';
+import { DynamicWidget, useDynamicContext, useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 import { useAccount } from 'wagmi';
 import { Link } from 'react-router-dom';
 
@@ -25,6 +21,7 @@ const Header = () => {
   const isNftProfile = true;
 
   const isLoggedIn = useIsLoggedIn();
+  const isUserAuthenticated = isLoggedIn || localStorage.getItem('dynamic_authentication_token');
   const { address, isConnected } = useAccount();
   const { setShowDynamicUserProfile } = useDynamicContext();
 
@@ -70,57 +67,33 @@ const Header = () => {
     <>
       <div className={styles.headerContainer}>
         <Link to="/" className={styles.navLink} title="Home">
-          <img
-            src={capytube}
-            alt="CapyTube"
-            className={
-              isLoggedIn ? styles.hideCapyInMobile : styles.capyMainIcon
-            }
-          />
-          {isLoggedIn ? (
-            <img
-              src={capyOnlyLogo}
-              alt="CapyTube"
-              className={styles.capyMobileIcon}
-            />
-          ) : null}
+          <img src={capytube} alt="CapyTube" className={isLoggedIn ? styles.hideCapyInMobile : styles.capyMainIcon} />
+          {isUserAuthenticated ? <img src={capyOnlyLogo} alt="CapyTube" className={styles.capyMobileIcon} /> : null}
         </Link>
-        <div
-          className={styles.logoAndSignoutButton}
-          style={{ display: isLoggedIn ? 'none' : 'initial' }}
-        >
-          <DynamicWidget
-            buttonClassName={styles.customLoginButton}
-            innerButtonComponent={<img src={loginIcon} alt="login" />}
-          />
+        <div className={styles.logoAndSignoutButton} style={{ display: isUserAuthenticated ? 'none' : 'initial' }}>
+          <img src={loginIcon} alt="login" />
+          <div className="absolute top-2 opacity-0 w-full ">
+            <DynamicWidget
+              buttonClassName={styles.customLoginButton}
+              innerButtonComponent={<img src={loginIcon} width={128} height={70} alt="login" />}
+            />
+          </div>
         </div>
-        {isLoggedIn ? (
-          <button
-            className={styles.signedInProfileContainer}
-            onClick={handleProfileClick}
-          >
+        {isUserAuthenticated ? (
+          <button className={styles.signedInProfileContainer} onClick={handleProfileClick}>
             <div className={styles.profile__coinCounts}>
               <img src={capyCoinIcon} alt="coin" />
               <span>0</span>
             </div>
             <div className={styles.verticalSeparator}></div>
             <div className={styles.profile__details}>
-              {isNftProfile ? (
-                <img src={NFTprofile} alt="user" />
-              ) : (
-                <img src={nonNFTprofile} alt="user" />
-              )}
+              {isNftProfile ? <img src={NFTprofile} alt="user" /> : <img src={nonNFTprofile} alt="user" />}
               <div className={styles.profile__nameAndAddress}>
                 <p>Hi, {user?.name || '...'}</p>
                 {isConnected ? (
                   <div className={styles.profile__walletAddress}>
                     <img src={walletLinkIcon} alt="link" />
-                    <span>
-                      {address?.substring(
-                        address?.length - 15,
-                        address?.length
-                      )}
-                    </span>
+                    <span>{address?.substring(address?.length - 15, address?.length)}</span>
                   </div>
                 ) : null}
               </div>
