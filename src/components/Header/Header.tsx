@@ -72,7 +72,7 @@ const Header = () => {
         </Link>
         <div className={styles.logoAndSignoutButton} style={{ display: isUserAuthenticated ? 'none' : 'initial' }}>
           <img src={loginIcon} alt="login" />
-          <div className="absolute top-2 opacity-0 w-full ">
+          <div className="absolute top-2 opacity-0 ">
             <DynamicWidget
               buttonClassName={styles.customLoginButton}
               innerButtonComponent={<img src={loginIcon} width={128} height={70} alt="login" />}
