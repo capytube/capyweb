@@ -2,14 +2,15 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 import { getStream } from '../functions/getStream/resource';
 import { getViewership } from '../functions/getViewership/resource';
 
-const interaction_type = ['vote', 'bid'];
-const transaction_type = ['tip', 'reward', 'stream_payment', 'transfer', 'withdraw', 'deposit', 'vote', 'bid'];
-const access_type = ['public', 'private'];
-
 const schema = a.schema({
   Options: a.customType({
     key: a.string(),
     value: a.string(),
+  }),
+  Vote_Options: a.customType({
+    id: a.string(),
+    title: a.string(),
+    description: a.string(),
   }),
   Offers: a.customType({
     from: a.string(), // User ID making the offer
@@ -17,7 +18,7 @@ const schema = a.schema({
     expires_at: a.timestamp(), // Expiration date of the offer
   }),
   ActivityLog: a.customType({
-    event: a.string(), // Type of event
+    event: a.string(), // Type of event (e.g., "Sale", "Transfer")
     price: a.float(), // Price associated with the event
     from: a.string(), // User ID of the seller or previous owner
     to: a.string(), // User ID of the buyer or new owner
@@ -100,21 +101,20 @@ const schema = a.schema({
       id: a.id(),
       capybara_id: a.id(), // Foreign Key to Capybara
       capybara: a.belongsTo('Capybara', 'capybara_id'),
-      interaction_type: a.enum(interaction_type), // "vote" or "bid"
+      interaction_type: a.enum(['vote', 'bid']), // "vote" or "bid"
       title: a.string(), // Title of the interaction (e.g., "Vote for Snack Choice")
       description: a.string(),
       image_url: a.string(),
-      options: a.ref('Options').array(),
-      rules: a.string(),
+      options: a.ref('Vote_Options').array(),
+      rules: a.string().array(),
       session_date: a.timestamp(),
-      result: a.string(),
-      created_at: a.timestamp(),
+      result: a.string(), // winning option ID
+      vote_cost: a.float(),
+      current_bid: a.float(),
+      createdAt: a.timestamp(),
       userInteractions: a.hasMany('UserInteractions', 'interaction_id'),
     })
-    .secondaryIndexes((index) => [
-      index('capybara_id').name('CapybaraInteractionIndex'),
-      // index('interaction_type').name('CapybaraInteractionIndex'),
-    ])
+    .secondaryIndexes((index) => [index('capybara_id').name('CapybaraInteractionIndex').sortKeys(['interaction_type'])])
     .authorization((allow) => [allow.publicApiKey()]),
 
   // UserInteractions schema
@@ -125,20 +125,18 @@ const schema = a.schema({
       interaction: a.belongsTo('Interactions', 'interaction_id'),
       user_id: a.id(), // Foreign Key to User
       user: a.belongsTo('User', 'user_id'),
-      type: a.enum(interaction_type), // "vote" or "bid"
+      type: a.enum(['vote', 'bid']), // "vote" or "bid"
       option_id: a.id(), // ID of the option the user voted for (only for votes)
       number_of_votes: a.integer(), // Number of votes purchased (only for votes)
-      bid_amount: a.float(),
-      cost: a.float(),
+      bid_amount: a.float(), // only for bids
+      cost: a.float(), // Total cost (including extra cost for custom votes)
       is_custom_request: a.boolean(),
       custom_request: a.string(),
       approved: a.boolean(),
-      created_at: a.timestamp(),
+      createdAt: a.timestamp(),
+      tokenTransaction: a.hasOne('TokenTransaction', 'related_id'),
     })
-    .secondaryIndexes((index) => [
-      index('interaction_id').name('InteractionTypeIndex'),
-      // index('type').name('InteractionTypeIndex'),
-    ])
+    .secondaryIndexes((index) => [index('interaction_id').name('InteractionTypeIndex').sortKeys(['type'])])
     .authorization((allow) => [allow.publicApiKey()]),
 
   // TokenTransaction schema
@@ -147,11 +145,12 @@ const schema = a.schema({
       id: a.id(),
       user_id: a.id(), // Foreign Key to User
       user: a.belongsTo('User', 'user_id'),
-      transaction_type: a.enum(transaction_type),
+      transaction_type: a.enum(['tip', 'reward', 'stream_payment', 'transfer', 'withdraw', 'deposit', 'vote', 'bid']),
       amount: a.float(), // Transaction amount in tokens
-      related_id: a.id(), // Can reference UserInteractions ???
-      related_type: a.enum(interaction_type),
-      created_at: a.timestamp(),
+      related_id: a.id(), // Can reference UserInteractions
+      related_type: a.enum(['vote', 'bid']),
+      related: a.belongsTo('UserInteractions', 'related_id'),
+      createdAt: a.timestamp(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
@@ -164,12 +163,9 @@ const schema = a.schema({
       user_id: a.id(), // Foreign Key to User
       user: a.belongsTo('User', 'user_id'),
       content: a.string(),
-      created_at: a.timestamp(),
+      createdAt: a.timestamp(),
     })
-    .secondaryIndexes((index) => [
-      index('stream_id').name('StreamCommentsIndex'),
-      // index('created_at').name('StreamCommentsIndex'),
-    ])
+    .secondaryIndexes((index) => [index('stream_id').name('StreamCommentsIndex').sortKeys(['createdAt'])])
     .authorization((allow) => [allow.publicApiKey()]),
 
   // LiveStream schema
@@ -181,13 +177,16 @@ const schema = a.schema({
       end_time: a.timestamp(),
       is_live: a.boolean(),
       viewer_count: a.integer(),
-      capybara_ids: a.string().array(), // Set of Capybara IDs involved in the stream
-      access_type: a.enum(access_type),
+      capybara_id: a.string(), // Capybara IDs involved in the stream
+      access_type: a.enum(['public', 'private']),
       price_per_10_sec: a.float(),
       streaming_address: a.string(), // URL or address for the live stream
       chatComments: a.hasMany('ChatComments', 'stream_id'),
     })
-    .secondaryIndexes((index) => [index('access_type').name('AccessTypeIndex')])
+    .secondaryIndexes((index) => [
+      index('access_type').name('AccessTypeIndex'),
+      index('capybara_id').name('CapybaraIdIndex'),
+    ])
     .authorization((allow) => [allow.publicApiKey()]),
 
   // Capybara schema
@@ -195,10 +194,17 @@ const schema = a.schema({
     .model({
       id: a.id(),
       name: a.string(),
+      gender: a.string(),
       age: a.integer(),
+      born_place: a.string(),
       description: a.string(),
+      bio: a.string(),
+      personality: a.string(),
+      card_image_url: a.string(),
+      avatar_image_url: a.string(),
       profile_image_url: a.string(),
       favorite_activities: a.string().array(),
+      fun_fact: a.string(),
       interactions: a.hasMany('Interactions', 'capybara_id'),
     })
     .authorization((allow) => [allow.publicApiKey()]),
@@ -210,7 +216,7 @@ const schema = a.schema({
       username: a.string(),
       email: a.string(),
       password_hash: a.string(),
-      created_at: a.timestamp(),
+      createdAt: a.timestamp(),
       profile_image_url: a.string(),
       wallet_address: a.string(),
       bio: a.string(),
@@ -224,22 +230,22 @@ const schema = a.schema({
   // NFT schema
   NFT: a
     .model({
-      id: a.id(),
-      name: a.string(),
+      id: a.id(), // Unique Token ID (e.g., "NFT1234")
+      name: a.string(), // Name of the NFT (e.g., "Capy #1234")
       image_url: a.string(),
-      rarity: a.string(),
-      labels: a.string().array(),
-      properties: a.ref('Options').array(),
-      price: a.float(),
+      rarity: a.string(), // Rarity level (e.g., "Ultra rare", "Rare")
+      labels: a.string().array(), // Labels for categorization (e.g., "Capybara", "Chalk Bonus")
+      properties: a.ref('Options').array(), // List of properties (e.g., "Chalk powder bonus")
+      price: a.float(), // Current price of the NFT
       is_for_sale: a.boolean(),
-      owner_id: a.string(), // User ID of the current owner
-      created_at: a.timestamp(),
+      owner_id: a.string(), // User ID of the current owner (nullable if listed for sale)
+      createdAt: a.timestamp(),
       offers: a.ref('Offers').array(),
-      activity_log: a.ref('ActivityLog').array(),
+      activity_log: a.ref('ActivityLog').array(), // List of activities (e.g., sales, transfers)
     })
     .secondaryIndexes((index) => [
-      index('price').name('ForSaleIndex'),
-      // index('owner_id').name('OwnerIndex')
+      index('price').name('ForSaleIndex').sortKeys(['createdAt']),
+      index('owner_id').name('OwnerIndex'),
     ])
     .authorization((allow) => [allow.publicApiKey()]),
 });
