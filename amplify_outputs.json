@@ -490,7 +490,7 @@
               "name": "options",
               "isArray": true,
               "type": {
-                "nonModel": "Options"
+                "nonModel": "Vote_Options"
               },
               "isRequired": false,
               "attributes": [],
@@ -498,10 +498,11 @@
             },
             "rules": {
               "name": "rules",
-              "isArray": false,
+              "isArray": true,
               "type": "String",
               "isRequired": false,
-              "attributes": []
+              "attributes": [],
+              "isArrayNullable": true
             },
             "session_date": {
               "name": "session_date",
@@ -517,8 +518,22 @@
               "isRequired": false,
               "attributes": []
             },
-            "created_at": {
-              "name": "created_at",
+            "vote_cost": {
+              "name": "vote_cost",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "current_bid": {
+              "name": "current_bid",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
               "isArray": false,
               "type": "AWSTimestamp",
               "isRequired": false,
@@ -539,14 +554,6 @@
                   "interaction_id"
                 ]
               }
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -576,9 +583,10 @@
               "type": "key",
               "properties": {
                 "name": "CapybaraInteractionIndex",
-                "queryField": "listInteractionsByCapybara_id",
+                "queryField": "listInteractionsByCapybara_idAndInteraction_type",
                 "fields": [
-                  "capybara_id"
+                  "capybara_id",
+                  "interaction_type"
                 ]
               }
             },
@@ -718,20 +726,28 @@
               "isRequired": false,
               "attributes": []
             },
-            "created_at": {
-              "name": "created_at",
+            "createdAt": {
+              "name": "createdAt",
               "isArray": false,
               "type": "AWSTimestamp",
               "isRequired": false,
               "attributes": []
             },
-            "createdAt": {
-              "name": "createdAt",
+            "tokenTransaction": {
+              "name": "tokenTransaction",
               "isArray": false,
-              "type": "AWSDateTime",
+              "type": {
+                "model": "TokenTransaction"
+              },
               "isRequired": false,
               "attributes": [],
-              "isReadOnly": true
+              "association": {
+                "connectionType": "HAS_ONE",
+                "associatedWith": [
+                  "related_id"
+                ],
+                "targetNames": []
+              }
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -761,9 +777,10 @@
               "type": "key",
               "properties": {
                 "name": "InteractionTypeIndex",
-                "queryField": "listUserInteractionsByInteraction_id",
+                "queryField": "listUserInteractionsByInteraction_idAndType",
                 "fields": [
-                  "interaction_id"
+                  "interaction_id",
+                  "type"
                 ]
               }
             },
@@ -855,20 +872,27 @@
               "isRequired": false,
               "attributes": []
             },
-            "created_at": {
-              "name": "created_at",
+            "related": {
+              "name": "related",
               "isArray": false,
-              "type": "AWSTimestamp",
+              "type": {
+                "model": "UserInteractions"
+              },
               "isRequired": false,
-              "attributes": []
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "related_id"
+                ]
+              }
             },
             "createdAt": {
               "name": "createdAt",
               "isArray": false,
-              "type": "AWSDateTime",
+              "type": "AWSTimestamp",
               "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
+              "attributes": []
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -979,20 +1003,12 @@
               "isRequired": false,
               "attributes": []
             },
-            "created_at": {
-              "name": "created_at",
+            "createdAt": {
+              "name": "createdAt",
               "isArray": false,
               "type": "AWSTimestamp",
               "isRequired": false,
               "attributes": []
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -1022,9 +1038,10 @@
               "type": "key",
               "properties": {
                 "name": "StreamCommentsIndex",
-                "queryField": "listChatCommentsByStream_id",
+                "queryField": "listChatCommentsByStream_idAndCreatedAt",
                 "fields": [
-                  "stream_id"
+                  "stream_id",
+                  "createdAt"
                 ]
               }
             },
@@ -1097,13 +1114,12 @@
               "isRequired": false,
               "attributes": []
             },
-            "capybara_ids": {
-              "name": "capybara_ids",
-              "isArray": true,
+            "capybara_id": {
+              "name": "capybara_id",
+              "isArray": false,
               "type": "String",
               "isRequired": false,
-              "attributes": [],
-              "isArrayNullable": true
+              "attributes": []
             },
             "access_type": {
               "name": "access_type",
@@ -1179,6 +1195,16 @@
             {
               "type": "key",
               "properties": {
+                "name": "CapybaraIdIndex",
+                "queryField": "listLiveStreamByCapybara_id",
+                "fields": [
+                  "capybara_id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
                 "name": "AccessTypeIndex",
                 "queryField": "listLiveStreamByAccess_type",
                 "fields": [
@@ -1227,6 +1253,13 @@
               "isRequired": false,
               "attributes": []
             },
+            "gender": {
+              "name": "gender",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
             "age": {
               "name": "age",
               "isArray": false,
@@ -1234,8 +1267,43 @@
               "isRequired": false,
               "attributes": []
             },
+            "born_place": {
+              "name": "born_place",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
             "description": {
               "name": "description",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "bio": {
+              "name": "bio",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "personality": {
+              "name": "personality",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "card_image_url": {
+              "name": "card_image_url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "avatar_image_url": {
+              "name": "avatar_image_url",
               "isArray": false,
               "type": "String",
               "isRequired": false,
@@ -1255,6 +1323,13 @@
               "isRequired": false,
               "attributes": [],
               "isArrayNullable": true
+            },
+            "fun_fact": {
+              "name": "fun_fact",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
             },
             "interactions": {
               "name": "interactions",
@@ -1359,8 +1434,8 @@
               "isRequired": false,
               "attributes": []
             },
-            "created_at": {
-              "name": "created_at",
+            "createdAt": {
+              "name": "createdAt",
               "isArray": false,
               "type": "AWSTimestamp",
               "isRequired": false,
@@ -1441,14 +1516,6 @@
                   "user_id"
                 ]
               }
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -1568,8 +1635,8 @@
               "isRequired": false,
               "attributes": []
             },
-            "created_at": {
-              "name": "created_at",
+            "createdAt": {
+              "name": "createdAt",
               "isArray": false,
               "type": "AWSTimestamp",
               "isRequired": false,
@@ -1594,14 +1661,6 @@
               "isRequired": false,
               "attributes": [],
               "isArrayNullable": true
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -1631,9 +1690,20 @@
               "type": "key",
               "properties": {
                 "name": "ForSaleIndex",
-                "queryField": "listNFTByPrice",
+                "queryField": "listNFTByPriceAndCreatedAt",
                 "fields": [
-                  "price"
+                  "price",
+                  "createdAt"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "OwnerIndex",
+                "queryField": "listNFTByOwner_id",
+                "fields": [
+                  "owner_id"
                 ]
               }
             },
@@ -1718,6 +1788,32 @@
             },
             "value": {
               "name": "value",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "Vote_Options": {
+          "name": "Vote_Options",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "title": {
+              "name": "title",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "description": {
+              "name": "description",
               "isArray": false,
               "type": "String",
               "isRequired": false,
