@@ -112,31 +112,45 @@ const schema = a.schema({
       vote_cost: a.float(),
       current_bid: a.float(),
       createdAt: a.timestamp(),
-      userInteractions: a.hasMany('UserInteractions', 'interaction_id'),
+      userVotes: a.hasMany('UserVotes', 'interaction_id'),
+      userBids: a.hasMany('UserBids', 'interaction_id'),
     })
     .secondaryIndexes((index) => [index('capybara_id').name('CapybaraInteractionIndex').sortKeys(['interaction_type'])])
     .authorization((allow) => [allow.publicApiKey()]),
 
-  // UserInteractions schema
-  UserInteractions: a
+  // UserVotes schema
+  UserVotes: a
     .model({
       id: a.id(),
       interaction_id: a.id(), // Foreign Key to the Interactions Table
       interaction: a.belongsTo('Interactions', 'interaction_id'),
       user_id: a.id(), // Foreign Key to User
       user: a.belongsTo('User', 'user_id'),
-      type: a.enum(['vote', 'bid']), // "vote" or "bid"
-      option_id: a.id(), // ID of the option the user voted for (only for votes)
-      number_of_votes: a.integer(), // Number of votes purchased (only for votes)
-      bid_amount: a.float(), // only for bids
+      option_id: a.id(), // ID of the option the user voted for
+      number_of_votes: a.integer(), // Number of votes purchased
       cost: a.float(), // Total cost (including extra cost for custom votes)
-      is_custom_request: a.boolean(),
-      custom_request: a.string(),
-      approved: a.boolean(),
+      is_custom_request: a.boolean(), // Whether the vote is for a custom option
+      custom_request: a.string(), // custom request string
+      approved: a.boolean(), // Whether the custom request is approved (if applicable)
       createdAt: a.timestamp(),
       tokenTransaction: a.hasOne('TokenTransaction', 'related_id'),
     })
-    .secondaryIndexes((index) => [index('interaction_id').name('InteractionTypeIndex').sortKeys(['type'])])
+    .secondaryIndexes((index) => [index('interaction_id').name('InteractionTypeIndex')])
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  // UserBids schema
+  UserBids: a
+    .model({
+      id: a.id(),
+      interaction_id: a.id(), // Foreign Key to the Interactions Table
+      interaction: a.belongsTo('Interactions', 'interaction_id'),
+      user_id: a.id(), // Foreign Key to User
+      user: a.belongsTo('User', 'user_id'),
+      bid_amount: a.float(),
+      createdAt: a.timestamp(),
+      tokenTransaction: a.hasOne('TokenTransaction', 'related_id'),
+    })
+    .secondaryIndexes((index) => [index('interaction_id').name('InteractionTypeIndex')])
     .authorization((allow) => [allow.publicApiKey()]),
 
   // TokenTransaction schema
@@ -147,9 +161,10 @@ const schema = a.schema({
       user: a.belongsTo('User', 'user_id'),
       transaction_type: a.enum(['tip', 'reward', 'stream_payment', 'transfer', 'withdraw', 'deposit', 'vote', 'bid']),
       amount: a.float(), // Transaction amount in tokens
-      related_id: a.id(), // Can reference UserInteractions
+      related_id: a.id(), // Can reference UserVotes or UserBids
       related_type: a.enum(['vote', 'bid']),
-      related: a.belongsTo('UserInteractions', 'related_id'),
+      relatedVote: a.belongsTo('UserVotes', 'related_id'),
+      relatedBid: a.belongsTo('UserBids', 'related_id'),
       createdAt: a.timestamp(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
@@ -221,7 +236,8 @@ const schema = a.schema({
       wallet_address: a.string(),
       bio: a.string(),
       balance: a.float(),
-      userInteractions: a.hasMany('UserInteractions', 'user_id'),
+      userVotes: a.hasMany('UserVotes', 'user_id'),
+      userBids: a.hasMany('UserBids', 'user_id'),
       tokenTransaction: a.hasMany('TokenTransaction', 'user_id'),
       chatComments: a.hasMany('ChatComments', 'user_id'),
     })
