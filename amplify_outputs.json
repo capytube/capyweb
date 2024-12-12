@@ -539,11 +539,27 @@
               "isRequired": false,
               "attributes": []
             },
-            "userInteractions": {
-              "name": "userInteractions",
+            "userVotes": {
+              "name": "userVotes",
               "isArray": true,
               "type": {
-                "model": "UserInteractions"
+                "model": "UserVotes"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "interaction_id"
+                ]
+              }
+            },
+            "userBids": {
+              "name": "userBids",
+              "isArray": true,
+              "type": {
+                "model": "UserBids"
               },
               "isRequired": false,
               "attributes": [],
@@ -614,8 +630,8 @@
             "sortKeyFieldNames": []
           }
         },
-        "UserInteractions": {
-          "name": "UserInteractions",
+        "UserVotes": {
+          "name": "UserVotes",
           "fields": {
             "id": {
               "name": "id",
@@ -668,15 +684,6 @@
                 ]
               }
             },
-            "type": {
-              "name": "type",
-              "isArray": false,
-              "type": {
-                "enum": "UserInteractionsType"
-              },
-              "isRequired": false,
-              "attributes": []
-            },
             "option_id": {
               "name": "option_id",
               "isArray": false,
@@ -688,13 +695,6 @@
               "name": "number_of_votes",
               "isArray": false,
               "type": "Int",
-              "isRequired": false,
-              "attributes": []
-            },
-            "bid_amount": {
-              "name": "bid_amount",
-              "isArray": false,
-              "type": "Float",
               "isRequired": false,
               "attributes": []
             },
@@ -759,7 +759,7 @@
             }
           },
           "syncable": true,
-          "pluralName": "UserInteractions",
+          "pluralName": "UserVotes",
           "attributes": [
             {
               "type": "model",
@@ -777,10 +777,151 @@
               "type": "key",
               "properties": {
                 "name": "InteractionTypeIndex",
-                "queryField": "listUserInteractionsByInteraction_idAndType",
+                "queryField": "listUserVotesByInteraction_id",
                 "fields": [
-                  "interaction_id",
-                  "type"
+                  "interaction_id"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "UserBids": {
+          "name": "UserBids",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "interaction_id": {
+              "name": "interaction_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "interaction": {
+              "name": "interaction",
+              "isArray": false,
+              "type": {
+                "model": "Interactions"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "interaction_id"
+                ]
+              }
+            },
+            "user_id": {
+              "name": "user_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "user": {
+              "name": "user",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "user_id"
+                ]
+              }
+            },
+            "bid_amount": {
+              "name": "bid_amount",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSTimestamp",
+              "isRequired": false,
+              "attributes": []
+            },
+            "tokenTransaction": {
+              "name": "tokenTransaction",
+              "isArray": false,
+              "type": {
+                "model": "TokenTransaction"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "HAS_ONE",
+                "associatedWith": [
+                  "related_id"
+                ],
+                "targetNames": []
+              }
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "UserBids",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "InteractionTypeIndex",
+                "queryField": "listUserBidsByInteraction_id",
+                "fields": [
+                  "interaction_id"
                 ]
               }
             },
@@ -872,11 +1013,26 @@
               "isRequired": false,
               "attributes": []
             },
-            "related": {
-              "name": "related",
+            "relatedVote": {
+              "name": "relatedVote",
               "isArray": false,
               "type": {
-                "model": "UserInteractions"
+                "model": "UserVotes"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "related_id"
+                ]
+              }
+            },
+            "relatedBid": {
+              "name": "relatedBid",
+              "isArray": false,
+              "type": {
+                "model": "UserBids"
               },
               "isRequired": false,
               "attributes": [],
@@ -1469,11 +1625,27 @@
               "isRequired": false,
               "attributes": []
             },
-            "userInteractions": {
-              "name": "userInteractions",
+            "userVotes": {
+              "name": "userVotes",
               "isArray": true,
               "type": {
-                "model": "UserInteractions"
+                "model": "UserVotes"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "user_id"
+                ]
+              }
+            },
+            "userBids": {
+              "name": "userBids",
+              "isArray": true,
+              "type": {
+                "model": "UserBids"
               },
               "isRequired": false,
               "attributes": [],
@@ -1735,13 +1907,6 @@
       "enums": {
         "InteractionsInteractionType": {
           "name": "InteractionsInteractionType",
-          "values": [
-            "vote",
-            "bid"
-          ]
-        },
-        "UserInteractionsType": {
-          "name": "UserInteractionsType",
           "values": [
             "vote",
             "bid"
