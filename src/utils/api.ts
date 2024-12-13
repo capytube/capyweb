@@ -12,7 +12,7 @@ const capybara = defaultStore.get(capybaraAtom);
 const capyList = defaultStore.get(capyListAtom);
 
 export async function getUserProfile(userId: string) {
-  const response = await client.models.User.get(
+  const response = await client.models.UserOld.get(
     {
       id: userId,
     },
@@ -29,7 +29,7 @@ export async function getUserProfile(userId: string) {
 }
 
 export async function updateUserProfile({ name, userId }: { name: string; userId: string }) {
-  const response = await client.models.User.update({
+  const response = await client.models.UserOld.update({
     id: userId,
     name: name,
   });
@@ -51,7 +51,7 @@ export async function updateUserCoins({
   timeStamp: number;
   userId: string;
 }) {
-  const response = await client.models.User.update({
+  const response = await client.models.UserOld.update({
     id: userId,
     totalEarnedCoins: totalCoins,
     todayEarnedCoins: {
