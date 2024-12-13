@@ -1270,12 +1270,13 @@
               "isRequired": false,
               "attributes": []
             },
-            "capybara_id": {
-              "name": "capybara_id",
-              "isArray": false,
+            "capybara_ids": {
+              "name": "capybara_ids",
+              "isArray": true,
               "type": "String",
               "isRequired": false,
-              "attributes": []
+              "attributes": [],
+              "isArrayNullable": true
             },
             "access_type": {
               "name": "access_type",
@@ -1351,16 +1352,6 @@
             {
               "type": "key",
               "properties": {
-                "name": "CapybaraIdIndex",
-                "queryField": "listLiveStreamByCapybara_id",
-                "fields": [
-                  "capybara_id"
-                ]
-              }
-            },
-            {
-              "type": "key",
-              "properties": {
                 "name": "AccessTypeIndex",
                 "queryField": "listLiveStreamByAccess_type",
                 "fields": [
@@ -1412,12 +1403,14 @@
             "gender": {
               "name": "gender",
               "isArray": false,
-              "type": "String",
+              "type": {
+                "enum": "CapybaraGender"
+              },
               "isRequired": false,
               "attributes": []
             },
-            "age": {
-              "name": "age",
+            "birth_year": {
+              "name": "birth_year",
               "isArray": false,
               "type": "Int",
               "isRequired": false,
@@ -1583,13 +1576,6 @@
               "isRequired": false,
               "attributes": []
             },
-            "password_hash": {
-              "name": "password_hash",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
             "createdAt": {
               "name": "createdAt",
               "isArray": false,
@@ -1714,6 +1700,16 @@
               }
             },
             {
+              "type": "key",
+              "properties": {
+                "name": "ByWalletAddress",
+                "queryField": "getUserByWalletAddress",
+                "fields": [
+                  "wallet_address"
+                ]
+              }
+            },
+            {
               "type": "auth",
               "properties": {
                 "rules": [
@@ -1764,7 +1760,9 @@
             "rarity": {
               "name": "rarity",
               "isArray": false,
-              "type": "String",
+              "type": {
+                "enum": "NftRarity"
+              },
               "isRequired": false,
               "attributes": []
             },
@@ -1796,7 +1794,7 @@
             "is_for_sale": {
               "name": "is_for_sale",
               "isArray": false,
-              "type": "Boolean",
+              "type": "Int",
               "isRequired": false,
               "attributes": []
             },
@@ -1862,10 +1860,10 @@
               "type": "key",
               "properties": {
                 "name": "ForSaleIndex",
-                "queryField": "listNFTByPriceAndCreatedAt",
+                "queryField": "listNFTByIs_for_saleAndPrice",
                 "fields": [
-                  "price",
-                  "createdAt"
+                  "is_for_sale",
+                  "price"
                 ]
               }
             },
@@ -1937,6 +1935,20 @@
           "values": [
             "public",
             "private"
+          ]
+        },
+        "CapybaraGender": {
+          "name": "CapybaraGender",
+          "values": [
+            "male",
+            "female"
+          ]
+        },
+        "NftRarity": {
+          "name": "NftRarity",
+          "values": [
+            "Ultra_rare",
+            "Rare"
           ]
         }
       },
@@ -2169,6 +2181,27 @@
         }
       }
     }
+  },
+  "storage": {
+    "aws_region": "ap-southeast-1",
+    "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-znsilg9ekfa2",
+    "buckets": [
+      {
+        "name": "capytubeDrive",
+        "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-znsilg9ekfa2",
+        "aws_region": "ap-southeast-1",
+        "paths": {
+          "pictures/*": {
+            "guest": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          }
+        }
+      }
+    ]
   },
   "version": "1.3"
 }

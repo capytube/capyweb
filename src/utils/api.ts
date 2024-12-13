@@ -1,70 +1,13 @@
 import { getDefaultStore } from 'jotai';
 import { generateClient } from 'aws-amplify/api';
 
-import { capybaraAtom, capyListAtom, commentsAtom, ratingsAtom, userAtom } from '../atoms/atom';
+import { capybaraAtom, commentsAtom, ratingsAtom } from '../atoms/atom';
 import { Schema } from '../../amplify/data/resource';
 
 const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
-const user = defaultStore.get(userAtom);
 const ratings = defaultStore.get(ratingsAtom);
 const capybara = defaultStore.get(capybaraAtom);
-const capyList = defaultStore.get(capyListAtom);
-
-export async function getUserProfile(userId: string) {
-  const response = await client.models.UserOld.get(
-    {
-      id: userId,
-    },
-    {
-      selectionSet: ['id', 'name', 'totalEarnedCoins', 'todayEarnedCoins.*', 'createdAt'],
-    },
-  );
-
-  if (response?.data?.id) {
-    defaultStore.set(userAtom, response?.data ?? { ...user });
-  }
-
-  return response;
-}
-
-export async function updateUserProfile({ name, userId }: { name: string; userId: string }) {
-  const response = await client.models.UserOld.update({
-    id: userId,
-    name: name,
-  });
-  if (response?.data?.name) {
-    await getUserProfile(userId);
-  }
-
-  return response;
-}
-
-export async function updateUserCoins({
-  totalCoins,
-  earnedCoins,
-  timeStamp,
-  userId,
-}: {
-  totalCoins: number;
-  earnedCoins: number;
-  timeStamp: number;
-  userId: string;
-}) {
-  const response = await client.models.UserOld.update({
-    id: userId,
-    totalEarnedCoins: totalCoins,
-    todayEarnedCoins: {
-      coins: earnedCoins,
-      timeStamp,
-    },
-  });
-  if (response?.data?.name) {
-    await getUserProfile(userId);
-  }
-
-  return response;
-}
 
 //'fa7ahoikpf19u1e9'
 
@@ -165,54 +108,6 @@ export async function updateRatings(streamId: string, countData: any) {
     await getRatings(streamId);
   }
 
-  return response;
-}
-
-export async function getCapyList() {
-  const response = await client.models.CapyList.list({
-    selectionSet: ['id', 'capyName', 'capyDescription', 'availableCameras.*', 'createdAt'],
-  });
-
-  if (response?.data) {
-    const sortedData = response?.data
-      .sort(function (a, b) {
-        const x = a?.capyName?.toLowerCase() ?? '';
-        const y = b?.capyName?.toLowerCase() ?? '';
-        if (x > y) {
-          return 1;
-        }
-        if (x < y) {
-          return -1;
-        }
-        return 0;
-      })
-      ?.reverse();
-
-    defaultStore.set(capyListAtom, sortedData ?? { ...capyList });
-  }
-
-  return response;
-}
-
-export async function createCapy({
-  capyName,
-  capyDescription,
-  availableCameras,
-}: {
-  capyName: string;
-  capyDescription: string;
-  availableCameras: {
-    mainCam: string;
-    foodCam: string;
-    bedroomCam: string;
-  };
-}) {
-  const response = await client.models.CapyList.create({ capyName, capyDescription, availableCameras });
-  return response;
-}
-
-export async function deleteCapy({ id }: { id: string }) {
-  const response = await client.models.CapyList.delete({ id });
   return response;
 }
 

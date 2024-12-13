@@ -192,16 +192,13 @@ const schema = a.schema({
       end_time: a.timestamp(),
       is_live: a.boolean(),
       viewer_count: a.integer(),
-      capybara_id: a.string(), // Capybara IDs involved in the stream
+      capybara_ids: a.string().array(), // array of Capybara IDs involved in the stream
       access_type: a.enum(['public', 'private']),
       price_per_10_sec: a.float(),
       streaming_address: a.string(), // URL or address for the live stream
       chatComments: a.hasMany('ChatComments', 'stream_id'),
     })
-    .secondaryIndexes((index) => [
-      index('access_type').name('AccessTypeIndex'),
-      index('capybara_id').name('CapybaraIdIndex'),
-    ])
+    .secondaryIndexes((index) => [index('access_type').name('AccessTypeIndex')])
     .authorization((allow) => [allow.publicApiKey()]),
 
   // Capybara schema
@@ -209,17 +206,17 @@ const schema = a.schema({
     .model({
       id: a.id(),
       name: a.string(),
-      gender: a.string(),
-      age: a.integer(),
+      gender: a.enum(['male', 'female']),
+      birth_year: a.integer(),
       born_place: a.string(),
-      description: a.string(),
-      bio: a.string(),
-      personality: a.string(),
+      description: a.string(), // can be in Markdown format
+      bio: a.string(), // can be in Markdown format
+      personality: a.string(), // can be in Markdown format
       card_image_url: a.string(),
       avatar_image_url: a.string(),
       profile_image_url: a.string(),
       favorite_activities: a.string().array(),
-      fun_fact: a.string(),
+      fun_fact: a.string(), // can be in Markdown format
       interactions: a.hasMany('Interactions', 'capybara_id'),
     })
     .authorization((allow) => [allow.publicApiKey()]),
@@ -230,7 +227,6 @@ const schema = a.schema({
       id: a.id(),
       username: a.string(),
       email: a.string(),
-      password_hash: a.string(),
       createdAt: a.timestamp(),
       profile_image_url: a.string(),
       wallet_address: a.string(),
@@ -241,6 +237,7 @@ const schema = a.schema({
       tokenTransaction: a.hasMany('TokenTransaction', 'user_id'),
       chatComments: a.hasMany('ChatComments', 'user_id'),
     })
+    .secondaryIndexes((index) => [index('wallet_address').name('ByWalletAddress').queryField('getUserByWalletAddress')])
     .authorization((allow) => [allow.publicApiKey()]),
 
   // NFT schema
@@ -249,18 +246,18 @@ const schema = a.schema({
       id: a.id(), // Unique Token ID (e.g., "NFT1234")
       name: a.string(), // Name of the NFT (e.g., "Capy #1234")
       image_url: a.string(),
-      rarity: a.string(), // Rarity level (e.g., "Ultra rare", "Rare")
+      rarity: a.enum(['Ultra_rare', 'Rare']), // Rarity level (e.g., "Ultra rare", "Rare")
       labels: a.string().array(), // Labels for categorization (e.g., "Capybara", "Chalk Bonus")
       properties: a.ref('Options').array(), // List of properties (e.g., "Chalk powder bonus")
       price: a.float(), // Current price of the NFT
-      is_for_sale: a.boolean(),
+      is_for_sale: a.integer(), // possible values 0 or 1 (1 represent NFT is currently for sale)
       owner_id: a.string(), // User ID of the current owner (nullable if listed for sale)
       createdAt: a.timestamp(),
       offers: a.ref('Offers').array(),
       activity_log: a.ref('ActivityLog').array(), // List of activities (e.g., sales, transfers)
     })
     .secondaryIndexes((index) => [
-      index('price').name('ForSaleIndex').sortKeys(['createdAt']),
+      index('is_for_sale').name('ForSaleIndex').sortKeys(['price']),
       index('owner_id').name('OwnerIndex'),
     ])
     .authorization((allow) => [allow.publicApiKey()]),

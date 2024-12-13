@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useAtom } from 'jotai';
 
-import { userAtom } from '../../../atoms/atom';
-import { updateUserProfile } from '../../../utils/api';
+import { userAtom } from '../../../store/atoms/userAtom';
+import { updateUser } from '../../../api/user';
 
 import styles from './updateProfile.module.css';
 
@@ -11,13 +11,13 @@ const UpdateProfile = ({ onClose }: { onClose: Function }) => {
   const { address, isConnected } = useAccount();
 
   const [user] = useAtom(userAtom);
-  const [name, setName] = useState<string>(user?.name ?? '');
+  const [name, setName] = useState<string>(user?.username ?? '');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const updateProfile = async (name: string, walletId: string) => {
+  const updateProfile = async (userId: string, name: string) => {
     try {
       setIsLoading(true);
-      const response = await updateUserProfile({ name, userId: walletId });
+      const response = await updateUser({ userId: userId, userName: name });
       if (response?.data) {
         onClose();
         setIsLoading(false);
@@ -29,8 +29,8 @@ const UpdateProfile = ({ onClose }: { onClose: Function }) => {
   };
 
   const onSaveHandler = () => {
-    if (isConnected && address) {
-      updateProfile(name, address);
+    if (isConnected && address && user?.id) {
+      updateProfile(user?.id, name);
       setName('');
     }
   };
@@ -43,7 +43,7 @@ const UpdateProfile = ({ onClose }: { onClose: Function }) => {
         <input type="text" placeholder="your name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
 
-      <button className={styles.profileSaveBtn} disabled={user?.name === name} onClick={onSaveHandler}>
+      <button className={styles.profileSaveBtn} disabled={user?.username === name} onClick={onSaveHandler}>
         {isLoading ? 'Loading...' : 'Save'}
       </button>
     </div>
