@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 import styles from './ChatRoom.module.css';
 import sendBtn from '../../../../assets/sendBtn.svg';
-import { useAtom } from 'jotai';
-import { commentsAtom } from '../../../../atoms/atom';
-import { addComment, getListOfComments } from '../../../../utils/api';
-import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
-import { useAccount } from 'wagmi';
+import { userAtom } from '../../../../store/atoms/userAtom';
+import { chatCommentsAtom } from '../../../../store/atoms/chatCommentsAtom';
+import { createChatComment, listAllComments } from '../../../../api/chatComments';
 
 interface ChatRoomProps {
   streamId: string;
@@ -13,17 +13,18 @@ interface ChatRoomProps {
 
 const ChatRoom = ({ streamId }: ChatRoomProps) => {
   const isLoggedIn = useIsLoggedIn();
+  const comments = useAtomValue(chatCommentsAtom);
+  const userData = useAtomValue(userAtom);
+
   const [input, setInput] = useState('');
-  const [comments] = useAtom(commentsAtom);
-  const { address } = useAccount();
 
   const getComments = async () => {
-    await getListOfComments({ streamId });
+    await listAllComments({ streamId });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isLoggedIn) getComments();
-  }, [isLoggedIn]);
+  }, [isLoggedIn, streamId]);
 
   const handleInputChange = (e: any) => {
     setInput(e.target.value);
@@ -33,11 +34,11 @@ const ChatRoom = ({ streamId }: ChatRoomProps) => {
     e.preventDefault();
 
     if (input.trim()) {
-      if (address) {
-        const response = await addComment({
-          streamId,
+      if (isLoggedIn && streamId && Object.keys(userData)?.length > 0) {
+        const response = await createChatComment({
+          stream_id: streamId,
+          user_id: userData?.id,
           content: input,
-          userId: address,
         });
         if (response?.data?.id) {
           await getComments();
@@ -55,24 +56,28 @@ const ChatRoom = ({ streamId }: ChatRoomProps) => {
     }
   };
 
+  const renderCommentsContent = () => {
+    if (isLoggedIn) {
+      if (comments?.length > 0) {
+        return comments?.map((comment) => (
+          <div key={comment?.id} className={styles.message}>
+            <span className={styles.username}>{comment?.user?.username}: </span>
+            {comment?.content}
+          </div>
+        ));
+      } else {
+        return <span className="font-comic">Be the first one to comment!</span>;
+      }
+    } else {
+      return <span className="font-comic">Please login to view comments</span>;
+    }
+  };
+
   return (
     <div className={styles.chatRoom}>
       <div className={styles.chatHeader}>Chat room</div>
       <div className={styles.messages} id="messages-container">
-        {isLoggedIn ? (
-          comments?.length > 0 && comments?.[0]?.id ? (
-            comments?.map((comment) => (
-              <div key={comment?.id} className={styles.message}>
-                <span className={styles.username}>{comment?.user?.name}: </span>
-                {comment?.content}
-              </div>
-            ))
-          ) : (
-            <span className="font-comic">Be the first one to comment!</span>
-          )
-        ) : (
-          <span className="font-comic">Please login to view comments</span>
-        )}
+        {renderCommentsContent()}
       </div>
       <form onSubmit={(e) => handleSendMessage(e)}>
         <div className={styles.inputContainer}>

@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
 
-interface UserAtom {
+export interface UserAtomType {
   id: string | null;
   username: string | null;
   email: string | null;
@@ -15,7 +15,7 @@ interface UserAtom {
   chatComments?: unknown;
 }
 
-export const userAtom = atom<UserAtom>({
+export const userAtom = atom<UserAtomType>({
   id: '',
   username: '',
   email: '',

@@ -1353,7 +1353,7 @@
               "type": "key",
               "properties": {
                 "name": "AccessTypeIndex",
-                "queryField": "listLiveStreamByAccess_type",
+                "queryField": "listStreamByAccessType",
                 "fields": [
                   "access_type"
                 ]
@@ -2184,11 +2184,11 @@
   },
   "storage": {
     "aws_region": "ap-southeast-1",
-    "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-znsilg9ekfa2",
+    "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-tx3zo53gubw5",
     "buckets": [
       {
         "name": "capytubeDrive",
-        "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-znsilg9ekfa2",
+        "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-tx3zo53gubw5",
         "aws_region": "ap-southeast-1",
         "paths": {
           "pictures/*": {

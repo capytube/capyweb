@@ -18,7 +18,7 @@ const CapyProfile = (props: CapyProfileProps) => {
   const navigate = useNavigate();
 
   const handleWatchStream = (capyId: string) => {
-    navigate(`/stream/${capyId}`);
+    navigate(`/stream/${capyId}`, { state: { capyData: JSON.stringify(data) } });
   };
 
   return (

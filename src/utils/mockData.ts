@@ -1,4 +1,5 @@
 import { createCapybara } from '../api/capybara';
+import { createLivestream } from '../api/livestream';
 
 export const handleAddCapy = async () => {
   await createCapybara({
@@ -48,5 +49,34 @@ export const handleAddCapy = async () => {
     favorite_activities: null,
     fun_fact:
       'Beneath his timid shell lies a clever capybara who’s always one step ahead, ready to explore… as long as it’s safe!',
+  });
+};
+
+export const handleCreateStreams = async () => {
+  await createLivestream({
+    title: 'Public Stream',
+    is_live: true,
+    capybara_ids: ['5ed78837-2e30-49fa-8a9a-3326b6006f82'],
+    access_type: 'public',
+    price_per_10_sec: 1,
+    streaming_address: 'fa7ahoikpf19u1e0',
+  });
+
+  await createLivestream({
+    title: 'main cam',
+    is_live: true,
+    capybara_ids: ['5ed78837-2e30-49fa-8a9a-3326b6006f82', '79d93273-9e46-4881-bfcd-71c0fd72cb83'],
+    access_type: 'private',
+    price_per_10_sec: 1,
+    streaming_address: 'fa7ahoikpf19u1e0',
+  });
+
+  await createLivestream({
+    title: 'food cam',
+    is_live: true,
+    capybara_ids: ['79d93273-9e46-4881-bfcd-71c0fd72cb83'],
+    access_type: 'private',
+    price_per_10_sec: 1,
+    streaming_address: 'fa7ahoikpf19u1e0',
   });
 };
