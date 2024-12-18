@@ -1,4 +1,5 @@
 import { createCapybara } from '../api/capybara';
+import { createInteractions } from '../api/interactions';
 import { createLivestream } from '../api/livestream';
 
 export const handleAddCapy = async () => {
@@ -78,5 +79,96 @@ export const handleCreateStreams = async () => {
     access_type: 'private',
     price_per_10_sec: 1,
     streaming_address: 'fa7ahoikpf19u1e0',
+  });
+};
+
+export const handleCreatingInteractions = async () => {
+  await createInteractions({
+    capybara_id: '5ed78837-2e30-49fa-8a9a-3326b6006f82',
+    interaction_type: 'vote',
+    title: 'Buy capy a snack',
+    title_icon_url: 'pictures/capyPlay/snackIcon.png',
+    description: 'Vote what capy should eat today?',
+    device_required: null,
+    image_url: 'pictures/capyPlay/dineTable.png',
+    options: [
+      {
+        id: '1',
+        title: 'Carrots 🥕',
+        description: 'Sweet crunchy baby carrots imported from Australia',
+      },
+      {
+        id: '2',
+        title: 'Pandan leaf 🌱',
+        description: 'Fresh organic pandan leave tips from Chiang Mai',
+      },
+      {
+        id: '3',
+        title: 'Watermelon 🍉',
+        description: 'Chilled sweet and juicy watermelon to quench the capy’s thirst  ',
+      },
+      {
+        id: '4',
+        title: 'Timothy grass 🌾',
+        description: 'Luxurious grass that is exceptionally silky and aromatic ',
+      },
+      {
+        id: '5',
+        title: 'New request',
+        description: '+ 20 ',
+      },
+    ],
+    rules: [
+      'Pay with your coins to join. 💰',
+      'Vote for the food you would like our capybaras to eat. 😋',
+      'The most voted food will be fed on the next day’s stream! 🏆',
+    ],
+    session_date: new Date('2024-12-20').getTime(),
+    result: null,
+    vote_cost: 5,
+    current_bid: null,
+    createdAt: new Date().getTime(),
+  });
+
+  await createInteractions({
+    capybara_id: '5ed78837-2e30-49fa-8a9a-3326b6006f82',
+    interaction_type: 'bid',
+    title: 'Capy safari',
+    title_icon_url: 'pictures/capyPlay/safariIcon.png',
+    description: 'Bid for a chance to be the safari guide and explore the world of capybaras from your screen!',
+    device_required: null,
+    image_url: 'pictures/capyPlay/capySafari.png',
+    options: null,
+    rules: [
+      'Pay with your coins to join. 💰',
+      'Place your bid for a personalised video from Apple Vision Pro, made just for you!',
+      'Win the auction and wait for the video recording to be sent your way for the unforgettable immersive experience.',
+    ],
+    session_date: new Date('2024-12-20').getTime(),
+    result: null,
+    vote_cost: null,
+    current_bid: 20,
+    createdAt: new Date().getTime(),
+  });
+
+  await createInteractions({
+    capybara_id: '5ed78837-2e30-49fa-8a9a-3326b6006f82',
+    interaction_type: 'bid',
+    title: 'Capy Vision Pro',
+    title_icon_url: 'pictures/capyPlay/visionIcon.png',
+    description: 'Get up close and personal with the world’s cutest capybaras, right through your Apple Vision Pro!',
+    device_required: '*Apple Vision Pro required for this experience',
+    image_url: 'pictures/capyPlay/visionCat.png',
+    options: null,
+    rules: [
+      'Pay with your coins to join. 💰',
+      'Place your bid to control a robot car with a live camera. 🎥',
+      'Win the auction and enjoy a 30-minute call where you can drive the car, chat, and interact with the capybaras up close!',
+    ],
+    session_date: new Date('2024-12-20').getTime(),
+    result: null,
+    vote_cost: null,
+    current_bid: 30,
+    createdAt: new Date().getTime(),
   });
 };

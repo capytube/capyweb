@@ -14,7 +14,6 @@ import NFTprofile from '../../assets/NFTprofile.svg';
 import Modal from '../Modal/Modal';
 import YourProfile from './YourProfile/YourProfile';
 import { useAtom } from 'jotai';
-import { loadingAtom } from '../../atoms/atom';
 import { userAtom } from '../../store/atoms/userAtom';
 import { getUserByWalletAddress } from '../../api/user';
 
@@ -27,7 +26,6 @@ const Header = () => {
   const { setShowDynamicUserProfile } = useDynamicContext();
 
   const [user] = useAtom(userAtom);
-  const [, setLoading] = useAtom(loadingAtom);
 
   const [isSetProfileModalOpen, setIsSetProfileModalOpen] = useState(false);
 
@@ -36,7 +34,6 @@ const Header = () => {
   };
 
   const getProfile = async () => {
-    setLoading(true);
     if (address && isLoggedIn) {
       const response = await getUserByWalletAddress(address);
       if (!response?.data?.[0]?.id) {
@@ -45,7 +42,6 @@ const Header = () => {
         setIsSetProfileModalOpen(false);
       }
     }
-    setLoading(false);
   };
 
   useEffect(() => {

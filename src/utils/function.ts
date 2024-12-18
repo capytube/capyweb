@@ -48,3 +48,28 @@ export function calculatedAge(birthYear: number): string {
   const years = Math.floor(ageInMonths / 12);
   return `${years} ${years === 1 ? 'Year' : 'Years'}`;
 }
+
+export function calculateTimeDifference(timestamp: number): string {
+  const now = new Date();
+  const futureDate = new Date(timestamp);
+
+  // Calculate the difference in milliseconds
+  const diff = futureDate.getTime() - now.getTime();
+
+  if (diff <= 0) {
+    return '2 h 33 m';
+  }
+
+  // Convert the difference to days, hours, and minutes
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+  // Build the result string
+  const resultParts: string[] = [];
+  if (days > 0) resultParts.push(`${days} d`);
+  if (hours > 0) resultParts.push(`${hours} h`);
+  if (minutes > 0) resultParts.push(`${minutes} m`);
+
+  return resultParts.join(' ');
+}
