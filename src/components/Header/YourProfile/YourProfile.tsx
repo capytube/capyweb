@@ -1,23 +1,17 @@
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
 
-import { generateClient } from 'aws-amplify/api';
-import { Schema } from '../../../../amplify/data/resource';
 import styles from './YourProfile.module.css';
+import { createUser } from '../../../api/user';
 
 const YourProfile = ({ onClose }: { onClose: Function }) => {
-  const client = generateClient<Schema>();
   const { address, isConnected } = useAccount();
 
   const [name, setName] = useState('');
 
   const createProfile = async (name: string, walletId: string) => {
-    const response = await client.models.UserOld.create({
-      id: walletId,
-      name: name,
-      createdAt: new Date().getTime(),
-    });
-    if (response?.data?.name) {
+    const response = await createUser({ userName: name, wallet_address: walletId });
+    if (response?.data?.username) {
       onClose();
     }
   };

@@ -42,55 +42,16 @@ const schema = a.schema({
     .handler(a.handler.function(getViewership))
     .authorization((allow) => [allow.publicApiKey()]),
 
-  // login user schema
-  UserOld: a
-    .model({
-      name: a.string(),
-      createdAt: a.timestamp(),
-      todayEarnedCoins: a.customType({
-        coins: a.integer(),
-        timeStamp: a.timestamp(),
-      }),
-      totalEarnedCoins: a.integer(),
-      comment: a.hasMany('Comment', 'userId'),
-    })
-    .authorization((allow) => [allow.publicApiKey()]),
-
-  // comments schema
-  Comment: a
-    .model({
-      streamId: a.id(),
-      userId: a.id(),
-      user: a.belongsTo('UserOld', 'userId'),
-      content: a.string(),
-      createdAt: a.timestamp(),
-    })
-    .authorization((allow) => [allow.publicApiKey()]),
-
   // ratings for streams
   Ratings: a
     .model({
-      id: a.id(),
+      id: a.id(), // livepeer video stream address
       ratingCounts: a.customType({
         capylove: a.integer(),
         capylike: a.integer(),
         capywow: a.integer(),
         capyangry: a.integer(),
         capyfire: a.integer(),
-      }),
-    })
-    .authorization((allow) => [allow.publicApiKey()]),
-
-  // capybara list and cams schema
-  CapyList: a
-    .model({
-      id: a.id(),
-      capyName: a.string(),
-      capyDescription: a.string(),
-      availableCameras: a.customType({
-        mainCam: a.string(),
-        foodCam: a.string(),
-        bedroomCam: a.string(),
       }),
     })
     .authorization((allow) => [allow.publicApiKey()]),
@@ -103,7 +64,9 @@ const schema = a.schema({
       capybara: a.belongsTo('Capybara', 'capybara_id'),
       interaction_type: a.enum(['vote', 'bid']), // "vote" or "bid"
       title: a.string(), // Title of the interaction (e.g., "Vote for Snack Choice")
+      title_icon_url: a.string(),
       description: a.string(),
+      device_required: a.string(),
       image_url: a.string(),
       options: a.ref('Vote_Options').array(),
       rules: a.string().array(),

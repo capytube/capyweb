@@ -1,30 +1,40 @@
+import { useEffect, useState } from 'react';
+import { useAtomValue } from 'jotai';
 import CharacterCard from './CharacterCard';
-
-import Elon from '/src/assets/play/elon.png';
-import Einstein from '/src/assets/play/einstien.png';
-import Magnus from '/src/assets/play/magnus.png';
+import { capybaraAtom } from '../../store/atoms/capybaraAtom';
+import { listCapybaras } from '../../api/capybara';
 
 type Props = {
   handleCapySelection: Function;
 };
 
-const characters = [
-  { id: 1, name: 'Elon', image: Elon, rotate: 356.62 },
-  {
-    id: 2,
-    name: 'Einstein',
-    image: Einstein,
-    rotate: 4,
-  },
-  {
-    id: 3,
-    name: 'Magnus',
-    image: Magnus,
-    rotate: 356.62,
-  },
-];
-
 function ChooseCapySection({ handleCapySelection }: Props) {
+  // hooks
+  const capybaraData = useAtomValue(capybaraAtom);
+
+  // states
+  const [isCapyDataLoading, setIsCapyDataLoading] = useState(false);
+
+  // effects
+  useEffect(() => {
+    const fetchAllCapyData = async () => {
+      setIsCapyDataLoading(true);
+      await listCapybaras()
+        .then((res) => {
+          if (res?.data?.length) {
+            setIsCapyDataLoading(false);
+          }
+        })
+        .catch(() => {
+          setIsCapyDataLoading(false);
+        });
+    };
+
+    if (capybaraData?.length === 0) {
+      fetchAllCapyData();
+    }
+  }, []);
+
   return (
     <div
       id="choose-capy"
@@ -38,15 +48,19 @@ function ChooseCapySection({ handleCapySelection }: Props) {
           Click to choose your capybara
         </p>
       </div>
-      <div className="flex gap-x-12 md:flex-nowrap flex-wrap md:gap-y-0 gap-y-[18px] justify-center">
-        {characters?.map((character) => (
-          <CharacterCard
-            key={character?.id}
-            data={character}
-            handleCapySelection={handleCapySelection}
-          />
-        ))}
-      </div>
+      {!isCapyDataLoading && capybaraData?.length ? (
+        <div className="flex gap-x-12 md:flex-nowrap flex-wrap md:gap-y-0 gap-y-[18px] justify-center">
+          {[...capybaraData]
+            ?.sort((a, b) => (a?.name ?? '')?.localeCompare(b?.name ?? ''))
+            ?.map((character) => (
+              <CharacterCard key={character?.id} data={character} handleCapySelection={handleCapySelection} />
+            ))}
+        </div>
+      ) : (
+        <div className="animate-bounce font-hanaleiFill md:h-full h-[50dvh] text-chocoBrown md:text-7xl text-3xl flex justify-center items-center">
+          loading...
+        </div>
+      )}
     </div>
   );
 }

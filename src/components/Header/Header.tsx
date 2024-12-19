@@ -14,8 +14,8 @@ import NFTprofile from '../../assets/NFTprofile.svg';
 import Modal from '../Modal/Modal';
 import YourProfile from './YourProfile/YourProfile';
 import { useAtom } from 'jotai';
-import { loadingAtom, userAtom } from '../../atoms/atom';
-import { getUserProfile } from '../../utils/api';
+import { userAtom } from '../../store/atoms/userAtom';
+import { getUserByWalletAddress } from '../../api/user';
 
 const Header = () => {
   const isNftProfile = true;
@@ -26,7 +26,6 @@ const Header = () => {
   const { setShowDynamicUserProfile } = useDynamicContext();
 
   const [user] = useAtom(userAtom);
-  const [, setLoading] = useAtom(loadingAtom);
 
   const [isSetProfileModalOpen, setIsSetProfileModalOpen] = useState(false);
 
@@ -35,16 +34,14 @@ const Header = () => {
   };
 
   const getProfile = async () => {
-    setLoading(true);
     if (address && isLoggedIn) {
-      const response = await getUserProfile(address);
-      if (!response?.data?.id) {
+      const response = await getUserByWalletAddress(address);
+      if (!response?.data?.[0]?.id) {
         setIsSetProfileModalOpen(true);
       } else {
         setIsSetProfileModalOpen(false);
       }
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -89,7 +86,7 @@ const Header = () => {
             <div className={styles.profile__details}>
               {isNftProfile ? <img src={NFTprofile} alt="user" /> : <img src={nonNFTprofile} alt="user" />}
               <div className={styles.profile__nameAndAddress}>
-                <p>Hi, {user?.name || '...'}</p>
+                <p>Hi, {user?.username || '...'}</p>
                 {isConnected ? (
                   <div className={styles.profile__walletAddress}>
                     <img src={walletLinkIcon} alt="link" />
