@@ -3,12 +3,26 @@ import { StorageImage } from '@aws-amplify/ui-react-storage';
 import RulesPopup from './RulesPopup/RulesPopup';
 import { ClockIcon } from './Icons';
 import { CoinCurrency, MinusIcon, PlusIcon, QuestionMark } from '../Account/Icons';
-import { InteractionsAtomType } from '../../store/atoms/interactionsAtom';
+import { InteractionsAtomType, VoteOptions } from '../../store/atoms/interactionsAtom';
 import { calculateTimeDifference } from '../../utils/function';
+
+export interface VotePayloadData {
+  optionSelected: VoteOptions | null | undefined;
+  number_of_votes: number;
+  totalFee: number;
+  is_custom_request: boolean;
+  custom_request: string;
+}
+
+interface HandleSubmitProps {
+  selectedInteractionData: InteractionsAtomType;
+  selectedFood: string | null;
+  votePayloadData?: VotePayloadData;
+}
 
 type Props = {
   data: InteractionsAtomType;
-  handleSubmit: Function;
+  handleSubmit: ({ selectedInteractionData, selectedFood, votePayloadData }: HandleSubmitProps) => Promise<void>;
 };
 
 const rulesContent = (data: InteractionsAtomType) => (
@@ -20,11 +34,16 @@ const rulesContent = (data: InteractionsAtomType) => (
 );
 
 function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
+  // states
   const [votes, setVotes] = React.useState<number>(1);
   const [rulePopup, setRulePopup] = React.useState<boolean>(false);
-  const [selectedFood, setSelectedFood] = React.useState(data?.options?.[0]?.title);
+  const [selectedOption, setSelectedOption] = React.useState(data?.options?.[0]);
   const [newFoodRequest, setNewFoodRequest] = useState<string>('');
-  const chosenFoodOption = selectedFood === 'New request' ? newFoodRequest : selectedFood;
+
+  // variables
+  const chosenFoodOption = selectedOption?.title === 'New request' ? newFoodRequest : selectedOption?.title;
+  const totalFee = votes * (data?.vote_cost ?? 1);
+  const isCustomRequest = Boolean(newFoodRequest);
 
   return (
     <div className="bg-babyCronYellow shadow-characterCard px-6 pt-6 pb-8 max-w-[744px]">
@@ -68,18 +87,18 @@ function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
             <button
               type="button"
               key={option?.id}
-              onClick={() => setSelectedFood(option?.title)}
+              onClick={() => setSelectedOption(option)}
               className={`border-[3px] rounded-2xl border-chocoBrown flex p-4 sm:min-w-[340px] min-w-full cursor-pointer ${
-                selectedFood === option?.title ? 'bg-white' : ''
+                selectedOption?.title === option?.title ? 'bg-white' : ''
               } ${option?.title === 'New request' ? 'col-span-2' : 'lg:col-span-1 col-span-2'}`}
             >
               <input
                 type="radio"
                 id={option?.title ?? ''}
                 name="food"
-                value={selectedFood ?? ''}
-                checked={selectedFood === option?.title}
-                onChange={() => setSelectedFood(option?.title)}
+                value={selectedOption?.title ?? ''}
+                checked={selectedOption?.title === option?.title}
+                onChange={() => setSelectedOption(option)}
                 className="mt-1 text-chocoBrown accent-chocoBrown size-7"
               />
               <label htmlFor={option?.title ?? ''} className="text-left flex flex-col ml-4 cursor-pointer w-full">
@@ -134,14 +153,26 @@ function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
         </div>
         <div id="submit" className="mt-6 flex items-center justify-between">
           <span className="flex text-chocoBrown font-commissioner md:text-2xl text-base font-semibold items-center gap-x-2">
-            Total fee: <span className="tmd:ext-titleSizeSM text-base">{votes * (data?.vote_cost ?? 1)}</span>{' '}
+            Total fee: <span className="md:text-titleSizeSM text-base">{totalFee}</span>{' '}
             <CoinCurrency className="md:size-8 size-6" />{' '}
           </span>
           <button
             type="submit"
             disabled={votes === 0}
             className="text-white bg-darkOrange font-ADLaM font-bold md:text-3xl text-base rounded-lg shadow-buttonShadow md:py-2.5 py-1.5 px-4 hover:bg-chocoBrown hover:text-white disabled:cursor-not-allowed disabled:bg-buttonDisabled disabled:shadow-buttonDisabledShadow"
-            onClick={() => handleSubmit({ selectedData: data, selectedFood: chosenFoodOption })}
+            onClick={() =>
+              handleSubmit({
+                selectedInteractionData: data,
+                selectedFood: chosenFoodOption ?? '',
+                votePayloadData: {
+                  optionSelected: selectedOption,
+                  number_of_votes: votes,
+                  totalFee: totalFee,
+                  is_custom_request: isCustomRequest,
+                  custom_request: newFoodRequest,
+                },
+              })
+            }
           >
             Place your vote
           </button>

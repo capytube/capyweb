@@ -2,7 +2,7 @@ import { atom } from 'jotai';
 
 type InteractionType = 'vote' | 'bid';
 
-interface VoteOptions {
+export interface VoteOptions {
   id: string | null;
   title: string | null;
   description: string | null;

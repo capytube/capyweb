@@ -6,9 +6,18 @@ import RulesPopup from './RulesPopup/RulesPopup';
 import { InteractionsAtomType } from '../../store/atoms/interactionsAtom';
 import { calculateTimeDifference } from '../../utils/function';
 
+export interface BidPayloadData {
+  bidAmount: number;
+}
+interface HandleSubmitProps {
+  selectedInteractionData: InteractionsAtomType;
+  selectedFood: string | null;
+  bidPayloadData: BidPayloadData;
+}
+
 type Props = {
   data: InteractionsAtomType;
-  handleSubmit: Function;
+  handleSubmit: ({ selectedInteractionData, selectedFood, bidPayloadData }: HandleSubmitProps) => Promise<void>;
 };
 
 const rulesContent = (data: InteractionsAtomType) => (
@@ -98,7 +107,15 @@ function BidInteractionCard({ data, handleSubmit }: Readonly<Props>) {
           type="submit"
           disabled={bid === data?.current_bid}
           className="text-white bg-darkOrange font-ADLaM font-bold md:text-3xl text-base rounded-lg shadow-buttonShadow md:py-2.5 py-1.5 px-4 hover:bg-chocoBrown hover:text-white disabled:cursor-not-allowed disabled:bg-buttonDisabled disabled:shadow-buttonDisabledShadow"
-          onClick={() => handleSubmit({ selectedData: data })}
+          onClick={() =>
+            handleSubmit({
+              selectedInteractionData: data,
+              selectedFood: '',
+              bidPayloadData: {
+                bidAmount: bid,
+              },
+            })
+          }
         >
           Place your bid
         </button>
