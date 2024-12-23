@@ -1411,6 +1411,54 @@
                 ]
               }
             },
+            "offers": {
+              "name": "offers",
+              "isArray": true,
+              "type": {
+                "model": "Offers"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "from"
+                ]
+              }
+            },
+            "sellerActivityLog": {
+              "name": "sellerActivityLog",
+              "isArray": true,
+              "type": {
+                "model": "ActivityLog"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "from"
+                ]
+              }
+            },
+            "buyerActivityLog": {
+              "name": "buyerActivityLog",
+              "isArray": true,
+              "type": {
+                "model": "ActivityLog"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "to"
+                ]
+              }
+            },
             "updatedAt": {
               "name": "updatedAt",
               "isArray": false,
@@ -1523,7 +1571,9 @@
             "price": {
               "name": "price",
               "isArray": false,
-              "type": "Float",
+              "type": {
+                "nonModel": "Price"
+              },
               "isRequired": false,
               "attributes": []
             },
@@ -1537,7 +1587,7 @@
             "owner_id": {
               "name": "owner_id",
               "isArray": false,
-              "type": "String",
+              "type": "ID",
               "isRequired": false,
               "attributes": []
             },
@@ -1552,21 +1602,33 @@
               "name": "offers",
               "isArray": true,
               "type": {
-                "nonModel": "Offers"
+                "model": "Offers"
               },
               "isRequired": false,
               "attributes": [],
-              "isArrayNullable": true
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "nftId"
+                ]
+              }
             },
-            "activity_log": {
-              "name": "activity_log",
+            "activityLog": {
+              "name": "activityLog",
               "isArray": true,
               "type": {
-                "nonModel": "ActivityLog"
+                "model": "ActivityLog"
               },
               "isRequired": false,
               "attributes": [],
-              "isArrayNullable": true
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "nftId"
+                ]
+              }
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -1596,10 +1658,9 @@
               "type": "key",
               "properties": {
                 "name": "ForSaleIndex",
-                "queryField": "listNFTByIs_for_saleAndPrice",
+                "queryField": "listNFTByIs_for_sale",
                 "fields": [
-                  "is_for_sale",
-                  "price"
+                  "is_for_sale"
                 ]
               }
             },
@@ -1610,6 +1671,314 @@
                 "queryField": "listNFTByOwner_id",
                 "fields": [
                   "owner_id"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "Offers": {
+          "name": "Offers",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "price": {
+              "name": "price",
+              "isArray": false,
+              "type": {
+                "nonModel": "Price"
+              },
+              "isRequired": true,
+              "attributes": []
+            },
+            "from": {
+              "name": "from",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "expires_at": {
+              "name": "expires_at",
+              "isArray": false,
+              "type": "AWSTimestamp",
+              "isRequired": false,
+              "attributes": []
+            },
+            "nftId": {
+              "name": "nftId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "nftDetails": {
+              "name": "nftDetails",
+              "isArray": false,
+              "type": {
+                "model": "NFT"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "nftId"
+                ]
+              }
+            },
+            "fromDetails": {
+              "name": "fromDetails",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "from"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Offers",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "OfferNftIdTypeIndex",
+                "queryField": "listOffersByNftId",
+                "fields": [
+                  "nftId"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "ActivityLog": {
+          "name": "ActivityLog",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "event": {
+              "name": "event",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "price": {
+              "name": "price",
+              "isArray": false,
+              "type": {
+                "nonModel": "Price"
+              },
+              "isRequired": true,
+              "attributes": []
+            },
+            "royalties": {
+              "name": "royalties",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "from": {
+              "name": "from",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "to": {
+              "name": "to",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "timestamp": {
+              "name": "timestamp",
+              "isArray": false,
+              "type": "AWSTimestamp",
+              "isRequired": false,
+              "attributes": []
+            },
+            "nftId": {
+              "name": "nftId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "nftDetails": {
+              "name": "nftDetails",
+              "isArray": false,
+              "type": {
+                "model": "NFT"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "nftId"
+                ]
+              }
+            },
+            "fromDetails": {
+              "name": "fromDetails",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "from"
+                ]
+              }
+            },
+            "toDetails": {
+              "name": "toDetails",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "to"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "ActivityLogs",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "LogNtfIdTypeIndex",
+                "queryField": "listActivityLogsByNftId",
+                "fields": [
+                  "nftId"
                 ]
               }
             },
@@ -1683,8 +2052,9 @@
         "NftRarity": {
           "name": "NftRarity",
           "values": [
-            "Ultra_rare",
-            "Rare"
+            "ultra_rare",
+            "rare",
+            "epic"
           ]
         }
       },
@@ -1734,67 +2104,20 @@
             }
           }
         },
-        "Offers": {
-          "name": "Offers",
+        "Price": {
+          "name": "Price",
           "fields": {
-            "from": {
-              "name": "from",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "price": {
-              "name": "price",
+            "unit": {
+              "name": "unit",
               "isArray": false,
               "type": "Float",
               "isRequired": false,
               "attributes": []
             },
-            "expires_at": {
-              "name": "expires_at",
-              "isArray": false,
-              "type": "AWSTimestamp",
-              "isRequired": false,
-              "attributes": []
-            }
-          }
-        },
-        "ActivityLog": {
-          "name": "ActivityLog",
-          "fields": {
-            "event": {
-              "name": "event",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "price": {
-              "name": "price",
+            "usd": {
+              "name": "usd",
               "isArray": false,
               "type": "Float",
-              "isRequired": false,
-              "attributes": []
-            },
-            "from": {
-              "name": "from",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "to": {
-              "name": "to",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "timestamp": {
-              "name": "timestamp",
-              "isArray": false,
-              "type": "AWSTimestamp",
               "isRequired": false,
               "attributes": []
             }

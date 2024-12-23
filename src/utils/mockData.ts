@@ -1,6 +1,7 @@
 import { createCapybara } from '../api/capybara';
 import { createInteractions } from '../api/interactions';
 import { createLivestream } from '../api/livestream';
+import { createNft } from '../api/nft';
 
 export const handleAddCapy = async () => {
   await createCapybara({
@@ -169,6 +170,53 @@ export const handleCreatingInteractions = async () => {
     result: null,
     vote_cost: null,
     current_bid: 30,
+    createdAt: new Date().getTime(),
+  });
+};
+
+export const handleCreatingNfts = async () => {
+  await createNft({
+    name: 'Capy #1234',
+    image_url: 'pictures/nft/brownRat.png',
+    rarity: 'ultra_rare',
+    labels: ['Capybara', 'Chalk Bonus'],
+    properties: [
+      { key: 'Chalk powder', value: '+5 bidding bonus' },
+      { key: 'Climbing gym', value: '+10 minutes bonus video call' },
+    ],
+    price: { unit: 5.8, usd: 100.0 },
+    is_for_sale: 0,
+    owner_id: null,
+    createdAt: new Date().getTime(),
+  });
+
+  await createNft({
+    name: 'Capy #5687',
+    image_url: 'pictures/nft/pinkRat.png',
+    rarity: 'rare',
+    labels: ['Capybara', 'Chalk Bonus'],
+    properties: [
+      { key: 'Chalk powder', value: '+5 bidding bonus' },
+      { key: 'Climbing gym', value: '+10 minutes bonus video call' },
+    ],
+    price: { unit: 6.8, usd: 120.0 },
+    is_for_sale: 0,
+    owner_id: null,
+    createdAt: new Date().getTime(),
+  });
+
+  await createNft({
+    name: 'Capy #632574',
+    image_url: 'pictures/nft/slateRat.png',
+    rarity: 'epic',
+    labels: ['Capybara', 'Chalk Bonus'],
+    properties: [
+      { key: 'Chalk powder', value: '+5 bidding bonus' },
+      { key: 'Climbing gym', value: '+10 minutes bonus video call' },
+    ],
+    price: { unit: 3.8, usd: 78.0 },
+    is_for_sale: 0,
+    owner_id: null,
     createdAt: new Date().getTime(),
   });
 };

@@ -1,78 +1,84 @@
-type Props = {};
+import { useEffect, useState } from 'react';
+import { ActivityLogAtomType } from '../../../store/atoms/activityLogAtom';
+import { listAllActivityLogsByNftId } from '../../../api/activityLog';
+import { calculateOfferExpiration } from '../../../utils/function';
 
-export default function ActivityTable({}: Props) {
-  const tableHeader = [
-    { id: 1, title: 'Event', minWidth: '60px' },
-    { id: 2, title: 'Price', minWidth: '60px' },
-    { id: 3, title: 'Royalties', minWidth: '80px' },
-    { id: 4, title: 'From', minWidth: '170px' },
-    { id: 5, title: 'To', minWidth: '170px' },
-    { id: 6, title: 'Time', minWidth: '88px' },
-  ];
+type Props = { nftId: string };
 
-  const data = [
-    {
-      id: 1,
-      event: 'Sale',
-      price: 0.79,
-      royalties: 'Paid',
-      from: '0dlffkl...4trijf',
-      to: '03fk0fl...2fg4',
-      time: '10 days ago',
-    },
-    {
-      id: 2,
-      event: 'Sale',
-      price: 0.79,
-      royalties: 'Paid',
-      from: '0dlffkl...4trijf',
-      to: '03fk0fl...2fg4',
-      time: '10 days ago',
-    },
-    {
-      id: 3,
-      event: 'Sale',
-      price: 0.79,
-      royalties: 'Paid',
-      from: '0dlffkl...4trijf',
-      to: '03fk0fl...2fg4',
-      time: '10 days ago',
-    },
-  ];
+const tableHeader = [
+  { title: 'Event', minWidth: '60px' },
+  { title: 'Price', minWidth: '60px' },
+  { title: 'Royalties', minWidth: '80px' },
+  { title: 'From', minWidth: '170px' },
+  { title: 'To', minWidth: '170px' },
+  { title: 'Time', minWidth: '88px' },
+];
+
+export default function ActivityTable({ nftId }: Readonly<Props>) {
+  // states
+  const [isFetchingDataLoading, setIsFetchingDataLoading] = useState(false);
+  const [allActivityData, setAllActivityData] = useState<ActivityLogAtomType[]>([]);
+
+  // variables
+  const isNoRowsYet = allActivityData?.length === 0;
+
+  // effects
+  useEffect(() => {
+    const fetchAllOffers = async () => {
+      setIsFetchingDataLoading(true);
+      await listAllActivityLogsByNftId({ nftId })
+        .then((res) => {
+          setIsFetchingDataLoading(false);
+          if (res?.data?.length) {
+            setAllActivityData(res?.data);
+          }
+        })
+        .catch(() => {
+          setIsFetchingDataLoading(false);
+        });
+    };
+
+    if (nftId) {
+      fetchAllOffers();
+    }
+  }, [nftId]);
 
   return (
     <table className="w-full">
-      <thead>
+      <thead className={isNoRowsYet ? 'border-b' : ''}>
         <tr>
-          {tableHeader?.length &&
-            tableHeader?.map((header) => (
-              <th
-                key={header?.id}
-                className="text-left text-chocoBrown pr-4 font-commissioner last:pr-0"
-                style={{ minWidth: header?.minWidth }}
-              >
-                {header?.title}
-              </th>
-            ))}
+          {tableHeader?.map((header) => (
+            <th
+              key={header?.title}
+              className="text-left text-chocoBrown pr-4 font-commissioner last:pr-0"
+              style={{ minWidth: header?.minWidth }}
+            >
+              {header?.title}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
-        {data?.map((row) => (
-          <tr className="">
-            {Object.values(row)
-              ?.slice(1)
-              ?.map((value) => (
-                <td
-                  className={`${
-                    value === 'Paid' ? 'text-siteGreen' : 'text-chocoBrown'
-                  } font-commissioner pt-6`}
-                  key={value}
-                >
-                  {value}
-                </td>
-              ))}
+        {allActivityData?.length > 0 ? (
+          allActivityData?.map((row) => (
+            <tr key={row?.id}>
+              <td className="text-chocoBrown font-commissioner pt-6">{row?.event}</td>
+              <td className="text-chocoBrown font-commissioner pt-6">{row?.price?.unit}</td>
+              <td className="text-chocoBrown font-commissioner pt-6">{row?.royalties}</td>
+              <td className="text-chocoBrown font-commissioner pt-6">{row?.fromDetails?.wallet_address}</td>
+              <td className="text-chocoBrown font-commissioner pt-6">{row?.toDetails?.wallet_address}</td>
+              <td className="text-siteGreen font-commissioner pt-6">
+                {calculateOfferExpiration(row?.timestamp ?? 0)} ago
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={6} className="px-4 py-6 text-center text-chocoBrown font-commissioner">
+              {isFetchingDataLoading ? 'Loading...' : 'No Logs yet'}
+            </td>
           </tr>
-        ))}
+        )}
       </tbody>
     </table>
   );
