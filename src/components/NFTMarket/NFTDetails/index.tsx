@@ -42,6 +42,7 @@ export default function Index() {
         .then((res) => {
           setIsFetchingDataLoading(false);
           if (res?.data) {
+            // @ts-ignore
             setNftData(res?.data);
           }
         })
