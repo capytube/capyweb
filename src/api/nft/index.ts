@@ -7,9 +7,24 @@ const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
 
 export async function listAllNfts() {
-  const response = await client.models.NFT.list();
+  const response = await client.models.NFT.list({
+    selectionSet: [
+      'id',
+      'name',
+      'image_url',
+      'rarity',
+      'labels',
+      'properties.*',
+      'price.*',
+      'is_for_sale',
+      'owner_id',
+      'createdAt',
+      'owner_details.*',
+    ],
+  });
 
   if (response?.data?.length) {
+    // @ts-ignore
     defaultStore.set(nftAtom, response?.data);
   }
 
@@ -17,9 +32,27 @@ export async function listAllNfts() {
 }
 
 export async function listNftsByIsForSale({ isForSale }: { isForSale: 0 | 1 }) {
-  const response = await client.models.NFT.listNFTByIs_for_sale({ is_for_sale: isForSale });
+  const response = await client.models.NFT.listNFTByIs_for_sale(
+    { is_for_sale: isForSale },
+    {
+      selectionSet: [
+        'id',
+        'name',
+        'image_url',
+        'rarity',
+        'labels',
+        'properties.*',
+        'price.*',
+        'is_for_sale',
+        'owner_id',
+        'createdAt',
+        'owner_details.*',
+      ],
+    },
+  );
 
   if (response?.data?.length) {
+    // @ts-ignore
     defaultStore.set(isForSaleNftAtom, response?.data);
   }
 
@@ -27,9 +60,27 @@ export async function listNftsByIsForSale({ isForSale }: { isForSale: 0 | 1 }) {
 }
 
 export async function listNFTByOwnerId({ ownerId }: { ownerId: string }) {
-  const response = await client.models.NFT.listNFTByOwner_id({ owner_id: ownerId });
+  const response = await client.models.NFT.listNFTByOwner_id(
+    { owner_id: ownerId },
+    {
+      selectionSet: [
+        'id',
+        'name',
+        'image_url',
+        'rarity',
+        'labels',
+        'properties.*',
+        'price.*',
+        'is_for_sale',
+        'owner_id',
+        'createdAt',
+        'owner_details.*',
+      ],
+    },
+  );
 
   if (response?.data?.length) {
+    // @ts-ignore
     defaultStore.set(specifiOwnerNftAtom, response?.data);
   }
 

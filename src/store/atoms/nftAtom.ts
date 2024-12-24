@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import { UserAtomType } from './userAtom';
 
 type RarityType = 'ultra_rare' | 'rare' | 'epic';
 
@@ -23,6 +24,7 @@ export interface NftAtomType {
   is_for_sale: number | null; // possible values 0 or 1 (1 represent NFT is currently for sale)
   owner_id: string | null; // User ID of the current owner (nullable if listed for sale)
   createdAt: number | null;
+  owner_details: UserAtomType;
   offers?: unknown;
   activityLog?: unknown;
 }

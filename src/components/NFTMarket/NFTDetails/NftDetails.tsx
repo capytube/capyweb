@@ -1,4 +1,5 @@
 import { NftAtomType } from '../../../store/atoms/nftAtom';
+import { shortenedWalletAddress } from '../../../utils/function';
 import { CoinCurrency, ShareIcon, XIcon } from '../../Account/Icons';
 import ActivityTable from './ActivityTable';
 import OfferTable from './OfferTable';
@@ -15,10 +16,10 @@ function NftDetails({ data }: Readonly<Props>) {
       <div className="flex flex-col gap-y-6 border-b pb-12 border-chocoBrown">
         <span className="font-dynapuff text-[44px] leading-[52px] text-chocoBrown">{data?.name}</span>
         {data?.is_for_sale ? <span className="text-siteGreen text-2xl font-commissioner">Available to buy</span> : null}
-        {data?.owner_id ? (
+        {data?.owner_id && data?.owner_details ? (
           <p className="flex flex-col gap-y-2 text-chocoBrown text-2xl">
             <strong>Owned by</strong>
-            <span>{data?.owner_id}</span>
+            <span>{shortenedWalletAddress(data?.owner_details?.wallet_address ?? '')}</span>
           </p>
         ) : null}
         <span className="flex items-center font-bold text-chocoBrown text-2xl font-Mulish">

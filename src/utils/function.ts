@@ -99,3 +99,12 @@ export function calculateOfferExpiration(timestamp: number): string {
     return `${minutes} minutes`;
   }
 }
+
+export function shortenedWalletAddress(address: string) {
+  // Ensure the address is not too short
+  if (address?.length <= 13) {
+    return address;
+  }
+
+  return `${address.slice(0, 7)}...${address.slice(-6)}`;
+}

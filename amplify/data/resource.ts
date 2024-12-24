@@ -191,6 +191,7 @@ const schema = a.schema({
       userBids: a.hasMany('UserBids', 'user_id'),
       tokenTransaction: a.hasMany('TokenTransaction', 'user_id'),
       chatComments: a.hasMany('ChatComments', 'user_id'),
+      nftOwned: a.hasMany('NFT', 'owner_id'),
       offers: a.hasMany('Offers', 'from'),
       sellerActivityLog: a.hasMany('ActivityLog', 'from'),
       buyerActivityLog: a.hasMany('ActivityLog', 'to'),
@@ -211,6 +212,7 @@ const schema = a.schema({
       is_for_sale: a.integer(), // possible values 0 or 1 (1 represent NFT is currently for sale)
       owner_id: a.id(), // User ID of the current owner (nullable if listed for sale)
       createdAt: a.timestamp(),
+      owner_details: a.belongsTo('User', 'owner_id'),
       offers: a.hasMany('Offers', 'nftId'),
       activityLog: a.hasMany('ActivityLog', 'nftId'),
     })

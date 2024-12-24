@@ -1411,6 +1411,22 @@
                 ]
               }
             },
+            "nftOwned": {
+              "name": "nftOwned",
+              "isArray": true,
+              "type": {
+                "model": "NFT"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "owner_id"
+                ]
+              }
+            },
             "offers": {
               "name": "offers",
               "isArray": true,
@@ -1597,6 +1613,21 @@
               "type": "AWSTimestamp",
               "isRequired": false,
               "attributes": []
+            },
+            "owner_details": {
+              "name": "owner_details",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "owner_id"
+                ]
+              }
             },
             "offers": {
               "name": "offers",

@@ -21,12 +21,13 @@ export default function ListingSection({}: Props) {
   const allNftData = useAtomValue(nftAtom);
 
   // states
-  const [option, setOption] = useState<number>(1);
+  const [option, setOption] = useState<number>(1); // 1 for ASC, 2 for DESC
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isFetchingDataLoading, setIsFetchingDataLoading] = useState(false);
+  const [sortedData, setSortedData] = useState(allNftData);
 
   // variables
-  const optionsStyle = 'text-left text-lg p-2';
+  const optionsStyle = 'text-left text-lg p-2 rounded-lg hover:bg-[#faceaf]';
 
   // effects
   useEffect(() => {
@@ -45,6 +46,21 @@ export default function ListingSection({}: Props) {
       fetchAllNfts();
     }
   }, []);
+
+  // Sort data whenever `option` or `allNftData` changes
+  useEffect(() => {
+    const sortData = [...allNftData].sort((a, b) => {
+      if (option === 1) {
+        return (a?.price?.unit ?? 0) - (b?.price?.unit ?? 0); // Ascending order
+      } else if (option === 2) {
+        return (b?.price?.unit ?? 0) - (a?.price?.unit ?? 0); // Descending order
+      }
+
+      return 0;
+    });
+
+    setSortedData(sortData);
+  }, [option, allNftData]);
 
   return (
     <div className="lg:pt-10 py-8 lg:px-40 px-4 pb-20 flex flex-col lg:gap-y-10 gap-y-6 items-center">
@@ -93,7 +109,7 @@ export default function ListingSection({}: Props) {
       </div>
       {!isFetchingDataLoading ? (
         <div className="grid 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2 max-[390px]:grid-cols-1 2xl:gap-x-11 lg:gap-x-16 gap-x-11 gap-y-10">
-          {allNftData?.length > 0 && allNftData?.map((data) => <NFTCard key={data?.id} data={data} />)}
+          {sortedData?.length > 0 && sortedData?.map((data) => <NFTCard key={data?.id} data={data} />)}
         </div>
       ) : (
         'Loading...'

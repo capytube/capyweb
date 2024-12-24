@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listAllOffersByNftId } from '../../../api/offers';
 import { OffersAtomType } from '../../../store/atoms/offersAtom';
-import { calculateOfferExpiration } from '../../../utils/function';
+import { calculateOfferExpiration, shortenedWalletAddress } from '../../../utils/function';
 
 type Props = { nftId: string };
 
@@ -60,7 +60,9 @@ function OfferTable({ nftId }: Readonly<Props>) {
           allOffersData?.map((row) => (
             <tr key={row?.id}>
               <td className="text-chocoBrown font-commissioner pt-6">{row?.price?.unit}</td>
-              <td className="text-chocoBrown font-commissioner pt-6">{row?.fromDetails?.wallet_address}</td>
+              <td className="text-chocoBrown font-commissioner pt-6" title={row?.fromDetails?.wallet_address ?? ''}>
+                {shortenedWalletAddress(row?.fromDetails?.wallet_address ?? '')}
+              </td>
               <td className="text-chocoBrown font-commissioner pt-6">
                 in {calculateOfferExpiration(row?.expires_at ?? 0)}
               </td>

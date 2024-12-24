@@ -2,6 +2,8 @@ import { createCapybara } from '../api/capybara';
 import { createInteractions } from '../api/interactions';
 import { createLivestream } from '../api/livestream';
 import { createNft } from '../api/nft';
+import { createNewOffer } from '../api/offers';
+import { createNewActivityLog } from '../api/activityLog';
 
 export const handleAddCapy = async () => {
   await createCapybara({
@@ -218,5 +220,34 @@ export const handleCreatingNfts = async () => {
     is_for_sale: 0,
     owner_id: null,
     createdAt: new Date().getTime(),
+  });
+};
+
+export const createMockOffers = async ({ nftId, userId }: { nftId: string; userId: string }) => {
+  await createNewOffer({
+    price: { unit: 3.2, usd: 70.0 },
+    from: userId,
+    expires_at: new Date('2024-12-24').getTime(),
+    nftId: nftId,
+  });
+};
+
+export const createMockActivityLog = async ({
+  nftId,
+  fromId,
+  toId,
+}: {
+  nftId: string;
+  fromId: string;
+  toId: string;
+}) => {
+  await createNewActivityLog({
+    event: 'sale',
+    price: { unit: 3.3, usd: 70.0 },
+    royalties: 'paid',
+    from: fromId,
+    to: toId,
+    timestamp: new Date('2024-12-22').getTime(),
+    nftId: nftId,
   });
 };
