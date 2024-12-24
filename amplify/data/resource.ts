@@ -2,6 +2,12 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 import { getStream } from '../functions/getStream/resource';
 import { getViewership } from '../functions/getViewership/resource';
 
+const access_type = a.enum(['public', 'private']);
+const interaction_type = a.enum(['vote', 'bid']);
+const transaction_type = a.enum(['tip', 'reward', 'stream_payment', 'transfer', 'withdraw', 'deposit', 'vote', 'bid']);
+const rarity_level = a.enum(['ultra_rare', 'rare', 'epic']);
+const gender = a.enum(['male', 'female']);
+
 const schema = a.schema({
   Options: a.customType({
     key: a.string(),
@@ -54,7 +60,7 @@ const schema = a.schema({
       id: a.id(),
       capybara_id: a.id(), // Foreign Key to Capybara
       capybara: a.belongsTo('Capybara', 'capybara_id'),
-      interaction_type: a.enum(['vote', 'bid']), // "vote" or "bid"
+      interaction_type: interaction_type, // "vote" or "bid"
       title: a.string(), // Title of the interaction (e.g., "Vote for Snack Choice")
       title_icon_url: a.string(),
       description: a.string(),
@@ -114,10 +120,10 @@ const schema = a.schema({
       id: a.id(),
       user_id: a.id(), // Foreign Key to User
       user: a.belongsTo('User', 'user_id'),
-      transaction_type: a.enum(['tip', 'reward', 'stream_payment', 'transfer', 'withdraw', 'deposit', 'vote', 'bid']),
+      transaction_type: transaction_type,
       amount: a.float(), // Transaction amount in tokens
       related_id: a.id(), // Can reference UserVotes or UserBids
-      related_type: a.enum(['vote', 'bid']),
+      related_type: interaction_type,
       relatedVote: a.belongsTo('UserVotes', 'related_id'),
       relatedBid: a.belongsTo('UserBids', 'related_id'),
       createdAt: a.timestamp(),
@@ -148,7 +154,7 @@ const schema = a.schema({
       is_live: a.boolean(),
       viewer_count: a.integer(),
       capybara_ids: a.string().array(), // array of Capybara IDs involved in the stream
-      access_type: a.enum(['public', 'private']),
+      access_type: access_type,
       price_per_10_sec: a.float(),
       streaming_address: a.string(), // URL or address for the live stream
       chatComments: a.hasMany('ChatComments', 'stream_id'),
@@ -161,7 +167,7 @@ const schema = a.schema({
     .model({
       id: a.id(),
       name: a.string(),
-      gender: a.enum(['male', 'female']),
+      gender: gender,
       birth_year: a.integer(),
       born_place: a.string(),
       description: a.string(), // can be in Markdown format
@@ -205,7 +211,7 @@ const schema = a.schema({
       id: a.id(), // Unique Token ID (e.g., "NFT1234")
       name: a.string(), // Name of the NFT (e.g., "Capy #1234")
       image_url: a.string(),
-      rarity: a.enum(['ultra_rare', 'rare', 'epic']), // Rarity level (e.g., "ultra rare", "rare", "epic")
+      rarity: rarity_level, // Rarity level (e.g., "ultra rare", "rare", "epic")
       labels: a.string().array(), // Labels for categorization (e.g., "Capybara", "Chalk Bonus")
       properties: a.ref('Options').array(), // List of properties (e.g., "Chalk powder bonus")
       price: a.ref('Price'), // Current price of the NFT
