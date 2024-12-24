@@ -12,17 +12,9 @@ const schema = a.schema({
     title: a.string(),
     description: a.string(),
   }),
-  Offers: a.customType({
-    from: a.string(), // User ID making the offer
-    price: a.float(), // Offer price
-    expires_at: a.timestamp(), // Expiration date of the offer
-  }),
-  ActivityLog: a.customType({
-    event: a.string(), // Type of event (e.g., "Sale", "Transfer")
-    price: a.float(), // Price associated with the event
-    from: a.string(), // User ID of the seller or previous owner
-    to: a.string(), // User ID of the buyer or new owner
-    timestamp: a.timestamp(), // Time of the event
+  Price: a.customType({
+    unit: a.float(),
+    usd: a.float(),
   }),
 
   getStream: a
@@ -199,6 +191,10 @@ const schema = a.schema({
       userBids: a.hasMany('UserBids', 'user_id'),
       tokenTransaction: a.hasMany('TokenTransaction', 'user_id'),
       chatComments: a.hasMany('ChatComments', 'user_id'),
+      nftOwned: a.hasMany('NFT', 'owner_id'),
+      offers: a.hasMany('Offers', 'from'),
+      sellerActivityLog: a.hasMany('ActivityLog', 'from'),
+      buyerActivityLog: a.hasMany('ActivityLog', 'to'),
     })
     .secondaryIndexes((index) => [index('wallet_address').name('ByWalletAddress').queryField('getUserByWalletAddress')])
     .authorization((allow) => [allow.publicApiKey()]),
@@ -209,20 +205,50 @@ const schema = a.schema({
       id: a.id(), // Unique Token ID (e.g., "NFT1234")
       name: a.string(), // Name of the NFT (e.g., "Capy #1234")
       image_url: a.string(),
-      rarity: a.enum(['Ultra_rare', 'Rare']), // Rarity level (e.g., "Ultra rare", "Rare")
+      rarity: a.enum(['ultra_rare', 'rare', 'epic']), // Rarity level (e.g., "ultra rare", "rare", "epic")
       labels: a.string().array(), // Labels for categorization (e.g., "Capybara", "Chalk Bonus")
       properties: a.ref('Options').array(), // List of properties (e.g., "Chalk powder bonus")
-      price: a.float(), // Current price of the NFT
+      price: a.ref('Price'), // Current price of the NFT
       is_for_sale: a.integer(), // possible values 0 or 1 (1 represent NFT is currently for sale)
-      owner_id: a.string(), // User ID of the current owner (nullable if listed for sale)
+      owner_id: a.id(), // User ID of the current owner (nullable if listed for sale)
       createdAt: a.timestamp(),
-      offers: a.ref('Offers').array(),
-      activity_log: a.ref('ActivityLog').array(), // List of activities (e.g., sales, transfers)
+      owner_details: a.belongsTo('User', 'owner_id'),
+      offers: a.hasMany('Offers', 'nftId'),
+      activityLog: a.hasMany('ActivityLog', 'nftId'),
     })
-    .secondaryIndexes((index) => [
-      index('is_for_sale').name('ForSaleIndex').sortKeys(['price']),
-      index('owner_id').name('OwnerIndex'),
-    ])
+    .secondaryIndexes((index) => [index('is_for_sale').name('ForSaleIndex'), index('owner_id').name('OwnerIndex')])
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  // Offers Schema
+  Offers: a
+    .model({
+      id: a.id(),
+      price: a.ref('Price').required(), // Offered price for NFT
+      from: a.id().required(), // User ID of the user making the offer
+      expires_at: a.timestamp(), // Expiration date of the offer
+      nftId: a.id().required(), // Foreign key to the NFT
+      nftDetails: a.belongsTo('NFT', 'nftId'),
+      fromDetails: a.belongsTo('User', 'from'),
+    })
+    .secondaryIndexes((index) => [index('nftId').name('OfferNftIdTypeIndex').queryField('listOffersByNftId')])
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  // ActivityLog Schema
+  ActivityLog: a
+    .model({
+      id: a.id(),
+      event: a.string().required(), // Type of event (e.g., "Sale", "Transfer")
+      price: a.ref('Price').required(), // Price associated with the event
+      royalties: a.string(), // (e.g., “Paid”)
+      from: a.id().required(), // User ID of the seller or previous owner
+      to: a.id().required(), // User ID of the buyer or new owner
+      timestamp: a.timestamp(), // Time of the event
+      nftId: a.id().required(), // Foreign key to the NFT
+      nftDetails: a.belongsTo('NFT', 'nftId'),
+      fromDetails: a.belongsTo('User', 'from'),
+      toDetails: a.belongsTo('User', 'to'),
+    })
+    .secondaryIndexes((index) => [index('nftId').name('LogNtfIdTypeIndex').queryField('listActivityLogsByNftId')])
     .authorization((allow) => [allow.publicApiKey()]),
 });
 

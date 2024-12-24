@@ -20,10 +20,8 @@ const OurCapybaras = () => {
     const fetchAllCapyData = async () => {
       setLoading(true);
       await listCapybaras()
-        .then((res) => {
-          if (res?.data?.length) {
-            setLoading(false);
-          }
+        .then(() => {
+          setLoading(false);
         })
         .catch(() => {
           setLoading(false);
@@ -42,19 +40,20 @@ const OurCapybaras = () => {
       </h1>
 
       <div className={styles.ourCapybarasProfilesCards}>
-        {!loading && capybaraData?.length ? (
+        {!loading ? (
           <>
-            {capybaraData?.map((data, index) => {
-              return (
-                <CapyProfile
-                  data={data}
-                  key={data.id}
-                  customCardStyle={{
-                    transform: `rotate(${index % 2 === 0 ? '-1deg' : '1deg'})`,
-                  }}
-                />
-              );
-            })}
+            {capybaraData?.length > 0 &&
+              capybaraData?.map((data, index) => {
+                return (
+                  <CapyProfile
+                    data={data}
+                    key={data.id}
+                    customCardStyle={{
+                      transform: `rotate(${index % 2 === 0 ? '-1deg' : '1deg'})`,
+                    }}
+                  />
+                );
+              })}
           </>
         ) : (
           <>

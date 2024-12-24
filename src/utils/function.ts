@@ -73,3 +73,38 @@ export function calculateTimeDifference(timestamp: number): string {
 
   return resultParts.join(' ');
 }
+
+export function calculateOfferExpiration(timestamp: number): string {
+  const now = new Date();
+  const futureDate = new Date(timestamp);
+
+  // Calculate the difference in milliseconds
+  const diff = futureDate.getTime() - now.getTime();
+
+  if (diff <= 0) {
+    return '5 hours';
+  }
+
+  // Convert the difference to days, hours, and minutes
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+  // Return the first available unit of time
+  if (days > 0) {
+    return `${days} days`;
+  } else if (hours > 0) {
+    return `${hours} hours`;
+  } else {
+    return `${minutes} minutes`;
+  }
+}
+
+export function shortenedWalletAddress(address: string) {
+  // Ensure the address is not too short
+  if (address?.length <= 13) {
+    return address;
+  }
+
+  return `${address.slice(0, 7)}...${address.slice(-6)}`;
+}
