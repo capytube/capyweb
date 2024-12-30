@@ -14,7 +14,6 @@ export interface UserVotesType {
   is_custom_request: boolean | null; // Whether the vote is for a custom option
   custom_request: string | null; // custom request string
   approved: boolean | null; // Whether the custom request is approved (if applicable)
-  createdAt: number | null;
   tokenTransaction?: unknown;
 }
 
@@ -40,7 +39,6 @@ export async function createUserVotes(params: Partial<UserVotesType>) {
     is_custom_request: params.is_custom_request,
     custom_request: params.custom_request,
     approved: params.approved,
-    createdAt: params.createdAt ?? new Date().getTime(),
   });
 
   return response;

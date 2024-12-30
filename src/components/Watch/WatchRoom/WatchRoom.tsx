@@ -75,9 +75,7 @@ const WatchRoom = () => {
         });
     };
 
-    if (privateStreamData?.length === 0) {
-      fetchPrivateStreams();
-    }
+    fetchPrivateStreams();
   }, []);
 
   useEffect(() => {
@@ -89,10 +87,19 @@ const WatchRoom = () => {
 
     if (privateStreamData?.length) {
       const filteredStreams = filterStreamsByCapyId(privateStreamData, capyId ?? '');
-      if (filteredStreams?.length) {
-        setLivestreamData(filteredStreams);
-        setVideoStreamAddress(filteredStreams?.[0]?.streaming_address ?? '');
-        setCurrentStreamData(filteredStreams?.[0]);
+
+      // sorting
+      const sortOrder = ['main', 'food', 'bedroom'];
+      const getOrder = (title: string | null) => {
+        const match = sortOrder.find((key) => title?.includes(key));
+        return match ? sortOrder.indexOf(match) : sortOrder.length;
+      };
+      const sortedData = [...filteredStreams].sort((a, b) => getOrder(a.title) - getOrder(b.title));
+
+      if (sortedData?.length) {
+        setLivestreamData(sortedData);
+        setVideoStreamAddress(sortedData?.[0]?.streaming_address ?? '');
+        setCurrentStreamData(sortedData?.[0]);
       }
     }
   }, [privateStreamData, capyId]);

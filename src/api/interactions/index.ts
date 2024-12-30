@@ -33,7 +33,6 @@ export async function createInteractions(params: Partial<InteractionsAtomType>) 
     result: params.result,
     vote_cost: params.vote_cost,
     current_bid: params.current_bid,
-    createdAt: params?.createdAt ?? new Date().getTime(),
   });
 
   return response;

@@ -30,7 +30,6 @@ export async function createUser({ userName, wallet_address }: { userName: strin
   const response = await client.models.User.create({
     username: userName,
     wallet_address: wallet_address,
-    createdAt: new Date().getTime(),
   });
 
   if (response?.data?.id) {

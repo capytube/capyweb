@@ -6,7 +6,6 @@ export interface ChatCommentsAtomType {
   stream_id: string | null;
   user_id: string | null;
   content: string | null;
-  createdAt: number | null;
   stream?: unknown;
   user?: UserAtomType;
 }

@@ -63,7 +63,6 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
           amount,
           related_id: relatedId,
           related_type: selectedInteractionData?.interaction_type,
-          createdAt: new Date().getTime(),
         };
         const tokenTransactionResponse = await createTokenTransaction(transactionPayload);
         if (tokenTransactionResponse?.data?.id) {
@@ -86,7 +85,6 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
         is_custom_request: votePayloadData?.is_custom_request || null,
         custom_request: votePayloadData?.custom_request || null,
         approved: false,
-        createdAt: new Date().getTime(),
       };
 
       try {
@@ -103,7 +101,6 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
         interaction_id: selectedInteractionData?.id,
         user_id: userData?.id,
         bid_amount: bidPayloadData?.bidAmount,
-        createdAt: new Date().getTime(),
       };
 
       try {

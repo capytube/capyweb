@@ -7,9 +7,9 @@ const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
 
 export async function listAllComments({ streamId }: { streamId: string }) {
-  const response = await client.models.ChatComments.listChatCommentsByStream_idAndCreatedAt(
+  const response = await client.models.ChatComments.listChatCommentsByStream_id(
     { stream_id: streamId },
-    { selectionSet: ['id', 'stream_id', 'user_id', 'content', 'createdAt', 'user.*'] },
+    { selectionSet: ['id', 'stream_id', 'user_id', 'content', 'user.*'] },
   );
 
   if (response?.data) {
@@ -25,7 +25,6 @@ export async function createChatComment(params: Partial<ChatCommentsAtomType>) {
     stream_id: params.stream_id,
     user_id: params.user_id,
     content: params.content,
-    createdAt: new Date().getTime(),
   });
 
   return response;
