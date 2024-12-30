@@ -18,7 +18,6 @@ export async function listAllNfts() {
       'price.*',
       'is_for_sale',
       'owner_id',
-      'createdAt',
       'owner_details.*',
     ],
   });
@@ -45,7 +44,6 @@ export async function listNftsByIsForSale({ isForSale }: { isForSale: 0 | 1 }) {
         'price.*',
         'is_for_sale',
         'owner_id',
-        'createdAt',
         'owner_details.*',
       ],
     },
@@ -73,7 +71,6 @@ export async function listNFTByOwnerId({ ownerId }: { ownerId: string }) {
         'price.*',
         'is_for_sale',
         'owner_id',
-        'createdAt',
         'owner_details.*',
       ],
     },
@@ -103,7 +100,6 @@ export async function createNft(params: Partial<NftAtomType>) {
     price: params.price,
     is_for_sale: params.is_for_sale,
     owner_id: params.owner_id,
-    createdAt: new Date().getTime(),
   });
 
   return response;

@@ -24,7 +24,6 @@ export interface InteractionsAtomType {
   result: string | null; // winning option ID
   vote_cost: number | null;
   current_bid: number | null;
-  createdAt: number | null;
   userVotes?: unknown;
   userBids?: unknown;
 }

@@ -60,7 +60,7 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'Public Stream',
     is_live: true,
-    capybara_ids: ['5ed78837-2e30-49fa-8a9a-3326b6006f82'],
+    capybara_ids: ['b6a9d892-fc90-411a-85b7-e57d44f89292'],
     access_type: 'public',
     price_per_10_sec: 1,
     streaming_address: 'fa7ahoikpf19u1e0',
@@ -69,7 +69,7 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'main cam',
     is_live: true,
-    capybara_ids: ['5ed78837-2e30-49fa-8a9a-3326b6006f82', '79d93273-9e46-4881-bfcd-71c0fd72cb83'],
+    capybara_ids: ['b6a9d892-fc90-411a-85b7-e57d44f89292', '5d11e71b-a6fc-4051-97e9-5561e58477fc'],
     access_type: 'private',
     price_per_10_sec: 1,
     streaming_address: 'fa7ahoikpf19u1e0',
@@ -78,7 +78,7 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'food cam',
     is_live: true,
-    capybara_ids: ['79d93273-9e46-4881-bfcd-71c0fd72cb83'],
+    capybara_ids: ['5d11e71b-a6fc-4051-97e9-5561e58477fc'],
     access_type: 'private',
     price_per_10_sec: 1,
     streaming_address: 'fa7ahoikpf19u1e0',
@@ -87,7 +87,7 @@ export const handleCreateStreams = async () => {
 
 export const handleCreatingInteractions = async () => {
   await createInteractions({
-    capybara_id: '5ed78837-2e30-49fa-8a9a-3326b6006f82',
+    capybara_id: 'b6a9d892-fc90-411a-85b7-e57d44f89292',
     interaction_type: 'vote',
     title: 'Buy capy a snack',
     title_icon_url: 'pictures/capyPlay/snackIcon.png',
@@ -130,11 +130,10 @@ export const handleCreatingInteractions = async () => {
     result: null,
     vote_cost: 5,
     current_bid: null,
-    createdAt: new Date().getTime(),
   });
 
   await createInteractions({
-    capybara_id: '5ed78837-2e30-49fa-8a9a-3326b6006f82',
+    capybara_id: 'b6a9d892-fc90-411a-85b7-e57d44f89292',
     interaction_type: 'bid',
     title: 'Capy safari',
     title_icon_url: 'pictures/capyPlay/safariIcon.png',
@@ -151,11 +150,10 @@ export const handleCreatingInteractions = async () => {
     result: null,
     vote_cost: null,
     current_bid: 20,
-    createdAt: new Date().getTime(),
   });
 
   await createInteractions({
-    capybara_id: '5ed78837-2e30-49fa-8a9a-3326b6006f82',
+    capybara_id: 'b6a9d892-fc90-411a-85b7-e57d44f89292',
     interaction_type: 'bid',
     title: 'Capy Vision Pro',
     title_icon_url: 'pictures/capyPlay/visionIcon.png',
@@ -172,7 +170,6 @@ export const handleCreatingInteractions = async () => {
     result: null,
     vote_cost: null,
     current_bid: 30,
-    createdAt: new Date().getTime(),
   });
 };
 
@@ -189,7 +186,6 @@ export const handleCreatingNfts = async () => {
     price: { unit: 5.8, usd: 100.0 },
     is_for_sale: 0,
     owner_id: null,
-    createdAt: new Date().getTime(),
   });
 
   await createNft({
@@ -204,7 +200,6 @@ export const handleCreatingNfts = async () => {
     price: { unit: 6.8, usd: 120.0 },
     is_for_sale: 0,
     owner_id: null,
-    createdAt: new Date().getTime(),
   });
 
   await createNft({
@@ -219,7 +214,6 @@ export const handleCreatingNfts = async () => {
     price: { unit: 3.8, usd: 78.0 },
     is_for_sale: 0,
     owner_id: null,
-    createdAt: new Date().getTime(),
   });
 };
 

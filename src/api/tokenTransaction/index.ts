@@ -15,7 +15,6 @@ export interface TokenTransactionType {
   related_type: InteractionType | null;
   relatedVote?: unknown;
   relatedBid?: unknown;
-  createdAt: number | null;
 }
 
 export async function listAllTokenTransactions() {
@@ -30,7 +29,6 @@ export async function listAllTokenTransactions() {
       'related_type',
       'relatedVote.*',
       'relatedBid.*',
-      'createdAt',
     ],
   });
 
@@ -51,7 +49,6 @@ export async function listTokenTransactionById(id: string) {
         'related_type',
         'relatedVote.*',
         'relatedBid.*',
-        'createdAt',
       ],
     },
   );
@@ -66,7 +63,6 @@ export async function createTokenTransaction(params: Partial<TokenTransactionTyp
     amount: params.amount,
     related_id: params.related_id,
     related_type: params.related_type,
-    createdAt: params.createdAt ?? new Date().getTime(),
   });
 
   return response;

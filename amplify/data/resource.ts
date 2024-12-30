@@ -72,7 +72,6 @@ const schema = a.schema({
       result: a.string(), // winning option ID
       vote_cost: a.float(),
       current_bid: a.float(),
-      createdAt: a.timestamp(),
       userVotes: a.hasMany('UserVotes', 'interaction_id'),
       userBids: a.hasMany('UserBids', 'interaction_id'),
     })
@@ -93,7 +92,6 @@ const schema = a.schema({
       is_custom_request: a.boolean(), // Whether the vote is for a custom option
       custom_request: a.string(), // custom request string
       approved: a.boolean(), // Whether the custom request is approved (if applicable)
-      createdAt: a.timestamp(),
       tokenTransaction: a.hasOne('TokenTransaction', 'related_id'),
     })
     .secondaryIndexes((index) => [index('interaction_id').name('InteractionTypeIndex')])
@@ -108,7 +106,6 @@ const schema = a.schema({
       user_id: a.id(), // Foreign Key to User
       user: a.belongsTo('User', 'user_id'),
       bid_amount: a.float(),
-      createdAt: a.timestamp(),
       tokenTransaction: a.hasOne('TokenTransaction', 'related_id'),
     })
     .secondaryIndexes((index) => [index('interaction_id').name('InteractionTypeIndex')])
@@ -126,7 +123,6 @@ const schema = a.schema({
       related_type: interaction_type,
       relatedVote: a.belongsTo('UserVotes', 'related_id'),
       relatedBid: a.belongsTo('UserBids', 'related_id'),
-      createdAt: a.timestamp(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
@@ -139,9 +135,8 @@ const schema = a.schema({
       user_id: a.id(), // Foreign Key to User
       user: a.belongsTo('User', 'user_id'),
       content: a.string(),
-      createdAt: a.timestamp(),
     })
-    .secondaryIndexes((index) => [index('stream_id').name('StreamCommentsIndex').sortKeys(['createdAt'])])
+    .secondaryIndexes((index) => [index('stream_id').name('StreamCommentsIndex')])
     .authorization((allow) => [allow.publicApiKey()]),
 
   // LiveStream schema
@@ -188,7 +183,6 @@ const schema = a.schema({
       id: a.id(),
       username: a.string(),
       email: a.string(),
-      createdAt: a.timestamp(),
       profile_image_url: a.string(),
       wallet_address: a.string(),
       bio: a.string(),
@@ -217,7 +211,6 @@ const schema = a.schema({
       price: a.ref('Price'), // Current price of the NFT
       is_for_sale: a.integer(), // possible values 0 or 1 (1 represent NFT is currently for sale)
       owner_id: a.id(), // User ID of the current owner (nullable if listed for sale)
-      createdAt: a.timestamp(),
       owner_details: a.belongsTo('User', 'owner_id'),
       offers: a.hasMany('Offers', 'nftId'),
       activityLog: a.hasMany('ActivityLog', 'nftId'),

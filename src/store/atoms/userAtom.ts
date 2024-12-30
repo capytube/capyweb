@@ -4,7 +4,6 @@ export interface UserAtomType {
   id: string | null;
   username: string | null;
   email: string | null;
-  createdAt: number | null;
   profile_image_url: string | null;
   wallet_address: string | null;
   bio: string | null;
@@ -19,7 +18,6 @@ export const userAtom = atom<UserAtomType>({
   id: '',
   username: '',
   email: '',
-  createdAt: 0,
   profile_image_url: '',
   wallet_address: '',
   bio: '',

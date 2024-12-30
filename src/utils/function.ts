@@ -57,7 +57,7 @@ export function calculateTimeDifference(timestamp: number): string {
   const diff = futureDate.getTime() - now.getTime();
 
   if (diff <= 0) {
-    return '2 h 33 m';
+    return '';
   }
 
   // Convert the difference to days, hours, and minutes
@@ -82,7 +82,7 @@ export function calculateOfferExpiration(timestamp: number): string {
   const diff = futureDate.getTime() - now.getTime();
 
   if (diff <= 0) {
-    return '5 hours';
+    return '0 seconds';
   }
 
   // Convert the difference to days, hours, and minutes

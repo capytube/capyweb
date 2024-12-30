@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "ap-southeast-1_WqhKijSl2",
+    "user_pool_id": "ap-southeast-1_HDPr9HjW8",
     "aws_region": "ap-southeast-1",
-    "user_pool_client_id": "176qa3kif4i0a1pq6g9k2ngqtr",
-    "identity_pool_id": "ap-southeast-1:132e4a06-4357-43a6-a498-fc8898dee2b9",
+    "user_pool_client_id": "2msrd31b0qa1n7sngffskf3kcj",
+    "identity_pool_id": "ap-southeast-1:a005495e-34f1-495f-84c3-ec77ce742864",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email"
@@ -60,9 +60,9 @@
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://hixatho3ofcuzmae3jvqngv4ty.appsync-api.ap-southeast-1.amazonaws.com/graphql",
+    "url": "https://xh4q6vlz5zfjfennjtvgtjp4na.appsync-api.ap-southeast-1.amazonaws.com/graphql",
     "aws_region": "ap-southeast-1",
-    "api_key": "da2-jhzbho3fqnh3zpslldnphhunji",
+    "api_key": "da2-kxatzz5erze4nirdj4jjxzav3e",
     "default_authorization_type": "API_KEY",
     "authorization_types": [
       "AMAZON_COGNITO_USER_POOLS",
@@ -268,13 +268,6 @@
               "isRequired": false,
               "attributes": []
             },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSTimestamp",
-              "isRequired": false,
-              "attributes": []
-            },
             "userVotes": {
               "name": "userVotes",
               "isArray": true,
@@ -306,6 +299,14 @@
                   "interaction_id"
                 ]
               }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -462,13 +463,6 @@
               "isRequired": false,
               "attributes": []
             },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSTimestamp",
-              "isRequired": false,
-              "attributes": []
-            },
             "tokenTransaction": {
               "name": "tokenTransaction",
               "isArray": false,
@@ -484,6 +478,14 @@
                 ],
                 "targetNames": []
               }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -604,13 +606,6 @@
               "isRequired": false,
               "attributes": []
             },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSTimestamp",
-              "isRequired": false,
-              "attributes": []
-            },
             "tokenTransaction": {
               "name": "tokenTransaction",
               "isArray": false,
@@ -626,6 +621,14 @@
                 ],
                 "targetNames": []
               }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -782,9 +785,10 @@
             "createdAt": {
               "name": "createdAt",
               "isArray": false,
-              "type": "AWSTimestamp",
+              "type": "AWSDateTime",
               "isRequired": false,
-              "attributes": []
+              "attributes": [],
+              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -898,9 +902,10 @@
             "createdAt": {
               "name": "createdAt",
               "isArray": false,
-              "type": "AWSTimestamp",
+              "type": "AWSDateTime",
               "isRequired": false,
-              "attributes": []
+              "attributes": [],
+              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -930,10 +935,9 @@
               "type": "key",
               "properties": {
                 "name": "StreamCommentsIndex",
-                "queryField": "listChatCommentsByStream_idAndCreatedAt",
+                "queryField": "listChatCommentsByStream_id",
                 "fields": [
-                  "stream_id",
-                  "createdAt"
+                  "stream_id"
                 ]
               }
             },
@@ -1312,13 +1316,6 @@
               "isRequired": false,
               "attributes": []
             },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSTimestamp",
-              "isRequired": false,
-              "attributes": []
-            },
             "profile_image_url": {
               "name": "profile_image_url",
               "isArray": false,
@@ -1475,6 +1472,14 @@
                 ]
               }
             },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
             "updatedAt": {
               "name": "updatedAt",
               "isArray": false,
@@ -1607,13 +1612,6 @@
               "isRequired": false,
               "attributes": []
             },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSTimestamp",
-              "isRequired": false,
-              "attributes": []
-            },
             "owner_details": {
               "name": "owner_details",
               "isArray": false,
@@ -1660,6 +1658,14 @@
                   "nftId"
                 ]
               }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
             },
             "updatedAt": {
               "name": "updatedAt",
@@ -2229,11 +2235,11 @@
   },
   "storage": {
     "aws_region": "ap-southeast-1",
-    "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-tx3zo53gubw5",
+    "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-js1uiklfz7lj",
     "buckets": [
       {
         "name": "capytubeDrive",
-        "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-tx3zo53gubw5",
+        "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-js1uiklfz7lj",
         "aws_region": "ap-southeast-1",
         "paths": {
           "pictures/*": {

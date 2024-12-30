@@ -9,7 +9,6 @@ export interface UserBidsType {
   user_id: string | null; // Foreign Key to User
   user?: unknown;
   bid_amount: number | null;
-  createdAt: number | null;
   tokenTransaction?: unknown;
 }
 
@@ -30,7 +29,6 @@ export async function createUserBids(params: Partial<UserBidsType>) {
     interaction_id: params.interaction_id,
     user_id: params.user_id,
     bid_amount: params.bid_amount,
-    createdAt: params.createdAt ?? new Date().getTime(),
   });
 
   return response;
