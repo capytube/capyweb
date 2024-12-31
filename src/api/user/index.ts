@@ -26,10 +26,19 @@ export async function getUserByWalletAddress(walletAddress: string) {
   return response;
 }
 
-export async function createUser({ userName, wallet_address }: { userName: string; wallet_address: string }) {
+export async function createUser({
+  userName,
+  wallet_address,
+  email_address,
+}: {
+  userName: string;
+  wallet_address: string;
+  email_address: string;
+}) {
   const response = await client.models.User.create({
     username: userName,
     wallet_address: wallet_address,
+    email: email_address,
   });
 
   if (response?.data?.id) {

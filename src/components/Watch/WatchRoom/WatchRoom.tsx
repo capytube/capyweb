@@ -41,7 +41,7 @@ const WatchRoom = () => {
   const [currentStreamData, setCurrentStreamData] = useState<LivestreamAtomType | null>(null);
 
   // variables
-  const currCapyData = JSON.parse(location.state?.capyData);
+  const currCapyData = JSON.parse(location?.state?.capyData ?? null);
 
   // functions
   // const watchCoins =

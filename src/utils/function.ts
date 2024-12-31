@@ -100,6 +100,32 @@ export function calculateOfferExpiration(timestamp: number): string {
   }
 }
 
+export function calculateActivityLog(timestamp: number): string {
+  const now = new Date();
+  const pastDate = new Date(timestamp);
+
+  // Calculate the difference in milliseconds
+  const diff = now.getTime() - pastDate.getTime();
+
+  if (diff <= 0) {
+    return '0 seconds';
+  }
+
+  // Convert the difference to days, hours, and minutes
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+  // Return the first available unit of time
+  if (days > 0) {
+    return `${days} days`;
+  } else if (hours > 0) {
+    return `${hours} hours`;
+  } else {
+    return `${minutes} minutes`;
+  }
+}
+
 export function shortenedWalletAddress(address: string) {
   // Ensure the address is not too short
   if (address?.length <= 13) {
