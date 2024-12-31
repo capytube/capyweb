@@ -12,7 +12,7 @@ import "./App.css";
 // import StreamingHome from "./components/Streaming/StreamingHome";
 import Home from "./components/Home";
 import Watch from "./components/Watch";
-import AboutMagnus from "./components/AboutMagnus";
+import AboutUs from "./components/AboutUs";
 import NFTMarket from "./components/NFTMarket/index";
 import NFTDetails from "./components/NFTMarket/NFTDetails/index";
 // import FullScreenStream from "./components/Streaming/FullScreenStream";
@@ -81,7 +81,7 @@ const App: React.FC = () => {
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/deletion" element={<DeletionInstructions />} />
-              <Route path="/about-magnus" element={<AboutMagnus />} />
+              <Route path="/about-us" element={<AboutUs />} />
             </Routes>
           </header>
         </div>
