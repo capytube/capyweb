@@ -26,7 +26,7 @@ const Footer = () => {
         </div>
 
         <div>
-          <Link to="/about-magnus" className={styles.navLink} title="About Capytube">
+          <Link to="/about-us" className={styles.navLink} title="About Capytube">
             About Capytube
           </Link>
           <Link to="/privacy-policy" className={styles.navLink} title="Privacy">
