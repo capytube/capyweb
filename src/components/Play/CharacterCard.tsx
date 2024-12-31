@@ -1,13 +1,11 @@
 import React from 'react';
+import { StorageImage } from '@aws-amplify/ui-react-storage';
 import ring from '/src/assets/ring.png';
+import { CapybaraAtomType } from '../../store/atoms/capybaraAtom';
 
 type Props = {
+  data: CapybaraAtomType;
   handleCapySelection: Function;
-  data: {
-    name: string;
-    image: string;
-    rotate: number;
-  };
 };
 
 function CharacterCard({ data, handleCapySelection }: Props) {
@@ -31,18 +29,17 @@ function CharacterCard({ data, handleCapySelection }: Props) {
       onMouseOver={() => setActive(true)}
       onMouseLeave={() => setActive(false)}
     >
-      <img src={data?.image} alt={data?.name} className="relative z-10" />
+      {data?.profile_image_url ? (
+        <StorageImage
+          alt={data?.name ?? 'capybara'}
+          path={data?.profile_image_url ?? ''}
+          loading="lazy"
+          className="relative z-10"
+        />
+      ) : null}
       {active && (
-        <div
-          className={`absolute ${
-            data?.name === 'Magnus' ? '-top-9' : ''
-          } left-0 z-0`}
-        >
-          <img
-            className={data?.name === 'Magnus' ? 'w-[500px] h-[300px]' : ''}
-            src={ring}
-            alt="ring"
-          />
+        <div className={`absolute ${data?.name === 'Magnus' ? '-top-9' : ''} left-0 z-0`}>
+          <img className={data?.name === 'Magnus' ? 'w-[500px] h-[300px]' : ''} src={ring} alt="ring" />
         </div>
       )}
       <div

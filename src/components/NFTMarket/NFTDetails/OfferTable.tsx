@@ -1,78 +1,80 @@
-type Props = {};
+import { useEffect, useState } from 'react';
+import { listAllOffersByNftId } from '../../../api/offers';
+import { OffersAtomType } from '../../../store/atoms/offersAtom';
+import { calculateOfferExpiration, shortenedWalletAddress } from '../../../utils/function';
 
-function OfferTable({}: Props) {
-  const tableHeader = [
-    { id: 1, title: 'Event', minWidth: '60px' },
-    { id: 2, title: 'Price', minWidth: '60px' },
-    { id: 3, title: 'Royalties', minWidth: '80px' },
-    { id: 4, title: 'From', minWidth: '170px' },
-    { id: 5, title: 'To', minWidth: '170px' },
-    { id: 6, title: 'Time', minWidth: '88px' },
-  ];
+type Props = { nftId: string };
 
-  const data = [
-    {
-      id: 1,
-      event: 'Sale',
-      price: 0.79,
-      royalties: 'Paid',
-      from: '0dlffkl...4trijf',
-      to: '03fk0fl...2fg4',
-      time: '10 days ago',
-    },
-    {
-      id: 2,
-      event: 'Sale',
-      price: 0.79,
-      royalties: 'Paid',
-      from: '0dlffkl...4trijf',
-      to: '03fk0fl...2fg4',
-      time: '10 days ago',
-    },
-    {
-      id: 3,
-      event: 'Sale',
-      price: 0.79,
-      royalties: 'Paid',
-      from: '0dlffkl...4trijf',
-      to: '03fk0fl...2fg4',
-      time: '10 days ago',
-    },
-  ];
+const tableHeader = [
+  { title: 'Price', minWidth: '60px' },
+  { title: 'From', minWidth: '500px' },
+  { title: 'Expires', minWidth: '88px' },
+];
+
+function OfferTable({ nftId }: Readonly<Props>) {
+  // states
+  const [isFetchingDataLoading, setIsFetchingDataLoading] = useState(false);
+  const [allOffersData, setAllOffersData] = useState<OffersAtomType[]>([]);
+
+  // variables
+  const isNoOffersYet = allOffersData?.length === 0;
+
+  // effects
+  useEffect(() => {
+    const fetchAllOffers = async () => {
+      setIsFetchingDataLoading(true);
+      await listAllOffersByNftId({ nftId })
+        .then((res) => {
+          setIsFetchingDataLoading(false);
+          if (res?.data?.length) {
+            setAllOffersData(res?.data);
+          }
+        })
+        .catch(() => {
+          setIsFetchingDataLoading(false);
+        });
+    };
+
+    if (nftId) {
+      fetchAllOffers();
+    }
+  }, [nftId]);
 
   return (
     <table className="w-full overflow-x-auto">
-      <thead>
+      <thead className={isNoOffersYet ? 'border-b' : ''}>
         <tr>
-          {tableHeader?.length &&
-            tableHeader?.map((header) => (
-              <th
-                key={header?.id}
-                className="text-left text-chocoBrown pr-4 font-commissioner last:pr-0"
-                style={{ minWidth: header?.minWidth }}
-              >
-                {header?.title}
-              </th>
-            ))}
+          {tableHeader?.map((header) => (
+            <th
+              key={header?.title}
+              className={`text-left text-chocoBrown pr-4 font-commissioner last:pr-0`}
+              style={{ minWidth: header?.minWidth }}
+            >
+              {header?.title}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
-        {data?.map((row) => (
-          <tr className="">
-            {Object.values(row)
-              ?.slice(1)
-              ?.map((value) => (
-                <td
-                  className={`${
-                    value === 'Paid' ? 'text-siteGreen' : 'text-chocoBrown'
-                  } font-commissioner pt-6`}
-                  key={value}
-                >
-                  {value}
-                </td>
-              ))}
+        {allOffersData?.length > 0 ? (
+          allOffersData?.map((row) => (
+            <tr key={row?.id}>
+              <td className="text-chocoBrown font-commissioner pt-6">{row?.price?.unit}</td>
+              <td className="text-chocoBrown font-commissioner pt-6" title={row?.fromDetails?.wallet_address ?? ''}>
+                {shortenedWalletAddress(row?.fromDetails?.wallet_address ?? '')}
+              </td>
+              <td className="text-chocoBrown font-commissioner pt-6">
+                in {calculateOfferExpiration(row?.expires_at ?? 0)}
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={3} className="px-4 py-6 text-center text-chocoBrown font-commissioner">
+              {isFetchingDataLoading ? 'Loading...' : 'No offers yet'}
+            </td>
           </tr>
-        ))}
+        )}
       </tbody>
     </table>
   );

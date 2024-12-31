@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "ap-southeast-1_WqhKijSl2",
+    "user_pool_id": "ap-southeast-1_HDPr9HjW8",
     "aws_region": "ap-southeast-1",
-    "user_pool_client_id": "176qa3kif4i0a1pq6g9k2ngqtr",
-    "identity_pool_id": "ap-southeast-1:132e4a06-4357-43a6-a498-fc8898dee2b9",
+    "user_pool_client_id": "2msrd31b0qa1n7sngffskf3kcj",
+    "identity_pool_id": "ap-southeast-1:a005495e-34f1-495f-84c3-ec77ce742864",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email"
@@ -60,9 +60,9 @@
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://hixatho3ofcuzmae3jvqngv4ty.appsync-api.ap-southeast-1.amazonaws.com/graphql",
+    "url": "https://xh4q6vlz5zfjfennjtvgtjp4na.appsync-api.ap-southeast-1.amazonaws.com/graphql",
     "aws_region": "ap-southeast-1",
-    "api_key": "da2-jhzbho3fqnh3zpslldnphhunji",
+    "api_key": "da2-kxatzz5erze4nirdj4jjxzav3e",
     "default_authorization_type": "API_KEY",
     "authorization_types": [
       "AMAZON_COGNITO_USER_POOLS",
@@ -71,195 +71,6 @@
     "model_introspection": {
       "version": 1,
       "models": {
-        "User": {
-          "name": "User",
-          "fields": {
-            "id": {
-              "name": "id",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "name": {
-              "name": "name",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSTimestamp",
-              "isRequired": false,
-              "attributes": []
-            },
-            "todayEarnedCoins": {
-              "name": "todayEarnedCoins",
-              "isArray": false,
-              "type": {
-                "nonModel": "UserTodayEarnedCoins"
-              },
-              "isRequired": false,
-              "attributes": []
-            },
-            "totalEarnedCoins": {
-              "name": "totalEarnedCoins",
-              "isArray": false,
-              "type": "Int",
-              "isRequired": false,
-              "attributes": []
-            },
-            "comment": {
-              "name": "comment",
-              "isArray": true,
-              "type": {
-                "model": "Comment"
-              },
-              "isRequired": false,
-              "attributes": [],
-              "isArrayNullable": true,
-              "association": {
-                "connectionType": "HAS_MANY",
-                "associatedWith": [
-                  "userId"
-                ]
-              }
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            }
-          },
-          "syncable": true,
-          "pluralName": "Users",
-          "attributes": [
-            {
-              "type": "model",
-              "properties": {}
-            },
-            {
-              "type": "auth",
-              "properties": {
-                "rules": [
-                  {
-                    "allow": "public",
-                    "provider": "apiKey",
-                    "operations": [
-                      "create",
-                      "update",
-                      "delete",
-                      "read"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "primaryKeyInfo": {
-            "isCustomPrimaryKey": false,
-            "primaryKeyFieldName": "id",
-            "sortKeyFieldNames": []
-          }
-        },
-        "Comment": {
-          "name": "Comment",
-          "fields": {
-            "id": {
-              "name": "id",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "streamId": {
-              "name": "streamId",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": false,
-              "attributes": []
-            },
-            "userId": {
-              "name": "userId",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": false,
-              "attributes": []
-            },
-            "user": {
-              "name": "user",
-              "isArray": false,
-              "type": {
-                "model": "User"
-              },
-              "isRequired": false,
-              "attributes": [],
-              "association": {
-                "connectionType": "BELONGS_TO",
-                "targetNames": [
-                  "userId"
-                ]
-              }
-            },
-            "content": {
-              "name": "content",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSTimestamp",
-              "isRequired": false,
-              "attributes": []
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            }
-          },
-          "syncable": true,
-          "pluralName": "Comments",
-          "attributes": [
-            {
-              "type": "model",
-              "properties": {}
-            },
-            {
-              "type": "auth",
-              "properties": {
-                "rules": [
-                  {
-                    "allow": "public",
-                    "provider": "apiKey",
-                    "operations": [
-                      "create",
-                      "update",
-                      "delete",
-                      "read"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "primaryKeyInfo": {
-            "isCustomPrimaryKey": false,
-            "primaryKeyFieldName": "id",
-            "sortKeyFieldNames": []
-          }
-        },
         "Ratings": {
           "name": "Ratings",
           "fields": {
@@ -335,8 +146,8 @@
             "sortKeyFieldNames": []
           }
         },
-        "CapyList": {
-          "name": "CapyList",
+        "Interactions": {
+          "name": "Interactions",
           "fields": {
             "id": {
               "name": "id",
@@ -345,28 +156,149 @@
               "isRequired": true,
               "attributes": []
             },
-            "capyName": {
-              "name": "capyName",
+            "capybara_id": {
+              "name": "capybara_id",
               "isArray": false,
-              "type": "String",
+              "type": "ID",
               "isRequired": false,
               "attributes": []
             },
-            "capyDescription": {
-              "name": "capyDescription",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "availableCameras": {
-              "name": "availableCameras",
+            "capybara": {
+              "name": "capybara",
               "isArray": false,
               "type": {
-                "nonModel": "CapyListAvailableCameras"
+                "model": "Capybara"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "capybara_id"
+                ]
+              }
+            },
+            "interaction_type": {
+              "name": "interaction_type",
+              "isArray": false,
+              "type": {
+                "enum": "InteractionsInteractionType"
               },
               "isRequired": false,
               "attributes": []
+            },
+            "title": {
+              "name": "title",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "title_icon_url": {
+              "name": "title_icon_url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "description": {
+              "name": "description",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "device_required": {
+              "name": "device_required",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "image_url": {
+              "name": "image_url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "options": {
+              "name": "options",
+              "isArray": true,
+              "type": {
+                "nonModel": "Vote_Options"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "rules": {
+              "name": "rules",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "session_date": {
+              "name": "session_date",
+              "isArray": false,
+              "type": "AWSTimestamp",
+              "isRequired": false,
+              "attributes": []
+            },
+            "result": {
+              "name": "result",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "vote_cost": {
+              "name": "vote_cost",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "current_bid": {
+              "name": "current_bid",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "userVotes": {
+              "name": "userVotes",
+              "isArray": true,
+              "type": {
+                "model": "UserVotes"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "interaction_id"
+                ]
+              }
+            },
+            "userBids": {
+              "name": "userBids",
+              "isArray": true,
+              "type": {
+                "model": "UserBids"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "interaction_id"
+                ]
+              }
             },
             "createdAt": {
               "name": "createdAt",
@@ -386,7 +318,489 @@
             }
           },
           "syncable": true,
-          "pluralName": "CapyLists",
+          "pluralName": "Interactions",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "CapybaraInteractionIndex",
+                "queryField": "listInteractionsByCapybara_idAndInteraction_type",
+                "fields": [
+                  "capybara_id",
+                  "interaction_type"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "UserVotes": {
+          "name": "UserVotes",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "interaction_id": {
+              "name": "interaction_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "interaction": {
+              "name": "interaction",
+              "isArray": false,
+              "type": {
+                "model": "Interactions"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "interaction_id"
+                ]
+              }
+            },
+            "user_id": {
+              "name": "user_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "user": {
+              "name": "user",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "user_id"
+                ]
+              }
+            },
+            "option_id": {
+              "name": "option_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "number_of_votes": {
+              "name": "number_of_votes",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "cost": {
+              "name": "cost",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "is_custom_request": {
+              "name": "is_custom_request",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "custom_request": {
+              "name": "custom_request",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "approved": {
+              "name": "approved",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "tokenTransaction": {
+              "name": "tokenTransaction",
+              "isArray": false,
+              "type": {
+                "model": "TokenTransaction"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "HAS_ONE",
+                "associatedWith": [
+                  "related_id"
+                ],
+                "targetNames": []
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "UserVotes",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "InteractionTypeIndex",
+                "queryField": "listUserVotesByInteraction_id",
+                "fields": [
+                  "interaction_id"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "UserBids": {
+          "name": "UserBids",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "interaction_id": {
+              "name": "interaction_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "interaction": {
+              "name": "interaction",
+              "isArray": false,
+              "type": {
+                "model": "Interactions"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "interaction_id"
+                ]
+              }
+            },
+            "user_id": {
+              "name": "user_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "user": {
+              "name": "user",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "user_id"
+                ]
+              }
+            },
+            "bid_amount": {
+              "name": "bid_amount",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "tokenTransaction": {
+              "name": "tokenTransaction",
+              "isArray": false,
+              "type": {
+                "model": "TokenTransaction"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "HAS_ONE",
+                "associatedWith": [
+                  "related_id"
+                ],
+                "targetNames": []
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "UserBids",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "InteractionTypeIndex",
+                "queryField": "listUserBidsByInteraction_id",
+                "fields": [
+                  "interaction_id"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "TokenTransaction": {
+          "name": "TokenTransaction",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "user_id": {
+              "name": "user_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "user": {
+              "name": "user",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "user_id"
+                ]
+              }
+            },
+            "transaction_type": {
+              "name": "transaction_type",
+              "isArray": false,
+              "type": {
+                "enum": "TokenTransactionTransactionType"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "amount": {
+              "name": "amount",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "related_id": {
+              "name": "related_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "related_type": {
+              "name": "related_type",
+              "isArray": false,
+              "type": {
+                "enum": "TokenTransactionRelatedType"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "relatedVote": {
+              "name": "relatedVote",
+              "isArray": false,
+              "type": {
+                "model": "UserVotes"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "related_id"
+                ]
+              }
+            },
+            "relatedBid": {
+              "name": "relatedBid",
+              "isArray": false,
+              "type": {
+                "model": "UserBids"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "related_id"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "TokenTransactions",
           "attributes": [
             {
               "type": "model",
@@ -423,24 +837,1324 @@
             "primaryKeyFieldName": "id",
             "sortKeyFieldNames": []
           }
-        }
-      },
-      "enums": {},
-      "nonModels": {
-        "UserTodayEarnedCoins": {
-          "name": "UserTodayEarnedCoins",
+        },
+        "ChatComments": {
+          "name": "ChatComments",
           "fields": {
-            "coins": {
-              "name": "coins",
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "stream_id": {
+              "name": "stream_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "stream": {
+              "name": "stream",
+              "isArray": false,
+              "type": {
+                "model": "LiveStream"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "stream_id"
+                ]
+              }
+            },
+            "user_id": {
+              "name": "user_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "user": {
+              "name": "user",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "user_id"
+                ]
+              }
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "ChatComments",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "StreamCommentsIndex",
+                "queryField": "listChatCommentsByStream_id",
+                "fields": [
+                  "stream_id"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "LiveStream": {
+          "name": "LiveStream",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "title": {
+              "name": "title",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "start_time": {
+              "name": "start_time",
+              "isArray": false,
+              "type": "AWSTimestamp",
+              "isRequired": false,
+              "attributes": []
+            },
+            "end_time": {
+              "name": "end_time",
+              "isArray": false,
+              "type": "AWSTimestamp",
+              "isRequired": false,
+              "attributes": []
+            },
+            "is_live": {
+              "name": "is_live",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "viewer_count": {
+              "name": "viewer_count",
               "isArray": false,
               "type": "Int",
               "isRequired": false,
               "attributes": []
             },
-            "timeStamp": {
-              "name": "timeStamp",
+            "capybara_ids": {
+              "name": "capybara_ids",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "access_type": {
+              "name": "access_type",
+              "isArray": false,
+              "type": {
+                "enum": "LiveStreamAccessType"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "price_per_10_sec": {
+              "name": "price_per_10_sec",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "streaming_address": {
+              "name": "streaming_address",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "chatComments": {
+              "name": "chatComments",
+              "isArray": true,
+              "type": {
+                "model": "ChatComments"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "stream_id"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "LiveStreams",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "AccessTypeIndex",
+                "queryField": "listLiveStreamByAccess_type",
+                "fields": [
+                  "access_type"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "Capybara": {
+          "name": "Capybara",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "name": {
+              "name": "name",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "gender": {
+              "name": "gender",
+              "isArray": false,
+              "type": {
+                "enum": "CapybaraGender"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "birth_year": {
+              "name": "birth_year",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "born_place": {
+              "name": "born_place",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "description": {
+              "name": "description",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "bio": {
+              "name": "bio",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "personality": {
+              "name": "personality",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "card_image_url": {
+              "name": "card_image_url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "avatar_image_url": {
+              "name": "avatar_image_url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "profile_image_url": {
+              "name": "profile_image_url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "favorite_activities": {
+              "name": "favorite_activities",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "fun_fact": {
+              "name": "fun_fact",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "interactions": {
+              "name": "interactions",
+              "isArray": true,
+              "type": {
+                "model": "Interactions"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "capybara_id"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Capybaras",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "User": {
+          "name": "User",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "username": {
+              "name": "username",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "email": {
+              "name": "email",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "profile_image_url": {
+              "name": "profile_image_url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "wallet_address": {
+              "name": "wallet_address",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "bio": {
+              "name": "bio",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "balance": {
+              "name": "balance",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "userVotes": {
+              "name": "userVotes",
+              "isArray": true,
+              "type": {
+                "model": "UserVotes"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "user_id"
+                ]
+              }
+            },
+            "userBids": {
+              "name": "userBids",
+              "isArray": true,
+              "type": {
+                "model": "UserBids"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "user_id"
+                ]
+              }
+            },
+            "tokenTransaction": {
+              "name": "tokenTransaction",
+              "isArray": true,
+              "type": {
+                "model": "TokenTransaction"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "user_id"
+                ]
+              }
+            },
+            "chatComments": {
+              "name": "chatComments",
+              "isArray": true,
+              "type": {
+                "model": "ChatComments"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "user_id"
+                ]
+              }
+            },
+            "nftOwned": {
+              "name": "nftOwned",
+              "isArray": true,
+              "type": {
+                "model": "NFT"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "owner_id"
+                ]
+              }
+            },
+            "offers": {
+              "name": "offers",
+              "isArray": true,
+              "type": {
+                "model": "Offers"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "from"
+                ]
+              }
+            },
+            "sellerActivityLog": {
+              "name": "sellerActivityLog",
+              "isArray": true,
+              "type": {
+                "model": "ActivityLog"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "from"
+                ]
+              }
+            },
+            "buyerActivityLog": {
+              "name": "buyerActivityLog",
+              "isArray": true,
+              "type": {
+                "model": "ActivityLog"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "to"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Users",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "ByWalletAddress",
+                "queryField": "getUserByWalletAddress",
+                "fields": [
+                  "wallet_address"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "NFT": {
+          "name": "NFT",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "name": {
+              "name": "name",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "image_url": {
+              "name": "image_url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "rarity": {
+              "name": "rarity",
+              "isArray": false,
+              "type": {
+                "enum": "NftRarity"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "labels": {
+              "name": "labels",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "properties": {
+              "name": "properties",
+              "isArray": true,
+              "type": {
+                "nonModel": "Options"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "price": {
+              "name": "price",
+              "isArray": false,
+              "type": {
+                "nonModel": "Price"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "is_for_sale": {
+              "name": "is_for_sale",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "owner_id": {
+              "name": "owner_id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "owner_details": {
+              "name": "owner_details",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "owner_id"
+                ]
+              }
+            },
+            "offers": {
+              "name": "offers",
+              "isArray": true,
+              "type": {
+                "model": "Offers"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "nftId"
+                ]
+              }
+            },
+            "activityLog": {
+              "name": "activityLog",
+              "isArray": true,
+              "type": {
+                "model": "ActivityLog"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "nftId"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "NFTS",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "ForSaleIndex",
+                "queryField": "listNFTByIs_for_sale",
+                "fields": [
+                  "is_for_sale"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "OwnerIndex",
+                "queryField": "listNFTByOwner_id",
+                "fields": [
+                  "owner_id"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "Offers": {
+          "name": "Offers",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "price": {
+              "name": "price",
+              "isArray": false,
+              "type": {
+                "nonModel": "Price"
+              },
+              "isRequired": true,
+              "attributes": []
+            },
+            "from": {
+              "name": "from",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "expires_at": {
+              "name": "expires_at",
               "isArray": false,
               "type": "AWSTimestamp",
+              "isRequired": false,
+              "attributes": []
+            },
+            "nftId": {
+              "name": "nftId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "nftDetails": {
+              "name": "nftDetails",
+              "isArray": false,
+              "type": {
+                "model": "NFT"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "nftId"
+                ]
+              }
+            },
+            "fromDetails": {
+              "name": "fromDetails",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "from"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Offers",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "OfferNftIdTypeIndex",
+                "queryField": "listOffersByNftId",
+                "fields": [
+                  "nftId"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "ActivityLog": {
+          "name": "ActivityLog",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "event": {
+              "name": "event",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "price": {
+              "name": "price",
+              "isArray": false,
+              "type": {
+                "nonModel": "Price"
+              },
+              "isRequired": true,
+              "attributes": []
+            },
+            "royalties": {
+              "name": "royalties",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "from": {
+              "name": "from",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "to": {
+              "name": "to",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "timestamp": {
+              "name": "timestamp",
+              "isArray": false,
+              "type": "AWSTimestamp",
+              "isRequired": false,
+              "attributes": []
+            },
+            "nftId": {
+              "name": "nftId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "nftDetails": {
+              "name": "nftDetails",
+              "isArray": false,
+              "type": {
+                "model": "NFT"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "nftId"
+                ]
+              }
+            },
+            "fromDetails": {
+              "name": "fromDetails",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "from"
+                ]
+              }
+            },
+            "toDetails": {
+              "name": "toDetails",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "to"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "ActivityLogs",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "LogNtfIdTypeIndex",
+                "queryField": "listActivityLogsByNftId",
+                "fields": [
+                  "nftId"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "apiKey",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        }
+      },
+      "enums": {
+        "InteractionsInteractionType": {
+          "name": "InteractionsInteractionType",
+          "values": [
+            "vote",
+            "bid"
+          ]
+        },
+        "TokenTransactionTransactionType": {
+          "name": "TokenTransactionTransactionType",
+          "values": [
+            "tip",
+            "reward",
+            "stream_payment",
+            "transfer",
+            "withdraw",
+            "deposit",
+            "vote",
+            "bid"
+          ]
+        },
+        "TokenTransactionRelatedType": {
+          "name": "TokenTransactionRelatedType",
+          "values": [
+            "vote",
+            "bid"
+          ]
+        },
+        "LiveStreamAccessType": {
+          "name": "LiveStreamAccessType",
+          "values": [
+            "public",
+            "private"
+          ]
+        },
+        "CapybaraGender": {
+          "name": "CapybaraGender",
+          "values": [
+            "male",
+            "female"
+          ]
+        },
+        "NftRarity": {
+          "name": "NftRarity",
+          "values": [
+            "ultra_rare",
+            "rare",
+            "epic"
+          ]
+        }
+      },
+      "nonModels": {
+        "Options": {
+          "name": "Options",
+          "fields": {
+            "key": {
+              "name": "key",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "value": {
+              "name": "value",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "Vote_Options": {
+          "name": "Vote_Options",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "title": {
+              "name": "title",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "description": {
+              "name": "description",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "Price": {
+          "name": "Price",
+          "fields": {
+            "unit": {
+              "name": "unit",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "usd": {
+              "name": "usd",
+              "isArray": false,
+              "type": "Float",
               "isRequired": false,
               "attributes": []
             }
@@ -485,32 +2199,6 @@
               "attributes": []
             }
           }
-        },
-        "CapyListAvailableCameras": {
-          "name": "CapyListAvailableCameras",
-          "fields": {
-            "mainCam": {
-              "name": "mainCam",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "foodCam": {
-              "name": "foodCam",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "bedroomCam": {
-              "name": "bedroomCam",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            }
-          }
         }
       },
       "queries": {
@@ -544,6 +2232,27 @@
         }
       }
     }
+  },
+  "storage": {
+    "aws_region": "ap-southeast-1",
+    "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-js1uiklfz7lj",
+    "buckets": [
+      {
+        "name": "capytubeDrive",
+        "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-js1uiklfz7lj",
+        "aws_region": "ap-southeast-1",
+        "paths": {
+          "pictures/*": {
+            "guest": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          }
+        }
+      }
+    ]
   },
   "version": "1.3"
 }

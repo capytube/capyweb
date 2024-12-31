@@ -1,27 +1,28 @@
-import { useEffect, useState } from "react";
-import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
-import { useAtom } from "jotai";
-import { generateClient } from "aws-amplify/api";
-import { Schema } from "../../../../../amplify/data/resource";
-import styles from "./EmojiRating.module.css";
-import capyangry from "../../../../assets/capyangry.svg";
-import capyfire from "../../../../assets/capyfire.svg";
-import capylike from "../../../../assets/capylike.svg";
-import capylove from "../../../../assets/capylove.svg";
-import capywow from "../../../../assets/capywow.svg";
-import { getRatings, updateRatings } from "../../../../utils/api";
-import { ratingsAtom } from "../../../../atoms/atom";
+import { useEffect, useState } from 'react';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+import { useAtom } from 'jotai';
+import { generateClient } from 'aws-amplify/api';
+import { Schema } from '../../../../../amplify/data/resource';
+import styles from './EmojiRating.module.css';
+import capyangry from '../../../../assets/capyangry.svg';
+import capyfire from '../../../../assets/capyfire.svg';
+import capylike from '../../../../assets/capylike.svg';
+import capylove from '../../../../assets/capylove.svg';
+import capywow from '../../../../assets/capywow.svg';
+import { ratingsAtom } from '../../../../store/atoms/ratingsAtom';
+import { getRatings, updateRatings } from '../../../../api/ratings';
+import { capitalizeWords } from '../../../../utils/function';
 
 interface EmojiRatingProps {
   streamId: string;
 }
 
 const emojis = [
-  { name: "capylove", icon: capylove },
-  { name: "capylike", icon: capylike },
-  { name: "capywow", icon: capywow },
-  { name: "capyangry", icon: capyangry },
-  { name: "capyfire", icon: capyfire },
+  { name: 'capylove', icon: capylove },
+  { name: 'capylike', icon: capylike },
+  { name: 'capywow', icon: capywow },
+  { name: 'capyangry', icon: capyangry },
+  { name: 'capyfire', icon: capyfire },
 ];
 
 const EmojiRating = ({ streamId }: EmojiRatingProps) => {
@@ -33,7 +34,7 @@ const EmojiRating = ({ streamId }: EmojiRatingProps) => {
   const [emojiCounts, setEmojiCounts] = useState<{
     [streamId: string]: { [emojiName: string]: number };
   }>(() => {
-    const ratings = localStorage.getItem("ratings");
+    const ratings = localStorage.getItem('ratings');
     return ratings ? JSON.parse(ratings) : { [streamId]: {} };
   });
 
@@ -74,17 +75,18 @@ const EmojiRating = ({ streamId }: EmojiRatingProps) => {
     if (isLoggedIn && streamId) {
       fetchRatingsOnce();
     }
-  }, []);
+  }, [streamId]);
 
   // keeping track in storage, so that apply limit on ratings on one login session
   useEffect(() => {
-    localStorage.setItem("ratings", JSON.stringify(emojiCounts));
+    localStorage.setItem('ratings', JSON.stringify(emojiCounts));
   }, [emojiCounts]);
 
   return (
     <div className={styles.emojiRatingWrapper}>
       {emojis.map((emoji) => (
         <button
+          title={capitalizeWords(emoji?.name?.replace('capy', ''))}
           key={emoji.name}
           className={`${styles.emojiRatingButton} disabled:cursor-not-allowed`}
           onClick={() => handleEmojiClick(streamId, emoji.name)}

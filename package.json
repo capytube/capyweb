@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.2.0",
+    "@aws-amplify/ui-react-storage": "^3.5.0",
     "@dynamic-labs/ethereum": "3.4.4",
     "@dynamic-labs/sdk-react-core": "3.4.4",
     "@dynamic-labs/wagmi-connector": "3.4.4",

@@ -1,15 +1,12 @@
 import React from 'react';
-import { useAtom } from 'jotai';
 import { useAccount } from 'wagmi';
 import { useTokenBalances } from '@dynamic-labs/sdk-react-core';
 
-import { userAtom } from '../../../atoms/atom';
 import { CapyCoin, CoinCurrency, PencilIcon, UnLinkedIcon } from '../Icons';
 import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
 
 function WalletSection({ premium = false }: { premium?: boolean }) {
   const { isConnected, address } = useAccount();
-  const [user] = useAtom(userAtom);
   const token = useTokenBalances();
 
   console.log('tokenBalances', token.tokenBalances);
@@ -34,7 +31,7 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
           <div className="flex gap-x-2 items-center md:justify-start justify-center">
             <CoinCurrency />
             <span className="sm:text-[64px] text-[45px] sm:leading-[76px] leading-[54px] font-ADLaM text-chocoBrown">
-              {user?.totalEarnedCoins || 0}
+              {0}
             </span>
           </div>
           <div className="flex gap-x-2 items-center md:justify-start justify-center sm:mb-4 mb-3 mt-5">

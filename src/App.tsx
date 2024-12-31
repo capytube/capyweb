@@ -22,7 +22,7 @@ import Header from "./components/Header/Header";
 import Navbar from "./components/Navbar/Navbar";
 import PlayPage from "./components/Play/index";
 import { useAtom } from "jotai";
-import { walletAtom } from "./atoms/atom";
+import { walletAtom } from "./store/atoms";
 
 const App: React.FC = () => {
   const isLoggedIn = useIsLoggedIn();

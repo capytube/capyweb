@@ -1,37 +1,12 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { useAtomValue } from 'jotai';
 import { DropdownIcon } from '../../Play/Icons';
 import { SearchIcon } from '../../Icons/Icons';
 import NFTCard from '../../Account/NFTCard';
-
-import BrownCapy from '/src/assets/account/brownRat.png';
-import PinkCapy from '/src/assets/account/pinkRat.png';
-import SlateCapy from '/src/assets/account/slateRat.png';
+import { nftAtom } from '../../../store/atoms/nftAtom';
+import { listAllNfts } from '../../../api/nft';
 
 type Props = {};
-
-const nftCards = [
-  {
-    id: 1,
-    title: '#12345678',
-    image: BrownCapy,
-    tag: 'ultra rare',
-    price: 8.5,
-  },
-  {
-    id: 2,
-    title: '#12345678',
-    image: PinkCapy,
-    tag: 'rare',
-    price: 8.5,
-  },
-  {
-    id: 3,
-    title: '#12345678',
-    image: SlateCapy,
-    tag: 'epic',
-    price: 8.5,
-  },
-];
 
 function printValue(value: number) {
   if (value === 1) {
@@ -42,18 +17,56 @@ function printValue(value: number) {
 }
 
 export default function ListingSection({}: Props) {
-  const [option, setOption] = React.useState<number>(1);
-  const [isOpen, setIsOpen] = React.useState<boolean>(false);
+  // hooks
+  const allNftData = useAtomValue(nftAtom);
 
-  const optionsStyle = 'text-left text-lg p-2';
+  // states
+  const [option, setOption] = useState<number>(1); // 1 for ASC, 2 for DESC
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isFetchingDataLoading, setIsFetchingDataLoading] = useState(false);
+  const [sortedData, setSortedData] = useState(allNftData);
+
+  // variables
+  const optionsStyle = 'text-left text-lg p-2 rounded-lg hover:bg-[#faceaf]';
+
+  // effects
+  useEffect(() => {
+    const fetchAllNfts = async () => {
+      setIsFetchingDataLoading(true);
+      await listAllNfts()
+        .then(() => {
+          setIsFetchingDataLoading(false);
+        })
+        .catch(() => {
+          setIsFetchingDataLoading(false);
+        });
+    };
+
+    if (allNftData?.length === 0) {
+      fetchAllNfts();
+    }
+  }, []);
+
+  // Sort data whenever `option` or `allNftData` changes
+  useEffect(() => {
+    const sortData = [...allNftData].sort((a, b) => {
+      if (option === 1) {
+        return (a?.price?.unit ?? 0) - (b?.price?.unit ?? 0); // Ascending order
+      } else if (option === 2) {
+        return (b?.price?.unit ?? 0) - (a?.price?.unit ?? 0); // Descending order
+      }
+
+      return 0;
+    });
+
+    setSortedData(sortData);
+  }, [option, allNftData]);
 
   return (
     <div className="lg:pt-10 py-8 lg:px-40 px-4 pb-20 flex flex-col lg:gap-y-10 gap-y-6 items-center">
       <div className="max-w-[1260px] flex lg:flex-row flex-col gap-y-4 justify-between items-end w-full">
         <div className="w-full flex-1">
-          <span className="font-ADLaM text-xl text-chocoBrown">
-            Search by Token ID
-          </span>
+          <span className="font-ADLaM text-xl text-chocoBrown">Search by Token ID</span>
           <div className="mt-2 flex gap-x-2 items-center text-chocoBrown border-2 border-chocoBrown rounded-[4px] px-3 sm:py-2.5 py-1.5 font-commissioner max-h-11 w-full lg:max-w-[587px]">
             <SearchIcon />
             <input type="text" className="outline-none " />
@@ -94,11 +107,13 @@ export default function ListingSection({}: Props) {
           ) : null}
         </div>
       </div>
-      <div className="grid lg:grid-cols-4 grid-cols-2 max-[390px]:grid-cols-1 gap-x-11 gap-y-10">
-        {[...nftCards, ...nftCards, ...nftCards]?.map((card, idx) => (
-          <NFTCard key={idx} data={{ ...card, id: idx + 1 }} />
-        ))}
-      </div>
+      {!isFetchingDataLoading ? (
+        <div className="grid 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2 max-[390px]:grid-cols-1 2xl:gap-x-11 lg:gap-x-16 gap-x-11 gap-y-10">
+          {sortedData?.length > 0 && sortedData?.map((data) => <NFTCard key={data?.id} data={data} />)}
+        </div>
+      ) : (
+        'Loading...'
+      )}
     </div>
   );
 }

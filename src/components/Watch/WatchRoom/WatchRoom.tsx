@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 // import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
-import { useAtom } from 'jotai';
-
-import { capybaraAtom } from '../../../atoms/atom';
-// import { capybaraAtom, userAtom } from '../../../atoms/atom';
-import { getCapybara } from '../../../utils/api';
+import { useAtomValue } from 'jotai';
 
 import Footer from '../../Footer/Footer';
 import ChatRoom from './ChatRoom/ChatRoom';
@@ -18,24 +14,36 @@ import EmojiRating from './EmojiRating/EmojiRating';
 // import instaIcon from '../../../assets/icons/insta.svg';
 // import shareIcon from '../../../assets/icons/share.svg';
 import styles from './WatchRoom.module.css';
+import { LivestreamAtomType, livestreamPrivateAtom } from '../../../store/atoms/livestreamAtom';
+import { listPrivateLivestreams } from '../../../api/livestream';
 // import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
 
 // const dailyLimit = 10;
 
 const WatchRoom = () => {
+  // hooks
   // const navigate = useNavigate();
   const { capyId } = useParams<{
     capyId: string;
   }>();
-
+  const location = useLocation();
   // const isLoggedIn = useIsLoggedIn();
+  const privateStreamData = useAtomValue(livestreamPrivateAtom);
+
+  // useStates
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
   const [, setIsCapyCoinIncrementing] = useState<boolean>(false);
   // const [isCapyCoinIncrementing, setIsCapyCoinIncrementing] = useState<boolean>(false);
+  const [activeCam, setActiveCam] = useState(0);
+  const [isStreamDataLoading, setIsStreamDataLoading] = useState(false);
+  const [livestreamData, setLivestreamData] = useState<LivestreamAtomType[]>([]);
+  const [videoStreamAddress, setVideoStreamAddress] = useState('');
+  const [currentStreamData, setCurrentStreamData] = useState<LivestreamAtomType | null>(null);
 
-  // const [user] = useAtom(userAtom);
-  const [capybara] = useAtom(capybaraAtom);
+  // variables
+  const currCapyData = JSON.parse(location?.state?.capyData ?? null);
 
+  // functions
   // const watchCoins =
   //   (() => {
   //     if (isLoggedIn) {
@@ -46,16 +54,7 @@ const WatchRoom = () => {
   //     return 0;
   //   })() ?? 0;
 
-  const [activeCam, setActiveCam] = useState(0);
-  const [streamId, setStreamId] = useState('');
-
-  const getCapy = async () => {
-    const response = await getCapybara(capyId ?? '');
-    if (response?.data?.availableCameras?.mainCam) {
-      setStreamId(response?.data?.availableCameras?.mainCam);
-    }
-  };
-
+  // effects
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 500);
     window.addEventListener('resize', handleResize);
@@ -63,107 +62,140 @@ const WatchRoom = () => {
   }, []);
 
   useEffect(() => {
-    getCapy();
+    const fetchPrivateStreams = async () => {
+      setIsStreamDataLoading(true);
+      await listPrivateLivestreams()
+        .then((res) => {
+          if (res?.data?.length) {
+            setIsStreamDataLoading(false);
+          }
+        })
+        .catch(() => {
+          setIsStreamDataLoading(false);
+        });
+    };
+
+    fetchPrivateStreams();
   }, []);
 
-  const availableCams = capybara?.availableCameras
-    ? // @ts-ignore
-      Object.keys(capybara?.availableCameras).filter((key) => capybara?.availableCameras[key])
-    : [];
+  useEffect(() => {
+    const filterStreamsByCapyId = (streamData: typeof privateStreamData, capyId: string) => {
+      return streamData?.filter(
+        (stream) => Array.isArray(stream?.capybara_ids) && stream?.capybara_ids?.includes(capyId),
+      );
+    };
+
+    if (privateStreamData?.length) {
+      const filteredStreams = filterStreamsByCapyId(privateStreamData, capyId ?? '');
+
+      // sorting
+      const sortOrder = ['main', 'food', 'bedroom'];
+      const getOrder = (title: string | null) => {
+        const match = sortOrder.find((key) => title?.includes(key));
+        return match ? sortOrder.indexOf(match) : sortOrder.length;
+      };
+      const sortedData = [...filteredStreams].sort((a, b) => getOrder(a.title) - getOrder(b.title));
+
+      if (sortedData?.length) {
+        setLivestreamData(sortedData);
+        setVideoStreamAddress(sortedData?.[0]?.streaming_address ?? '');
+        setCurrentStreamData(sortedData?.[0]);
+      }
+    }
+  }, [privateStreamData, capyId]);
 
   return (
     <>
       <div className={styles.watchRoomWrapper}>
-        {capybara?.capyName && streamId ? (
+        {!isStreamDataLoading && videoStreamAddress ? (
           <>
-            <h1>{capybara?.capyName}’ ROOM</h1>
+            <h1>{currCapyData?.name}’ ROOM</h1>
             <div className={styles.watchRoomContent}>
               <div className={styles.roomCamsContainer}>
-                {availableCams?.map((camName, index) => {
-                  // @ts-ignore
-                  const stream = capybara?.availableCameras[camName];
+                {livestreamData?.map((data, index) => {
+                  const streamAddr = data?.streaming_address ?? '';
                   return (
                     <button
-                      key={camName}
+                      key={data?.id}
                       className={`${activeCam === index ? styles.selected : ''} ${
-                        !stream && 'cursor-not-allowed hidden'
+                        !streamAddr && 'cursor-not-allowed hidden'
                       }`}
-                      disabled={!stream}
+                      disabled={!streamAddr}
                       onClick={() => {
-                        if (capybara?.availableCameras) {
+                        if (streamAddr) {
                           setActiveCam(index);
-                          // @ts-ignore
-                          setStreamId(stream);
+                          setVideoStreamAddress(streamAddr);
+                          setCurrentStreamData(data);
                         }
                       }}
                     >
-                      <span className={styles.hideInMobile}>{capybara?.capyName}’ </span>
+                      <span className={styles.hideInMobile}>{currCapyData?.name}’ </span>
                       {''}
-                      {camName?.slice(0, -3)} cam
+                      {data?.title}
                     </button>
                   );
                 })}
               </div>
 
-          {/*<div className={`${styles.streamToolbarContainer} sm:px-24 px-8 py-4 relative overflow-hidden`}>*/}
-          {/*  <TopCrossRibbon />*/}
-          {/*  <div className={styles.coinsStatus}>*/}
-          {/*    <span className={styles.coinsStatus__title}>Watch-to-earn:</span>*/}
-          {/*    <div className={styles.coinsStatus__value__div}>*/}
-          {/*      <img src={coinIcon} alt="coin" />*/}
-          {/*      <span className={styles.coinsStatus__value}>*/}
-          {/*        {watchCoins}/{dailyLimit}*/}
-          {/*      </span>*/}
-          {/*    </div>*/}
-          {/*  </div>*/}
-          {/*  <div className="flex flex-col md:flex-row items-center gap-2">*/}
-          {/*    <div className={styles.progressContainer}>*/}
-          {/*      <div className={isCapyCoinIncrementing ? styles.progressBarWrapper : ''} />*/}
-          {/*      <div className={styles.progressBar} style={{ width: `${(watchCoins / dailyLimit) * 100}%` }} />*/}
-          {/*    </div>*/}
-          {/*    {watchCoins === dailyLimit ? (*/}
-          {/*      <span className="font-commissioner text-lg text-chocoBrown font-normal">daily limit reached!</span>*/}
-          {/*    ) : null}*/}
-          {/*  </div>*/}
+              {/*<div className={`${styles.streamToolbarContainer} sm:px-24 px-8 py-4 relative overflow-hidden`}>*/}
+              {/*  <TopCrossRibbon />*/}
+              {/*  <div className={styles.coinsStatus}>*/}
+              {/*    <span className={styles.coinsStatus__title}>Watch-to-earn:</span>*/}
+              {/*    <div className={styles.coinsStatus__value__div}>*/}
+              {/*      <img src={coinIcon} alt="coin" />*/}
+              {/*      <span className={styles.coinsStatus__value}>*/}
+              {/*        {watchCoins}/{dailyLimit}*/}
+              {/*      </span>*/}
+              {/*    </div>*/}
+              {/*  </div>*/}
+              {/*  <div className="flex flex-col md:flex-row items-center gap-2">*/}
+              {/*    <div className={styles.progressContainer}>*/}
+              {/*      <div className={isCapyCoinIncrementing ? styles.progressBarWrapper : ''} />*/}
+              {/*      <div className={styles.progressBar} style={{ width: `${(watchCoins / dailyLimit) * 100}%` }} />*/}
+              {/*    </div>*/}
+              {/*    {watchCoins === dailyLimit ? (*/}
+              {/*      <span className="font-commissioner text-lg text-chocoBrown font-normal">daily limit reached!</span>*/}
+              {/*    ) : null}*/}
+              {/*  </div>*/}
 
-          {/*      /!* <button*/}
-          {/*    disabled={watchCoins < dailyLimit}*/}
-          {/*    className={`${styles.collectButton} ${*/}
-          {/*      watchCoins === 10*/}
-          {/*        ? "animate-pulse"*/}
-          {/*        : "bg-siteGreen cursor-not-allowed"*/}
-          {/*    }`}*/}
-          {/*  >*/}
-          {/*    {watchCoins === dailyLimit ? "Collect now" : "Collect"}*/}
-          {/*  </button> *!/*/}
+              {/*      /!* <button*/}
+              {/*    disabled={watchCoins < dailyLimit}*/}
+              {/*    className={`${styles.collectButton} ${*/}
+              {/*      watchCoins === 10*/}
+              {/*        ? "animate-pulse"*/}
+              {/*        : "bg-siteGreen cursor-not-allowed"*/}
+              {/*    }`}*/}
+              {/*  >*/}
+              {/*    {watchCoins === dailyLimit ? "Collect now" : "Collect"}*/}
+              {/*  </button> *!/*/}
 
-          {/*      <div className={styles.streamShareIcons}>*/}
-          {/*        <img src={fbIcon} alt="fb" />*/}
-          {/*        <img src={twitterIcon} alt="X" />*/}
-          {/*        <img src={instaIcon} alt="Insta" />*/}
-          {/*        <img src={shareIcon} alt="Share" />*/}
-          {/*      </div>*/}
-          {/*    </div>*/}
+              {/*      <div className={styles.streamShareIcons}>*/}
+              {/*        <img src={fbIcon} alt="fb" />*/}
+              {/*        <img src={twitterIcon} alt="X" />*/}
+              {/*        <img src={instaIcon} alt="Insta" />*/}
+              {/*        <img src={shareIcon} alt="Share" />*/}
+              {/*      </div>*/}
+              {/*    </div>*/}
             </div>
 
             <div className={styles.videoMainContainer}>
               <div className={styles.videoAndCommentSection}>
                 <div className={styles.videoSection}>
                   <LivepeerPlayer
-                    streamId={streamId ?? ''}
-                    title={capybara?.capyName ?? ''}
+                    streamId={videoStreamAddress ?? ''}
+                    title={currCapyData?.name ?? ''}
                     setIsCapyCoinIncrementing={setIsCapyCoinIncrementing}
                   />
                 </div>
                 <div className={styles.commentSection}>
                   <div className={styles.emojiRatingWrapper__mobile}>
-                    <EmojiRating streamId={streamId ?? ''} />
+                    <EmojiRating streamId={videoStreamAddress ?? ''} />
                   </div>
-                  <ChatRoom streamId={streamId ?? ''} />
+                  <ChatRoom streamId={currentStreamData?.id ?? ''} />
                 </div>
               </div>
               <div className={styles.emojiRatingWrapper}>
-                <EmojiRating streamId={streamId ?? ''} />
+                <EmojiRating streamId={videoStreamAddress ?? ''} />
               </div>
             </div>
           </>

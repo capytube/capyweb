@@ -1,4 +1,5 @@
 import { MouseEventHandler } from 'react';
+import { StorageImage } from '@aws-amplify/ui-react-storage';
 import { DownRightArrowIcon } from './Icons';
 // import Elon from '/src/assets/play/elon.png';
 
@@ -16,11 +17,14 @@ function SelectedCharacterCard({ capy, handleClick }: Props) {
           {capy?.name}
         </span>
       </div>
-      <img
-        src={capy?.image}
-        alt="capy"
-        className="md:max-w-[192px] max-w-[106px] "
-      />
+      {capy?.image ? (
+        <StorageImage
+          alt={capy?.name ?? 'capybara'}
+          path={capy?.image ?? ''}
+          loading="lazy"
+          className="md:max-w-[192px] max-w-[106px]"
+        />
+      ) : null}
       <button
         type="button"
         className="md:text-3xl text-base bg-darkOrange rounded-lg md:px-4 px-3.5 md:py-2.5 py-1.5 max-h-fit text-white font-ADLaM shadow-buttonShadow"

@@ -1,10 +1,15 @@
 import { useNavigate } from 'react-router-dom';
+import { StorageImage } from '@aws-amplify/ui-react-storage';
 
-import { StarringData } from '../Starring';
 import styles from './CapyCards.module.css';
+import { CapybaraAtomType } from '../../../../store/atoms/capybaraAtom';
+
+export interface CapyData extends CapybaraAtomType {
+  streamCount: number;
+}
 
 interface CapyProfileProps {
-  data: StarringData;
+  data: CapyData;
   customCardStyle: { transform: string };
 }
 
@@ -12,13 +17,20 @@ const CapyProfile = (props: CapyProfileProps) => {
   const { data, customCardStyle } = props;
   const navigate = useNavigate();
 
-  const handleWatchStream = (streamId: string) => {
-    navigate(`/stream/${streamId}`);
+  const handleWatchStream = (capyId: string) => {
+    navigate(`/stream/${capyId}`, { state: { capyData: JSON.stringify(data) } });
   };
 
   return (
     <div className={styles.card} style={customCardStyle}>
-      <img src={data?.image} alt={data?.name ?? 'capybara'} className={styles.image} />
+      {data?.avatar_image_url ? (
+        <StorageImage
+          alt={data?.name ?? 'capybara'}
+          path={data?.avatar_image_url ?? ''}
+          loading="lazy"
+          className={styles.image}
+        />
+      ) : null}
       <div className={styles.content}>
         <h2 className={styles.name}>{data?.name}</h2>
         <div className={styles.detail}>
@@ -37,7 +49,7 @@ const CapyProfile = (props: CapyProfileProps) => {
           <span className={styles.greenCircle} /> {data?.streamCount} available streams
         </p>
         <button
-          className={styles.watchButton__mobile}
+          className={`${styles.watchButton__mobile} ${data?.streamCount === 0 && 'cursor-not-allowed'}`}
           disabled={data?.streamCount === 0}
           onClick={() => {
             if (data?.id) handleWatchStream(data?.id);
