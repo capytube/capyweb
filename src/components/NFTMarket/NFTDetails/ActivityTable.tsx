@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityLogAtomType } from '../../../store/atoms/activityLogAtom';
 import { listAllActivityLogsByNftId } from '../../../api/activityLog';
-import { calculateOfferExpiration, shortenedWalletAddress } from '../../../utils/function';
+import { calculateActivityLog, shortenedWalletAddress } from '../../../utils/function';
 
 type Props = { nftId: string };
 
@@ -76,7 +76,7 @@ export default function ActivityTable({ nftId }: Readonly<Props>) {
                 {shortenedWalletAddress(row?.toDetails?.wallet_address ?? '')}
               </td>
               <td className="text-chocoBrown font-commissioner pt-6">
-                {calculateOfferExpiration(row?.timestamp ?? 0)} ago
+                {calculateActivityLog(row?.timestamp ?? 0)} ago
               </td>
             </tr>
           ))
