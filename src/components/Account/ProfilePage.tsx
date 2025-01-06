@@ -31,9 +31,6 @@ const ProfilePage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // if (isLoggedIn) {
-  //   return <div>Loading...</div>;
-  // }
   return isLoggedIn ? (
     isConnected ? (
       <>
@@ -51,7 +48,7 @@ const ProfilePage: React.FC = () => {
                   name="displayName"
                   type="text"
                   disabled={!!userData?.username}
-                  defaultValue={userData?.username || ''}
+                  value={userData?.username || ''}
                   className="border-2 bg-white border-chocoBrown rounded-[4px] outline-none px-3 sm:py-2.5 py-1.5 font-commissioner max-h-11 w-full lg:min-w-[316px] lg:max-w-[316px] max-w-[266px]"
                 />
                 <button type="button" onClick={() => setOpenNameModal(true)}>
