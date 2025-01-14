@@ -36,11 +36,11 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
   const videoErrorMessage = () => {
     let msg = '';
     if (isLoading) msg = 'Loading stream...';
-    else if (error) msg = 'The Capybara streams isn´t available';
-    else msg = 'Please Login to Watch the Stream';
-
+    else if (!isHomePage && !isConnected) msg = 'Please Login to Watch the Stream';
+    else if (error) msg = error;
+  
     return msg;
-  };
+  };  
 
   useEffect(() => {
     if (isConnected && address) {
@@ -89,6 +89,23 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
 
     fetchSource();
   }, [streamId]);
+
+  useEffect(() => {
+    const validatingVodSource = async () => {
+      if (vodSource && vodSource?.length > 0) {
+        const link = vodSource?.filter((vod) => vod?.type === 'webrtc' || vod?.type === 'video');
+        const src = link?.[0]?.src;
+        const response = await fetch(src);
+        if (response?.status === 200) {
+          setError(null);
+        } else {
+          setError('The Capybara streams isn´t available');
+        }
+      }
+    };
+
+    validatingVodSource();
+  }, [vodSource]);
 
   return (
     <div>
