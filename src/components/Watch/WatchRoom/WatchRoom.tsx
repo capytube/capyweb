@@ -7,6 +7,7 @@ import Footer from '../../Footer/Footer';
 import ChatRoom from './ChatRoom/ChatRoom';
 import LivepeerPlayer from '../../LivepeerPlayer';
 import EmojiRating from './EmojiRating/EmojiRating';
+import UserStreamCounter from './UserStreamCounter';
 
 // import coinIcon from '../../../assets/icons/coin.svg';
 // import fbIcon from '../../../assets/icons/fb.svg';
@@ -39,6 +40,7 @@ const WatchRoom = () => {
   const [livestreamData, setLivestreamData] = useState<LivestreamAtomType[]>([]);
   const [videoStreamAddress, setVideoStreamAddress] = useState('');
   const [currentStreamData, setCurrentStreamData] = useState<LivestreamAtomType | null>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
 
   // variables
   const currCapyData = JSON.parse(location?.state?.capyData ?? null);
@@ -185,17 +187,20 @@ const WatchRoom = () => {
                     streamId={videoStreamAddress ?? ''}
                     title={currCapyData?.name ?? ''}
                     setIsCapyCoinIncrementing={setIsCapyCoinIncrementing}
+                    setIsVideoPlaying={setIsVideoPlaying}
                   />
                 </div>
                 <div className={styles.commentSection}>
                   <div className={styles.emojiRatingWrapper__mobile}>
                     <EmojiRating streamId={videoStreamAddress ?? ''} />
+                    <UserStreamCounter isVideoPlaying={isVideoPlaying} />
                   </div>
                   <ChatRoom streamId={currentStreamData?.id ?? ''} />
                 </div>
               </div>
               <div className={styles.emojiRatingWrapper}>
                 <EmojiRating streamId={videoStreamAddress ?? ''} />
+                <UserStreamCounter isVideoPlaying={isVideoPlaying} />
               </div>
             </div>
           </>
