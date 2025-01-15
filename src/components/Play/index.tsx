@@ -1,13 +1,12 @@
 import React from 'react';
 import { DropdownIcon } from './Icons';
-// import Footer from '../Footer/Footer';
 import ChooseCapySection from './ChooseCapySection';
 import GameSection from './GameSection';
 import Footer from '../Footer/Footer';
-import LivepeerPlayer from '../LivepeerPlayer';
 import Modal from '../Modal/Modal';
 import { CapyCoin } from '../Account/Icons';
 import { CapybaraAtomType } from '../../store/atoms/capybaraAtom';
+import VideoPlayer from '../VideoPlayer';
 
 type Props = {};
 
@@ -157,7 +156,11 @@ function index({}: Props) {
             </div>
           </div>
           <div className="lg:max-w-5xl mx-auto mt-10">
-            <LivepeerPlayer streamId="fa7ahoikpf19u1e0" title="Magnus" />
+            {/* <LivepeerPlayer streamId="fa7ahoikpf19u1e0" title="Magnus" /> */}
+            <VideoPlayer
+              streamId="play-page"
+              videoUrl="https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4"
+            />
             {/* <img
           src={vidFrame}
           alt="frame"

@@ -3,13 +3,12 @@ import js from '@eslint/js';
 import * as tseslint from 'typescript-eslint';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import parser from '@typescript-eslint/parser';
 
 export default [
   {
     ignores: ['.amplify/**'],
-    extends: ['plugin:@typescript-eslint/recommended'],
   },
-
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -17,6 +16,7 @@ export default [
         ...globals.browser,
         ...globals.node,
       },
+      parser,
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
@@ -42,10 +42,8 @@ export default [
       ...reactHooksPlugin.configs.recommended.rules,
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_' },
-      ],
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-undef': 'off',
     },
   },

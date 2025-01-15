@@ -60,28 +60,28 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'Public Stream',
     is_live: true,
-    capybara_ids: ['b6a9d892-fc90-411a-85b7-e57d44f89292'],
+    capybara_ids: ['35199085-1a76-44f4-882c-3f4a70b0294a'],
     access_type: 'public',
     price_per_10_sec: 1,
-    streaming_address: 'fa7ahoikpf19u1e0',
+    streaming_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
   });
 
   await createLivestream({
     title: 'main cam',
     is_live: true,
-    capybara_ids: ['b6a9d892-fc90-411a-85b7-e57d44f89292', '5d11e71b-a6fc-4051-97e9-5561e58477fc'],
+    capybara_ids: ['35199085-1a76-44f4-882c-3f4a70b0294a', 'db4156be-fc5a-4851-89b1-0c7b07e9af09'],
     access_type: 'private',
     price_per_10_sec: 1,
-    streaming_address: 'fa7ahoikpf19u1e0',
+    streaming_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
   });
 
   await createLivestream({
     title: 'food cam',
     is_live: true,
-    capybara_ids: ['5d11e71b-a6fc-4051-97e9-5561e58477fc'],
+    capybara_ids: ['db4156be-fc5a-4851-89b1-0c7b07e9af09'],
     access_type: 'private',
     price_per_10_sec: 1,
-    streaming_address: 'fa7ahoikpf19u1e0',
+    streaming_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
   });
 };
 
