@@ -47,12 +47,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   console.log('playTime', playTime);
 
   // functions
-  const handlePlayPause = () => {
-    if (!isHomePage) {
-      setIsPlaying(!isPlaying);
-    }
-  };
-
   const handlePlay = () => {
     setIsPlaying(true);
     if (playerInstance) {
@@ -124,7 +118,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   return (
     <div className={styles.videoWrapper}>
-      <div onClick={handlePlayPause} className={styles.playerWrapper}>
+      <div className={styles.playerWrapper}>
         {!isVideoError && (isHomePage || (!isHomePage && isLoggedIn)) ? (
           <ReactPlayer
             width="100%"
@@ -154,7 +148,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Display play button only when the video is paused */}
       {playerInstance && !isPlaying && !isVideoError && !isHomePage && (
-        <button className={styles.customControl} onClick={handlePlayPause}>
+        <button className={styles.customControl}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
             <path d="M8 5v14l11-7z" />
           </svg>
