@@ -1,14 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
-import { Src } from "@livepeer/react";
-import { useLocation } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
+import { Src } from '@livepeer/react';
+import { useLocation } from 'react-router-dom';
 
-import { Schema } from "../../amplify/data/resource";
-import { generateClient } from "aws-amplify/api";
-import LiveStream from "./Streaming/LiveStream";
-import PauseStreamPopup from "./Watch/WatchRoom/PauseStreamPopup/PauseStreamPopup";
-
-import vidFrame from "../assets/vidFrame.svg";
+import { Schema } from '../../amplify/data/resource';
+import { generateClient } from 'aws-amplify/api';
+import LiveStream from './Streaming/LiveStream';
 
 interface LivepeerPlayerProps {
   streamId: string;
@@ -16,31 +13,15 @@ interface LivepeerPlayerProps {
   setIsCapyCoinIncrementing?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
-  streamId,
-  title,
-  setIsCapyCoinIncrementing,
-}) => {
+const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({ streamId, title, setIsCapyCoinIncrementing }) => {
   const { pathname } = useLocation();
-  const isHomePage = pathname === "/";
+  const isHomePage = pathname === '/';
   const { address, isConnected } = useAccount();
   const [vodSource, setVodSource] = useState<Src[] | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewerId, setViewerId] = useState("");
+  const [viewerId, setViewerId] = useState('');
   const videoRef = React.useRef<any>(null);
-
-  const [isResumeStreamConfirmation, setIsResumeStreamConfirmation] =
-    useState<boolean>(false);
-
-  const videoErrorMessage = () => {
-    let msg = '';
-    if (isLoading) msg = 'Loading stream...';
-    else if (!isHomePage && !isConnected) msg = 'Please Login to Watch the Stream';
-    else if (error) msg = error;
-  
-    return msg;
-  };  
 
   useEffect(() => {
     if (isConnected && address) {
@@ -116,17 +97,7 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
           viewerId={viewerId}
           videoRef={videoRef}
           setIsCapyCoinIncrementing={setIsCapyCoinIncrementing}
-          setIsResumeStreamConfirmation={setIsResumeStreamConfirmation}
-        />
-      ) : (
-        <VideoFrameWithErrorMessage message={videoErrorMessage()} />
-      )}
-
-      {isResumeStreamConfirmation ? (
-        <PauseStreamPopup
-          isOpen={isResumeStreamConfirmation}
-          setIsOpen={setIsResumeStreamConfirmation}
-          videoRef={videoRef}
+          // setIsResumeStreamConfirmation={setIsResumeStreamConfirmation}
         />
       ) : null}
     </div>
@@ -134,28 +105,3 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
 };
 
 export default LivepeerPlayer;
-
-export const VideoFrameWithErrorMessage = ({ message }: { message: string }) => {
-  return (
-    <div style={{ position: 'relative' }}>
-      <img src={vidFrame} alt="frame" style={{ background: 'black' }} />
-      <span
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          color: 'white',
-          padding: '20px',
-          borderRadius: '8px',
-          textAlign: 'center',
-          fontFamily: 'Mulish, sans-serif',
-          fontSize: '20px',
-          width: '100%',
-        }}
-      >
-        {message}
-      </span>
-    </div>
-  );
-};

@@ -1,0 +1,28 @@
+.videoWrapper {
+  position: relative;
+}
+
+.playerWrapper {
+  outline: 1px solid rgba(122, 63, 62, 0.082);
+}
+
+.reactPlayer {
+  width: 100%;
+}
+
+.customControl {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 4;
+}
+
+.customControl svg {
+  fill: white;
+}

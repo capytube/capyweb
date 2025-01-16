@@ -9,7 +9,6 @@ import { getCapybara } from '../../../utils/api';
 
 import Footer from '../../Footer/Footer';
 import ChatRoom from './ChatRoom/ChatRoom';
-import LivepeerPlayer from '../../LivepeerPlayer';
 import EmojiRating from './EmojiRating/EmojiRating';
 
 // import coinIcon from '../../../assets/icons/coin.svg';
@@ -18,6 +17,7 @@ import EmojiRating from './EmojiRating/EmojiRating';
 // import instaIcon from '../../../assets/icons/insta.svg';
 // import shareIcon from '../../../assets/icons/share.svg';
 import styles from './WatchRoom.module.css';
+import VideoPlayer from '../../VideoPlayer';
 // import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
 
 // const dailyLimit = 10;
@@ -149,9 +149,9 @@ const WatchRoom = () => {
             <div className={styles.videoMainContainer}>
               <div className={styles.videoAndCommentSection}>
                 <div className={styles.videoSection}>
-                  <LivepeerPlayer
-                    streamId={streamId ?? ''}
-                    title={capybara?.capyName ?? ''}
+                  <VideoPlayer
+                    streamId='watch-page'
+                    videoUrl="https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4"
                     setIsCapyCoinIncrementing={setIsCapyCoinIncrementing}
                   />
                 </div>

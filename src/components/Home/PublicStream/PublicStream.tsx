@@ -1,5 +1,5 @@
-import styles from "./PublicStream.module.css";
-import LivepeerPlayer from "../../LivepeerPlayer";
+import styles from './PublicStream.module.css';
+import VideoPlayer from '../../VideoPlayer';
 
 const PublicStream = () => {
   return (
@@ -7,7 +7,10 @@ const PublicStream = () => {
       <h1>Public stream</h1>
 
       <div className={styles.publicStreamPlayerContainer}>
-        <LivepeerPlayer streamId="fa7ahoikpf19u1e0" title="Magnus" />
+        <VideoPlayer
+          streamId="public"
+          videoUrl="https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4"
+        />
       </div>
     </div>
   );
