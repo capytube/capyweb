@@ -25,6 +25,19 @@ const ChatRoom = ({ streamId }: ChatRoomProps) => {
     if (isLoggedIn) getComments();
   }, [isLoggedIn]);
 
+  React.useEffect(() => {
+    if (isLoggedIn && comments?.length > 0) {
+      scrollToLatestComment();
+    }
+  }, [isLoggedIn, comments]);
+
+  const scrollToLatestComment = () => {
+    const messagesContainer = document.getElementById('messages-container');
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  };
+
   const handleInputChange = (e: any) => {
     setInput(e.target.value);
   };
@@ -44,10 +57,7 @@ const ChatRoom = ({ streamId }: ChatRoomProps) => {
 
           // scroll to the latest comment
           setTimeout(() => {
-            const messagesContainer = document.getElementById('messages-container');
-            if (messagesContainer) {
-              messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
+            scrollToLatestComment();
           }, 800);
         }
       }
