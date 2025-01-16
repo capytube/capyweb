@@ -47,12 +47,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   console.log('playTime', playTime);
 
   // functions
-  const handlePlayPause = () => {
-    if (!isHomePage) {
-      setIsPlaying(!isPlaying);
-    }
-  };
-
   const handlePlay = () => {
     setIsPlaying(true);
     if (playerInstance) {
