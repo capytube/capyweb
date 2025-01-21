@@ -7,6 +7,7 @@ import Footer from '../Footer/Footer';
 import LivepeerPlayer from '../LivepeerPlayer';
 import Modal from '../Modal/Modal';
 import { CapyCoin } from '../Account/Icons';
+import { CapybaraAtomType } from '../../store/atoms/capybaraAtom';
 
 type Props = {};
 
@@ -14,9 +15,10 @@ function index({}: Props) {
   const coins = 10;
   const [selection, setSelection] = React.useState(1);
   const [selectedCapy, setSelectedCapy] = React.useState<{
+    id: string;
     name: string;
     image: string;
-  }>({ name: '', image: '' });
+  }>({ id: '', name: '', image: '' });
 
   const [openMenu, setOpenMenu] = React.useState(false);
 
@@ -35,13 +37,14 @@ function index({}: Props) {
 
   const optionsStyle = 'text-left text-lg p-2';
 
-  const handleSection = (
-    e: any,
-    selection: { name: string; image: string }
-  ) => {
+  const handleSection = (e: any, selection: CapybaraAtomType) => {
     e.preventDefault();
     if (coins) {
-      setSelectedCapy({ name: selection?.name, image: selection?.image });
+      setSelectedCapy({
+        id: selection?.id ?? '',
+        name: selection?.name ?? '',
+        image: selection?.profile_image_url ?? '',
+      });
       setSection(2);
     } else {
       setTopupModal(true);
@@ -51,9 +54,7 @@ function index({}: Props) {
   return (
     <div>
       <div className="md:py-10 py-8 flex flex-col md:gap-y-6 gap-y-[18px] bg-grassGreen justify-center items-center">
-        <h1 className="md:text-titleSize text-titleSizeSM font-hanaleiFill text-darkGreen">
-          Play with Capy
-        </h1>
+        <h1 className="md:text-titleSize text-titleSizeSM font-hanaleiFill text-darkGreen">Play with Capy</h1>
         <p className="text-chocoBrown font-commissioner md:text-titleSizeSM text-sm">
           Spend your coins to play with our capybaras!
         </p>
@@ -102,7 +103,7 @@ function index({}: Props) {
           <ChooseCapySection handleCapySelection={handleSection} />
         ) : (
           <GameSection
-            capy={{ name: selectedCapy?.name, image: selectedCapy?.image }}
+            capy={{ id: selectedCapy?.id, name: selectedCapy?.name, image: selectedCapy?.image }}
             handleSectionChange={() => setSection(1)}
           />
         )
@@ -170,16 +171,12 @@ function index({}: Props) {
       <Modal
         isOpen={isTopupModal}
         onClose={() => setTopupModal(false)}
-        className='md:max-w-[350px] max-w-[240px] shadow-characterCard'
+        className="md:max-w-[350px] max-w-[240px] shadow-characterCard"
       >
         <div className="flex flex-col md:gap-y-6 gap-y-4 items-center justify-center">
-          <h4 className="font-ADLaM md:text-[28px] md:leading-8 text-chocoBrown">
-            Not enough coins
-          </h4>
+          <h4 className="font-ADLaM md:text-[28px] md:leading-8 text-chocoBrown">Not enough coins</h4>
           <CapyCoin clx="size-20" />
-          <h5 className="font-ADLaM md:text-[28px] md:leading-8 text-chocoBrown">
-            Top up your coins
-          </h5>
+          <h5 className="font-ADLaM md:text-[28px] md:leading-8 text-chocoBrown">Top up your coins</h5>
           <div className="flex flex-col md:gap-y-6 gap-y-2 w-full">
             {[
               { value: 20, price: 10 },
@@ -193,10 +190,7 @@ function index({}: Props) {
                   value={item.value}
                   className="text-chocoBrown accent-chocoBrown size-6"
                 />
-                <label
-                  htmlFor="topup"
-                  className="md:text-2xl text-sm text-chocoBrown font-commissioner"
-                >
+                <label htmlFor="topup" className="md:text-2xl text-sm text-chocoBrown font-commissioner">
                   {item?.value} coins ({item?.price} USD)
                 </label>
               </div>
