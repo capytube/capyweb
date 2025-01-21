@@ -33,22 +33,20 @@ const Header = () => {
     setShowDynamicUserProfile(true);
   };
 
-  const getProfile = async () => {
-    if (address && isLoggedIn) {
-      const response = await getUserByWalletAddress(address);
-      if (!response?.data?.[0]?.id) {
-        setIsSetProfileModalOpen(true);
-      } else {
-        setIsSetProfileModalOpen(false);
-      }
-    }
-  };
-
   useEffect(() => {
-    if (isLoggedIn && address) {
-      getProfile();
-    }
-  }, [address, isLoggedIn]);
+    const getProfile = async () => {
+      if (isLoggedIn && address) {
+        const response = await getUserByWalletAddress(address);
+        if (!response?.data?.[0]?.id) {
+          setIsSetProfileModalOpen(true);
+        } else {
+          setIsSetProfileModalOpen(false);
+        }
+      }
+    };
+
+    getProfile();
+  }, [isLoggedIn, address]);
 
   // overriding dynamic widget styling
   const host = document.getElementById('dynamic-widget');
@@ -108,7 +106,6 @@ const Header = () => {
         <YourProfile
           onClose={() => {
             setIsSetProfileModalOpen(false);
-            getProfile();
           }}
         />
       </Modal>

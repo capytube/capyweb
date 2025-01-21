@@ -5,7 +5,6 @@ import { useAtomValue } from 'jotai';
 
 import Footer from '../../Footer/Footer';
 import ChatRoom from './ChatRoom/ChatRoom';
-import LivepeerPlayer from '../../LivepeerPlayer';
 import EmojiRating from './EmojiRating/EmojiRating';
 import UserStreamCounter from './UserStreamCounter';
 
@@ -17,6 +16,7 @@ import UserStreamCounter from './UserStreamCounter';
 import styles from './WatchRoom.module.css';
 import { LivestreamAtomType, livestreamPrivateAtom } from '../../../store/atoms/livestreamAtom';
 import { listPrivateLivestreams } from '../../../api/livestream';
+import VideoPlayer from '../../VideoPlayer';
 // import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
 
 // const dailyLimit = 10;
@@ -183,9 +183,15 @@ const WatchRoom = () => {
             <div className={styles.videoMainContainer}>
               <div className={styles.videoAndCommentSection}>
                 <div className={styles.videoSection}>
-                  <LivepeerPlayer
+                  {/* <LivepeerPlayer
                     streamId={videoStreamAddress ?? ''}
                     title={currCapyData?.name ?? ''}
+                    setIsCapyCoinIncrementing={setIsCapyCoinIncrementing}
+                    setIsVideoPlaying={setIsVideoPlaying}
+                  /> */}
+                  <VideoPlayer
+                    streamId={currentStreamData?.id ?? ''}
+                    videoUrl={videoStreamAddress}
                     setIsCapyCoinIncrementing={setIsCapyCoinIncrementing}
                     setIsVideoPlaying={setIsVideoPlaying}
                   />

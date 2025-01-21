@@ -26,6 +26,19 @@ const ChatRoom = ({ streamId }: ChatRoomProps) => {
     if (isLoggedIn) getComments();
   }, [isLoggedIn, streamId]);
 
+  useEffect(() => {
+    if (isLoggedIn && comments?.length > 0) {
+      scrollToLatestComment();
+    }
+  }, [isLoggedIn, comments]);
+
+  const scrollToLatestComment = () => {
+    const messagesContainer = document.getElementById('messages-container');
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  };
+
   const handleInputChange = (e: any) => {
     setInput(e.target.value);
   };
@@ -45,10 +58,7 @@ const ChatRoom = ({ streamId }: ChatRoomProps) => {
 
           // scroll to the latest comment
           setTimeout(() => {
-            const messagesContainer = document.getElementById('messages-container');
-            if (messagesContainer) {
-              messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
+            scrollToLatestComment();
           }, 800);
         }
       }
@@ -59,7 +69,10 @@ const ChatRoom = ({ streamId }: ChatRoomProps) => {
   const renderCommentsContent = () => {
     if (isLoggedIn) {
       if (comments?.length > 0) {
-        return comments?.map((comment) => (
+        const sortedComments = [...comments].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+        return sortedComments?.map((comment) => (
           <div key={comment?.id} className={styles.message}>
             <span className={styles.username}>{comment?.user?.username}: </span>
             {comment?.content}
