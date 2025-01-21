@@ -14,12 +14,14 @@ interface LivepeerPlayerProps {
   streamId: string;
   title: string;
   setIsCapyCoinIncrementing?: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsVideoPlaying?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
   streamId,
   title,
   setIsCapyCoinIncrementing,
+  setIsVideoPlaying,
 }) => {
   const { pathname } = useLocation();
   const isHomePage = pathname === "/";
@@ -100,6 +102,7 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
           videoRef={videoRef}
           setIsCapyCoinIncrementing={setIsCapyCoinIncrementing}
           setIsResumeStreamConfirmation={setIsResumeStreamConfirmation}
+          setIsVideoPlaying={setIsVideoPlaying}
         />
       ) : (
         <div style={{ position: "relative" }}>

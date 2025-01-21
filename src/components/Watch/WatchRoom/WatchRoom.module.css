@@ -149,6 +149,9 @@
   min-width: 40%;
   width: 500px;
 }
+.emojiRatingWrapper {
+  background-color: #ffe3a2;
+}
 .emojiRatingWrapper__mobile {
   display: none;
 }

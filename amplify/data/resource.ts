@@ -249,6 +249,15 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('nftId').name('LogNtfIdTypeIndex').queryField('listActivityLogsByNftId')])
     .authorization((allow) => [allow.publicApiKey()]),
+
+  // WatchTimeInfo Schema
+  WatchTimeInfo: a
+    .model({
+      id: a.id(), // user id of the authenticated user
+      watchTime: a.integer(), // Total watch time in seconds
+      lastUpdated: a.timestamp(), // Timestamp of the last update
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

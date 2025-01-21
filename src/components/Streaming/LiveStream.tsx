@@ -17,6 +17,7 @@ interface LiveStreamProps {
   videoRef: React.MutableRefObject<any>;
   setIsCapyCoinIncrementing?: React.Dispatch<React.SetStateAction<boolean>>;
   setIsResumeStreamConfirmation?: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsVideoPlaying?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const dailyLimit = 10;
@@ -28,6 +29,7 @@ const LiveStream = ({
   videoRef,
   setIsCapyCoinIncrementing,
   setIsResumeStreamConfirmation,
+  setIsVideoPlaying,
 }: LiveStreamProps) => {
   const { pathname } = useLocation();
   const isHomePage = pathname === '/';
@@ -47,19 +49,17 @@ const LiveStream = ({
   const isCoinUpdateEnabled = false;
 
   const handleTimeUpdate = () => {
-    if (
-      isloggedIn &&
-      videoRef.current &&
-      !videoRef.current.paused &&
-      !isHomePage &&
-      !pathname?.includes('play') &&
-      coins < dailyLimit &&
-      isCoinUpdateEnabled
-    ) {
-      setPlayTime((prev) => prev + 1); // Increment playTime by 1 second
-      setIsCapyCoinIncrementing?.(true);
+    if (isloggedIn && videoRef.current && !videoRef.current.paused && !isHomePage && !pathname?.includes('play')) {
+      setIsVideoPlaying?.(true);
+
+      if (coins < dailyLimit && isCoinUpdateEnabled) {
+        setPlayTime((prev) => prev + 1); // Increment playTime by 1 second
+        setIsCapyCoinIncrementing?.(true);
+      } else {
+        setIsCapyCoinIncrementing?.(false);
+      }
     } else {
-      setIsCapyCoinIncrementing?.(false);
+      setIsVideoPlaying?.(false);
     }
   };
 
