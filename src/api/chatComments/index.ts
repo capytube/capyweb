@@ -9,7 +9,7 @@ const defaultStore = getDefaultStore();
 export async function listAllComments({ streamId }: { streamId: string }) {
   const response = await client.models.ChatComments.listChatCommentsByStream_id(
     { stream_id: streamId },
-    { selectionSet: ['id', 'stream_id', 'user_id', 'content', 'user.*'] },
+    { selectionSet: ['id', 'stream_id', 'user_id', 'content', 'createdAt', 'user.*'] },
   );
 
   if (response?.data) {

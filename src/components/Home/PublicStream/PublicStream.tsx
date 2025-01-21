@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useAtomValue } from 'jotai';
 import styles from './PublicStream.module.css';
-import LivepeerPlayer from '../../LivepeerPlayer';
 import { livestreamPublicAtom } from '../../../store/atoms/livestreamAtom';
 import { listPublicLivestreams } from '../../../api/livestream';
+import VideoPlayer, { VideoFrameWithErrorMessage } from '../../VideoPlayer';
 
 const PublicStream = () => {
   // hooks
   const publicStreamData = useAtomValue(livestreamPublicAtom);
 
   // states
-  const [isStreamDataLoading, setIsStreamDataLoading] = useState(false);
+  const [isStreamDataLoading, setIsStreamDataLoading] = useState(true);
 
   // effects
   useEffect(() => {
@@ -36,13 +36,18 @@ const PublicStream = () => {
     <div className={styles.publicStreamWrapper}>
       <h1>Public stream</h1>
 
-      {!isStreamDataLoading && publicStreamData?.length > 0 ? (
-        <div className={styles.publicStreamPlayerContainer}>
-          <LivepeerPlayer streamId={publicStreamData?.[0]?.streaming_address ?? ''} title="Magnus" />
-        </div>
-      ) : (
-        'Loading stream...'
-      )}
+      <div className={styles.publicStreamPlayerContainer}>
+        {publicStreamData?.length > 0 ? (
+          <VideoPlayer
+            streamId={publicStreamData?.[0]?.id ?? ''}
+            videoUrl={publicStreamData?.[0]?.streaming_address ?? ''}
+          />
+        ) : (
+          <VideoFrameWithErrorMessage
+            message={isStreamDataLoading ? 'Loading stream...' : 'The Capybara streams isn´t available'}
+          />
+        )}
+      </div>
     </div>
   );
 };
