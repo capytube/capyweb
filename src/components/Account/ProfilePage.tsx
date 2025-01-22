@@ -38,7 +38,7 @@ const ProfilePage: React.FC = () => {
           <h1 className="font-hanaleiFill text-darkGreen md:text-titleSize text-titleSizeSM text-center md:pb-6 pb-4">
             My Account
           </h1>
-          <form className="flex md:flex-row flex-col gap-x-6 gap-y-6 justify-center p-6">
+          <form className="flex md:flex-row flex-col gap-x-6 gap-y-6 justify-center items-center p-6">
             <div className="flex flex-col gap-y-2">
               <label htmlFor="displayName" className="text-chocoBrown font-ADLaM sm:text-xl text-xs">
                 Display name:

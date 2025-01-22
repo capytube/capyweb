@@ -3,9 +3,8 @@ import { useAccount } from 'wagmi';
 import { useTokenBalances } from '@dynamic-labs/sdk-react-core';
 
 import { CapyCoin, CoinCurrency, PencilIcon, UnLinkedIcon } from '../Icons';
-import TopCrossRibbon from '../../ComingSoonRibbon/TopCrossRibbon';
 
-function WalletSection({ premium = false }: { premium?: boolean }) {
+function WalletSection({ premium = false }: Readonly<{ premium?: boolean }>) {
   const { isConnected, address } = useAccount();
   const token = useTokenBalances();
 
@@ -22,19 +21,21 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
   }, []);
 
   return (
-    <div className="max-w-screen-lg mx-auto mb-10 sm:pt-10 pt-8 sm:pb-20 pb-20 sm:px-40 px-6 flex flex-col sm:gap-y-10 gap-y-6 justify-center items-center relative">
-      <TopCrossRibbon glass_clsx="!backdrop-blur-[5px]" ribbon_clsx="!text-[17px] !top-[25px]" />
+    <div className="max-w-screen-lg mx-auto mb-10 sm:pt-10 pt-8 sm:pb-20 pb-20 sm:px-40 px-6 flex flex-col sm:gap-y-10 gap-y-6 justify-center items-center">
       <span className="font-hanaleiFill sm:text-titleSize text-titleSizeSM text-darkOrange">My capycoin wallet</span>
       <div className="flex sm:flex-row flex-col gap-x-14 sm:gap-y-0 gap-y-6 items-center md:w-max w-full">
         <CapyCoin />
         <div className="md:w-max w-full">
-          <div className="flex gap-x-2 items-center md:justify-start justify-center">
-            <CoinCurrency />
-            <span className="sm:text-[64px] text-[45px] sm:leading-[76px] leading-[54px] font-ADLaM text-chocoBrown">
-              {0}
-            </span>
+          <div className="flex flex-col items-center sm:items-start">
+            <div className="flex gap-x-2 items-center md:justify-start justify-center">
+              <CoinCurrency />
+              <span className="sm:text-[64px] text-[45px] sm:leading-[76px] leading-[54px] font-ADLaM text-chocoBrown">
+                {0}
+              </span>
+            </div>
+            <span className="text-chocoBrown font-ADLaM sm:text-lg text-xs">My current balance</span>
           </div>
-          <div className="flex gap-x-2 items-center md:justify-start justify-center sm:mb-4 mb-3 mt-5">
+          {/* <div className="flex gap-x-2 items-center md:justify-start justify-center sm:mb-4 mb-3 mt-5">
             <span className="sm:text-2xl text-sm text-chocoBrown font-commissioner flex md:justify-start justify-center">
               Unclaimed Capy Coins
             </span>
@@ -43,10 +44,10 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
               disabled
               className={`bg-siteGreen ${btnStyle} sm:text-xl sm:py-1.5 py-1 sm:px-3 px-[15px] disabled:cursor-not-allowed relative`}
             >
-              {/* <CrossShadowRibbon clsx="text-[10px] sm:leading-7 leading-5 px-[5px]" /> */}
+              <CrossShadowRibbon clsx="text-[10px] sm:leading-7 leading-5 px-[5px]" />
               Claim Now
             </button>
-          </div>
+          </div> */}
           <div className="flex items-center sm:items-start flex-col gap-y-2 md:mt-4 mt-2 w-full leading">
             <label htmlFor="walletAddress" className="text-chocoBrown font-ADLaM sm:text-xl text-xs">
               Wallet address:
@@ -74,7 +75,9 @@ function WalletSection({ premium = false }: { premium?: boolean }) {
                   />
                 )}
               </div>
-              <PencilIcon />
+              <button disabled className="disabled:cursor-not-allowed">
+                <PencilIcon />
+              </button>
             </div>
           </div>
         </div>

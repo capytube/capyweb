@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import FrameCapy from '/src/assets/account/noLogin/frame-capy.png';
 import TVRemote from '/src/assets/account/noLogin/tv-remote.png';
 import ExclusiveCapy from '/src/assets/account/noLogin/exclusive-capy.png';
-import CrossShadowRibbon from '../../ComingSoonRibbon/CrossShadowRibbon';
 
 type Props = { clx?: string };
 
@@ -59,12 +58,10 @@ function NftSection({ clx }: Props) {
           </div>
         ))}
       </div>
-      <Link to="#" target="_blank" rel="noreferrer">
+      <Link to="/shop" target="_blank" rel="noreferrer">
         <button
           className="md:-rotate-1 bg-darkOrange font-ADLaM text-white md:text-3xl md:py-2.5 py-1 px-4 rounded-lg md:shadow-loginShadow shadow-buttonShadow relative disabled:cursor-not-allowed disabled:bg-buttonDisabled disabled:shadow-buttonDisabledShadow"
-          disabled
         >
-          <CrossShadowRibbon />
           Buy NFT & Join Premium ✨
         </button>
       </Link>
