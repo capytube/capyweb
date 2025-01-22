@@ -2,9 +2,9 @@ import { atom } from 'jotai';
 
 export interface CapybaraAtomType {
   id: string | null;
-  name: string | null;
+  name: string;
   gender: 'male' | 'female' | null;
-  birth_year: number | null;
+  birth_date: string | null;
   born_place: string | null;
   description: string | null; // can be in Markdown format
   bio: string | null; // can be in Markdown format

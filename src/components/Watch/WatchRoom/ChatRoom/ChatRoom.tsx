@@ -47,7 +47,7 @@ const ChatRoom = ({ streamId }: ChatRoomProps) => {
     e.preventDefault();
 
     if (input.trim()) {
-      if (isLoggedIn && streamId && Object.keys(userData)?.length > 0) {
+      if (isLoggedIn && streamId && userData?.id) {
         const response = await createChatComment({
           stream_id: streamId,
           user_id: userData?.id,

@@ -7,7 +7,7 @@ const client = generateClient<Schema>();
 export async function listAllOffersByNftId({ nftId }: { nftId: string }) {
   const response = await client.models.Offers.listOffersByNftId(
     { nftId },
-    { selectionSet: ['id', 'price.*', 'from', 'expires_at', 'nftId', 'fromDetails.*'] },
+    { selectionSet: ['id', 'price', 'from', 'expires_at', 'nftId', 'fromDetails.*'] },
   );
 
   return response;
@@ -15,7 +15,7 @@ export async function listAllOffersByNftId({ nftId }: { nftId: string }) {
 
 export async function createNewOffer(params: Omit<OffersAtomType, 'id'>) {
   const response = await client.models.Offers.create({
-    price: params.price ?? { unit: 0, usd: 0 },
+    price: params.price,
     from: params.from ?? '',
     expires_at: params.expires_at,
     nftId: params.nftId ?? '',

@@ -26,7 +26,7 @@ const CapyProfile = (props: CapyProfileProps) => {
       <div className={styles.content}>
         <h2 className={styles.name}>{data?.name}</h2>
         <p className={styles.age_info}>
-          {capitalizeWords(data?.gender ?? '')}, {calculatedAge(data?.birth_year ?? 0)}
+          {capitalizeWords(data?.gender ?? '')}, {calculatedAge(data?.birth_date ?? '')}
         </p>
         <p className={styles.location_info}>{data?.born_place}</p>
         {data?.description ? <p className={styles.description}>{data?.description}</p> : null}

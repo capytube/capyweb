@@ -38,7 +38,7 @@ function NFTCard({ data }: Readonly<Props>) {
         </div>
         <span className="flex items-center font-bold text-chocoBrown text-2xl font-Mulish">
           <CoinCurrency className="max-h-8" />
-          {data?.price?.unit}
+          {data?.price}
         </span>
         {pathName?.includes('shop') ? (
           <Link

@@ -53,11 +53,11 @@ function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
         ) : null}
         <h2 className="md:text-5xl text-2xl font-dynapuff text-chocoBrown">{data?.title}</h2>
       </div>
-      {calculateTimeDifference(data?.session_date ?? 0) ? (
+      {calculateTimeDifference(data?.session_date ?? '') ? (
         <div className="flex gap-x-2 items-center justify-center font-bold pt-2">
           <ClockIcon />
           <span className="text-darkOrange text-2xl font-commissioner">
-            ends in {calculateTimeDifference(data?.session_date ?? 0)}
+            ends in {calculateTimeDifference(data?.session_date ?? '')}
           </span>
         </div>
       ) : null}

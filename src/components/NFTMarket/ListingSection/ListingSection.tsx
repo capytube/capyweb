@@ -6,8 +6,6 @@ import NFTCard from '../../Account/NFTCard';
 import { nftAtom } from '../../../store/atoms/nftAtom';
 import { listAllNfts } from '../../../api/nft';
 
-type Props = {};
-
 function printValue(value: number) {
   if (value === 1) {
     return 'Low to High';
@@ -16,14 +14,14 @@ function printValue(value: number) {
   }
 }
 
-export default function ListingSection({}: Props) {
+export default function ListingSection() {
   // hooks
   const allNftData = useAtomValue(nftAtom);
 
   // states
   const [option, setOption] = useState<number>(1); // 1 for ASC, 2 for DESC
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [isFetchingDataLoading, setIsFetchingDataLoading] = useState(false);
+  const [isFetchingDataLoading, setIsFetchingDataLoading] = useState(true);
   const [sortedData, setSortedData] = useState(allNftData);
 
   // variables
@@ -51,9 +49,9 @@ export default function ListingSection({}: Props) {
   useEffect(() => {
     const sortData = [...allNftData].sort((a, b) => {
       if (option === 1) {
-        return (a?.price?.unit ?? 0) - (b?.price?.unit ?? 0); // Ascending order
+        return (a?.price ?? 0) - (b?.price ?? 0); // Ascending order
       } else if (option === 2) {
-        return (b?.price?.unit ?? 0) - (a?.price?.unit ?? 0); // Descending order
+        return (b?.price ?? 0) - (a?.price ?? 0); // Descending order
       }
 
       return 0;
@@ -107,13 +105,25 @@ export default function ListingSection({}: Props) {
           ) : null}
         </div>
       </div>
-      {!isFetchingDataLoading ? (
-        <div className="grid 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2 max-[390px]:grid-cols-1 2xl:gap-x-11 lg:gap-x-16 gap-x-11 gap-y-10">
-          {sortedData?.length > 0 && sortedData?.map((data) => <NFTCard key={data?.id} data={data} />)}
-        </div>
-      ) : (
-        'Loading...'
-      )}
+      {(() => {
+        if (isFetchingDataLoading) {
+          return 'Loading...';
+        } else if (sortedData?.length > 0) {
+          return (
+            <div className="grid 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2 max-[390px]:grid-cols-1 2xl:gap-x-11 lg:gap-x-16 gap-x-11 gap-y-10">
+              {sortedData?.map((data) => (
+                <NFTCard key={data?.id} data={data} />
+              ))}
+            </div>
+          );
+        } else {
+          return (
+            <div className="font-hanaleiFill text-chocoBrown md:text-4xl text-xl text-center px-3 sm:py-16">
+              The NFTs aren't available right now
+            </div>
+          );
+        }
+      })()}
     </div>
   );
 }

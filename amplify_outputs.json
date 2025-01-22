@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "ap-southeast-1_HDPr9HjW8",
+    "user_pool_id": "ap-southeast-1_LJVckhYo6",
     "aws_region": "ap-southeast-1",
-    "user_pool_client_id": "2msrd31b0qa1n7sngffskf3kcj",
-    "identity_pool_id": "ap-southeast-1:a005495e-34f1-495f-84c3-ec77ce742864",
+    "user_pool_client_id": "7nv3cdrsf8u2ar5iqjn0qqv98v",
+    "identity_pool_id": "ap-southeast-1:6e9b4c11-cf44-496a-9d35-429eb9178213",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email"
@@ -55,14 +55,14 @@
         "profile",
         "aws.cognito.signin.user.admin"
       ],
-      "domain": "957bd32237f02e8d71a7.auth.ap-southeast-1.amazoncognito.com"
+      "domain": "14eb65e04474fda6d72e.auth.ap-southeast-1.amazoncognito.com"
     },
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://xh4q6vlz5zfjfennjtvgtjp4na.appsync-api.ap-southeast-1.amazonaws.com/graphql",
+    "url": "https://dln4fldcezbxnepx4sjh2pp2za.appsync-api.ap-southeast-1.amazonaws.com/graphql",
     "aws_region": "ap-southeast-1",
-    "api_key": "da2-kxatzz5erze4nirdj4jjxzav3e",
+    "api_key": "da2-q7btbty36zexzeog4hl3uxz7gu",
     "default_authorization_type": "API_KEY",
     "authorization_types": [
       "AMAZON_COGNITO_USER_POOLS",
@@ -71,81 +71,6 @@
     "model_introspection": {
       "version": 1,
       "models": {
-        "Ratings": {
-          "name": "Ratings",
-          "fields": {
-            "id": {
-              "name": "id",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "ratingCounts": {
-              "name": "ratingCounts",
-              "isArray": false,
-              "type": {
-                "nonModel": "RatingsRatingCounts"
-              },
-              "isRequired": false,
-              "attributes": []
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            }
-          },
-          "syncable": true,
-          "pluralName": "Ratings",
-          "attributes": [
-            {
-              "type": "model",
-              "properties": {}
-            },
-            {
-              "type": "key",
-              "properties": {
-                "fields": [
-                  "id"
-                ]
-              }
-            },
-            {
-              "type": "auth",
-              "properties": {
-                "rules": [
-                  {
-                    "allow": "public",
-                    "provider": "apiKey",
-                    "operations": [
-                      "create",
-                      "update",
-                      "delete",
-                      "read"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "primaryKeyInfo": {
-            "isCustomPrimaryKey": false,
-            "primaryKeyFieldName": "id",
-            "sortKeyFieldNames": []
-          }
-        },
         "Interactions": {
           "name": "Interactions",
           "fields": {
@@ -160,7 +85,7 @@
               "name": "capybara_id",
               "isArray": false,
               "type": "ID",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "capybara": {
@@ -191,7 +116,7 @@
               "name": "title",
               "isArray": false,
               "type": "String",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "title_icon_url": {
@@ -205,7 +130,7 @@
               "name": "description",
               "isArray": false,
               "type": "String",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "device_required": {
@@ -243,7 +168,7 @@
             "session_date": {
               "name": "session_date",
               "isArray": false,
-              "type": "AWSTimestamp",
+              "type": "AWSDate",
               "isRequired": false,
               "attributes": []
             },
@@ -257,14 +182,14 @@
             "vote_cost": {
               "name": "vote_cost",
               "isArray": false,
-              "type": "Float",
+              "type": "Int",
               "isRequired": false,
               "attributes": []
             },
             "current_bid": {
               "name": "current_bid",
               "isArray": false,
-              "type": "Float",
+              "type": "Int",
               "isRequired": false,
               "attributes": []
             },
@@ -381,7 +306,7 @@
               "name": "interaction_id",
               "isArray": false,
               "type": "ID",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "interaction": {
@@ -403,7 +328,7 @@
               "name": "user_id",
               "isArray": false,
               "type": "ID",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "user": {
@@ -438,7 +363,7 @@
             "cost": {
               "name": "cost",
               "isArray": false,
-              "type": "Float",
+              "type": "Int",
               "isRequired": false,
               "attributes": []
             },
@@ -559,7 +484,7 @@
               "name": "interaction_id",
               "isArray": false,
               "type": "ID",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "interaction": {
@@ -581,7 +506,7 @@
               "name": "user_id",
               "isArray": false,
               "type": "ID",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "user": {
@@ -602,7 +527,7 @@
             "bid_amount": {
               "name": "bid_amount",
               "isArray": false,
-              "type": "Float",
+              "type": "Int",
               "isRequired": false,
               "attributes": []
             },
@@ -702,7 +627,7 @@
               "name": "user_id",
               "isArray": false,
               "type": "ID",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "user": {
@@ -732,7 +657,7 @@
             "amount": {
               "name": "amount",
               "isArray": false,
-              "type": "Float",
+              "type": "Int",
               "isRequired": false,
               "attributes": []
             },
@@ -852,7 +777,7 @@
               "name": "stream_id",
               "isArray": false,
               "type": "ID",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "stream": {
@@ -874,7 +799,7 @@
               "name": "user_id",
               "isArray": false,
               "type": "ID",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "user": {
@@ -896,7 +821,7 @@
               "name": "content",
               "isArray": false,
               "type": "String",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "createdAt": {
@@ -979,20 +904,20 @@
               "name": "title",
               "isArray": false,
               "type": "String",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "start_time": {
               "name": "start_time",
               "isArray": false,
-              "type": "AWSTimestamp",
+              "type": "AWSDate",
               "isRequired": false,
               "attributes": []
             },
             "end_time": {
               "name": "end_time",
               "isArray": false,
-              "type": "AWSTimestamp",
+              "type": "AWSDate",
               "isRequired": false,
               "attributes": []
             },
@@ -1016,7 +941,7 @@
               "type": "String",
               "isRequired": false,
               "attributes": [],
-              "isArrayNullable": true
+              "isArrayNullable": false
             },
             "access_type": {
               "name": "access_type",
@@ -1030,7 +955,14 @@
             "price_per_10_sec": {
               "name": "price_per_10_sec",
               "isArray": false,
-              "type": "Float",
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "s3_video_address": {
+              "name": "s3_video_address",
+              "isArray": false,
+              "type": "String",
               "isRequired": false,
               "attributes": []
             },
@@ -1038,6 +970,15 @@
               "name": "streaming_address",
               "isArray": false,
               "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "ratingCounts": {
+              "name": "ratingCounts",
+              "isArray": false,
+              "type": {
+                "nonModel": "LiveStreamRatingCounts"
+              },
               "isRequired": false,
               "attributes": []
             },
@@ -1137,7 +1078,7 @@
               "name": "name",
               "isArray": false,
               "type": "String",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "gender": {
@@ -1149,10 +1090,10 @@
               "isRequired": false,
               "attributes": []
             },
-            "birth_year": {
-              "name": "birth_year",
+            "birth_date": {
+              "name": "birth_date",
               "isArray": false,
-              "type": "Int",
+              "type": "AWSDate",
               "isRequired": false,
               "attributes": []
             },
@@ -1306,14 +1247,14 @@
               "name": "username",
               "isArray": false,
               "type": "String",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "email": {
               "name": "email",
               "isArray": false,
               "type": "String",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "profile_image_url": {
@@ -1340,7 +1281,14 @@
             "balance": {
               "name": "balance",
               "isArray": false,
-              "type": "Float",
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "totalWatchTime": {
+              "name": "totalWatchTime",
+              "isArray": false,
+              "type": "Int",
               "isRequired": false,
               "attributes": []
             },
@@ -1552,7 +1500,7 @@
               "name": "name",
               "isArray": false,
               "type": "String",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "image_url": {
@@ -1592,9 +1540,7 @@
             "price": {
               "name": "price",
               "isArray": false,
-              "type": {
-                "nonModel": "Price"
-              },
+              "type": "Int",
               "isRequired": false,
               "attributes": []
             },
@@ -1748,9 +1694,7 @@
             "price": {
               "name": "price",
               "isArray": false,
-              "type": {
-                "nonModel": "Price"
-              },
+              "type": "Int",
               "isRequired": true,
               "attributes": []
             },
@@ -1764,7 +1708,7 @@
             "expires_at": {
               "name": "expires_at",
               "isArray": false,
-              "type": "AWSTimestamp",
+              "type": "AWSDate",
               "isRequired": false,
               "attributes": []
             },
@@ -1891,9 +1835,7 @@
             "price": {
               "name": "price",
               "isArray": false,
-              "type": {
-                "nonModel": "Price"
-              },
+              "type": "Int",
               "isRequired": true,
               "attributes": []
             },
@@ -1921,7 +1863,7 @@
             "timestamp": {
               "name": "timestamp",
               "isArray": false,
-              "type": "AWSTimestamp",
+              "type": "AWSDate",
               "isRequired": false,
               "attributes": []
             },
@@ -2016,86 +1958,6 @@
                 "queryField": "listActivityLogsByNftId",
                 "fields": [
                   "nftId"
-                ]
-              }
-            },
-            {
-              "type": "auth",
-              "properties": {
-                "rules": [
-                  {
-                    "allow": "public",
-                    "provider": "apiKey",
-                    "operations": [
-                      "create",
-                      "update",
-                      "delete",
-                      "read"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "primaryKeyInfo": {
-            "isCustomPrimaryKey": false,
-            "primaryKeyFieldName": "id",
-            "sortKeyFieldNames": []
-          }
-        },
-        "WatchTimeInfo": {
-          "name": "WatchTimeInfo",
-          "fields": {
-            "id": {
-              "name": "id",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "watchTime": {
-              "name": "watchTime",
-              "isArray": false,
-              "type": "Int",
-              "isRequired": false,
-              "attributes": []
-            },
-            "lastUpdated": {
-              "name": "lastUpdated",
-              "isArray": false,
-              "type": "AWSTimestamp",
-              "isRequired": false,
-              "attributes": []
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            }
-          },
-          "syncable": true,
-          "pluralName": "WatchTimeInfos",
-          "attributes": [
-            {
-              "type": "model",
-              "properties": {}
-            },
-            {
-              "type": "key",
-              "properties": {
-                "fields": [
-                  "id"
                 ]
               }
             },
@@ -2221,27 +2083,8 @@
             }
           }
         },
-        "Price": {
-          "name": "Price",
-          "fields": {
-            "unit": {
-              "name": "unit",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": false,
-              "attributes": []
-            },
-            "usd": {
-              "name": "usd",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": false,
-              "attributes": []
-            }
-          }
-        },
-        "RatingsRatingCounts": {
-          "name": "RatingsRatingCounts",
+        "LiveStreamRatingCounts": {
+          "name": "LiveStreamRatingCounts",
           "fields": {
             "capylove": {
               "name": "capylove",
@@ -2315,11 +2158,11 @@
   },
   "storage": {
     "aws_region": "ap-southeast-1",
-    "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-js1uiklfz7lj",
+    "bucket_name": "amplify-capyweb-dmlrohan--capytubedrivebucket2b315-hxq8gvyzsdil",
     "buckets": [
       {
         "name": "capytubeDrive",
-        "bucket_name": "amplify-amplifyvitereactt-capytubedrivebucket2b315-js1uiklfz7lj",
+        "bucket_name": "amplify-capyweb-dmlrohan--capytubedrivebucket2b315-hxq8gvyzsdil",
         "aws_region": "ap-southeast-1",
         "paths": {
           "pictures/*": {

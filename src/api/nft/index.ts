@@ -2,6 +2,9 @@ import { generateClient } from 'aws-amplify/api';
 import { getDefaultStore } from 'jotai';
 import { Schema } from '../../../amplify/data/resource';
 import { NftAtomType, isForSaleNftAtom, nftAtom, specifiOwnerNftAtom } from '../../store/atoms/nftAtom';
+import { MakeSomeRequired } from '../../utils/function';
+
+type NftAtomParams = MakeSomeRequired<NftAtomType, 'name'>;
 
 const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
@@ -15,7 +18,7 @@ export async function listAllNfts() {
       'rarity',
       'labels',
       'properties.*',
-      'price.*',
+      'price',
       'is_for_sale',
       'owner_id',
       'owner_details.*',
@@ -41,7 +44,7 @@ export async function listNftsByIsForSale({ isForSale }: { isForSale: 0 | 1 }) {
         'rarity',
         'labels',
         'properties.*',
-        'price.*',
+        'price',
         'is_for_sale',
         'owner_id',
         'owner_details.*',
@@ -68,7 +71,7 @@ export async function listNFTByOwnerId({ ownerId }: { ownerId: string }) {
         'rarity',
         'labels',
         'properties.*',
-        'price.*',
+        'price',
         'is_for_sale',
         'owner_id',
         'owner_details.*',
@@ -90,7 +93,7 @@ export async function getNftById({ id }: { id: string }) {
   return response;
 }
 
-export async function createNft(params: Partial<NftAtomType>) {
+export async function createNft(params: NftAtomParams) {
   const response = await client.models.NFT.create({
     name: params.name,
     image_url: params.image_url,

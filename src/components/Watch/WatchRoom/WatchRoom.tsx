@@ -100,7 +100,7 @@ const WatchRoom = () => {
 
       if (sortedData?.length) {
         setLivestreamData(sortedData);
-        setVideoStreamAddress(sortedData?.[0]?.streaming_address ?? '');
+        setVideoStreamAddress(sortedData?.[0]?.s3_video_address ?? '');
         setCurrentStreamData(sortedData?.[0]);
       }
     }
@@ -115,7 +115,7 @@ const WatchRoom = () => {
             <div className={styles.watchRoomContent}>
               <div className={styles.roomCamsContainer}>
                 {livestreamData?.map((data, index) => {
-                  const streamAddr = data?.streaming_address ?? '';
+                  const streamAddr = data?.s3_video_address ?? '';
                   return (
                     <button
                       key={data?.id}

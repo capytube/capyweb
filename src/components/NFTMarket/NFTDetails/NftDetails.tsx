@@ -24,7 +24,7 @@ function NftDetails({ data }: Readonly<Props>) {
         ) : null}
         <span className="flex items-center font-bold text-chocoBrown text-2xl font-Mulish">
           <CoinCurrency className="max-h-8" />
-          {data?.price?.unit} (${data?.price?.usd})
+          {data?.price}
         </span>
         <button className="bg-darkGreen font-ADLaM text-white lg:shadow-loginShadow shadow-buttonShadow rounded-lg lg:text-3xl text-2xl lg:py-2 lg:px-4 py-2 max-w-[158px]">
           Buy now

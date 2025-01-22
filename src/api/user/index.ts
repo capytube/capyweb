@@ -37,8 +37,10 @@ export async function createUser({
 }) {
   const response = await client.models.User.create({
     username: userName,
-    wallet_address: wallet_address,
     email: email_address,
+    wallet_address: wallet_address,
+    balance: 0,
+    totalWatchTime: 0,
   });
 
   if (response?.data?.id) {

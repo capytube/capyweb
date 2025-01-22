@@ -7,6 +7,9 @@ import {
   livestreamPrivateAtom,
   livestreamPublicAtom,
 } from '../../store/atoms/livestreamAtom';
+import { MakeSomeRequired } from '../../utils/function';
+
+type LivestreamParams = MakeSomeRequired<LivestreamAtomType, 'title' | 'capybara_ids'>;
 
 const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
@@ -41,7 +44,7 @@ export async function listPrivateLivestreams() {
   return response;
 }
 
-export async function createLivestream(params: Partial<LivestreamAtomType>) {
+export async function createLivestream(params: LivestreamParams) {
   const response = await client.models.LiveStream.create({
     title: params.title,
     start_time: params.start_time,
@@ -51,7 +54,9 @@ export async function createLivestream(params: Partial<LivestreamAtomType>) {
     capybara_ids: params.capybara_ids,
     access_type: params.access_type,
     price_per_10_sec: params.price_per_10_sec,
+    s3_video_address: params.s3_video_address,
     streaming_address: params.streaming_address,
+    ratingCounts: params.ratingCounts,
   });
 
   return response;

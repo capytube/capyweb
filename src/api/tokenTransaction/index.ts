@@ -1,5 +1,6 @@
 import { generateClient } from 'aws-amplify/api';
 import { Schema } from '../../../amplify/data/resource';
+import { MakeSomeRequired } from '../../utils/function';
 
 const client = generateClient<Schema>();
 
@@ -7,7 +8,7 @@ type TransactionType = 'tip' | 'reward' | 'stream_payment' | 'transfer' | 'withd
 type InteractionType = 'vote' | 'bid';
 
 export interface TokenTransactionType {
-  user_id: string | null; // Foreign Key to User
+  user_id: string; // Foreign Key to User
   user?: unknown;
   transaction_type: TransactionType | null;
   amount: number | null; // Transaction amount in tokens
@@ -16,6 +17,8 @@ export interface TokenTransactionType {
   relatedVote?: unknown;
   relatedBid?: unknown;
 }
+
+type TokenTransactionParams = MakeSomeRequired<TokenTransactionType, 'user_id'>;
 
 export async function listAllTokenTransactions() {
   const response = await client.models.TokenTransaction.list({
@@ -56,7 +59,7 @@ export async function listTokenTransactionById(id: string) {
   return response;
 }
 
-export async function createTokenTransaction(params: Partial<TokenTransactionType>) {
+export async function createTokenTransaction(params: TokenTransactionParams) {
   const response = await client.models.TokenTransaction.create({
     user_id: params.user_id,
     transaction_type: params.transaction_type,

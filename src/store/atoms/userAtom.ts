@@ -2,12 +2,13 @@ import { atom } from 'jotai';
 
 export interface UserAtomType {
   id: string | null;
-  username: string | null;
-  email: string | null;
+  username: string;
+  email: string;
   profile_image_url: string | null;
   wallet_address: string | null;
   bio: string | null;
   balance: number | null;
+  totalWatchTime: number | null;
   userVotes?: unknown;
   userBids?: unknown;
   tokenTransaction?: unknown;
@@ -22,6 +23,7 @@ export const userAtom = atom<UserAtomType>({
   wallet_address: '',
   bio: '',
   balance: 0,
+  totalWatchTime: 0,
   userVotes: null,
   userBids: null,
   tokenTransaction: null,

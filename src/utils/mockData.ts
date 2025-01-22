@@ -9,7 +9,7 @@ export const handleAddCapy = async () => {
   await createCapybara({
     name: 'Magnus',
     gender: 'male',
-    birth_year: 2017,
+    birth_date: '2017-02-10',
     born_place: 'Born in Bangkok, Thailand',
     description: 'Named after Magnus the climber and chess champion 🧗♟️.',
     bio: 'Watch our biggest naughty boy munching and chasing his little brother',
@@ -25,7 +25,7 @@ export const handleAddCapy = async () => {
   await createCapybara({
     name: 'Elon',
     gender: 'male',
-    birth_year: 2022,
+    birth_date: '2022-02-10',
     born_place: 'Born in South America',
     description: 'Named after the Elon Musk, for his eccentric personality.',
     bio: 'This fearless bad boy doesn’t afraid of anything. Chatty and full of energy. A truely socialised capy.',
@@ -41,7 +41,7 @@ export const handleAddCapy = async () => {
   await createCapybara({
     name: 'Einstein',
     gender: 'male',
-    birth_year: 2022,
+    birth_date: '2022-02-10',
     born_place: 'South America (in a different spot from Elon!)',
     description: null,
     bio: 'The youngest and shy baby loves to plan a prison break. Brainy of the boys. The mastermind capy lord.',
@@ -63,7 +63,7 @@ export const handleCreateStreams = async () => {
     capybara_ids: ['35199085-1a76-44f4-882c-3f4a70b0294a'],
     access_type: 'public',
     price_per_10_sec: 1,
-    streaming_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
+    s3_video_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
   });
 
   await createLivestream({
@@ -72,7 +72,7 @@ export const handleCreateStreams = async () => {
     capybara_ids: ['35199085-1a76-44f4-882c-3f4a70b0294a', 'db4156be-fc5a-4851-89b1-0c7b07e9af09'],
     access_type: 'private',
     price_per_10_sec: 1,
-    streaming_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
+    s3_video_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
   });
 
   await createLivestream({
@@ -81,7 +81,7 @@ export const handleCreateStreams = async () => {
     capybara_ids: ['db4156be-fc5a-4851-89b1-0c7b07e9af09'],
     access_type: 'private',
     price_per_10_sec: 1,
-    streaming_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
+    s3_video_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
   });
 };
 
@@ -126,7 +126,7 @@ export const handleCreatingInteractions = async () => {
       'Vote for the food you would like our capybaras to eat. 😋',
       'The most voted food will be fed on the next day’s stream! 🏆',
     ],
-    session_date: new Date('2024-12-20').getTime(),
+    session_date: '2024-12-20',
     result: null,
     vote_cost: 5,
     current_bid: null,
@@ -146,7 +146,7 @@ export const handleCreatingInteractions = async () => {
       'Place your bid for a personalised video from Apple Vision Pro, made just for you!',
       'Win the auction and wait for the video recording to be sent your way for the unforgettable immersive experience.',
     ],
-    session_date: new Date('2024-12-20').getTime(),
+    session_date: '2024-12-20',
     result: null,
     vote_cost: null,
     current_bid: 20,
@@ -166,7 +166,7 @@ export const handleCreatingInteractions = async () => {
       'Place your bid to control a robot car with a live camera. 🎥',
       'Win the auction and enjoy a 30-minute call where you can drive the car, chat, and interact with the capybaras up close!',
     ],
-    session_date: new Date('2024-12-20').getTime(),
+    session_date: '2024-12-20',
     result: null,
     vote_cost: null,
     current_bid: 30,
@@ -183,7 +183,7 @@ export const handleCreatingNfts = async () => {
       { key: 'Chalk powder', value: '+5 bidding bonus' },
       { key: 'Climbing gym', value: '+10 minutes bonus video call' },
     ],
-    price: { unit: 5.8, usd: 100.0 },
+    price: 5,
     is_for_sale: 0,
     owner_id: null,
   });
@@ -197,7 +197,7 @@ export const handleCreatingNfts = async () => {
       { key: 'Chalk powder', value: '+5 bidding bonus' },
       { key: 'Climbing gym', value: '+10 minutes bonus video call' },
     ],
-    price: { unit: 6.8, usd: 120.0 },
+    price: 6,
     is_for_sale: 0,
     owner_id: null,
   });
@@ -211,7 +211,7 @@ export const handleCreatingNfts = async () => {
       { key: 'Chalk powder', value: '+5 bidding bonus' },
       { key: 'Climbing gym', value: '+10 minutes bonus video call' },
     ],
-    price: { unit: 3.8, usd: 78.0 },
+    price: 3,
     is_for_sale: 0,
     owner_id: null,
   });
@@ -219,9 +219,9 @@ export const handleCreatingNfts = async () => {
 
 export const createMockOffers = async ({ nftId, userId }: { nftId: string; userId: string }) => {
   await createNewOffer({
-    price: { unit: 3.2, usd: 70.0 },
+    price: 3,
     from: userId,
-    expires_at: new Date('2024-12-24').getTime(),
+    expires_at: '2024-12-24',
     nftId: nftId,
   });
 };
@@ -237,11 +237,11 @@ export const createMockActivityLog = async ({
 }) => {
   await createNewActivityLog({
     event: 'sale',
-    price: { unit: 3.3, usd: 70.0 },
+    price: 4,
     royalties: 'paid',
     from: fromId,
     to: toId,
-    timestamp: new Date('2024-12-22').getTime(),
+    timestamp: '2024-12-22',
     nftId: nftId,
   });
 };

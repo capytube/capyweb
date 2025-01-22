@@ -57,14 +57,17 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
 
     const createTransaction = async (amount: number | null, relatedId: string) => {
       try {
-        const transactionPayload = {
-          user_id: userData?.id,
-          transaction_type: selectedInteractionData?.interaction_type,
-          amount,
-          related_id: relatedId,
-          related_type: selectedInteractionData?.interaction_type,
-        };
-        const tokenTransactionResponse = await createTokenTransaction(transactionPayload);
+        let tokenTransactionResponse;
+        if (userData?.id) {
+          const transactionPayload = {
+            user_id: userData?.id,
+            transaction_type: selectedInteractionData?.interaction_type,
+            amount,
+            related_id: relatedId,
+            related_type: selectedInteractionData?.interaction_type,
+          };
+          tokenTransactionResponse = await createTokenTransaction(transactionPayload);
+        }
         if (tokenTransactionResponse?.data?.id) {
           setThanksActive(true);
         }
@@ -75,7 +78,7 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
 
     const isVoteTypeInteracted = selectedInteractionData?.interaction_type === 'vote';
 
-    if (isVoteTypeInteracted && votePayloadData) {
+    if (isVoteTypeInteracted && votePayloadData && selectedInteractionData?.id && userData?.id) {
       const userVotePayload = {
         interaction_id: selectedInteractionData?.id,
         user_id: userData?.id,
@@ -96,7 +99,7 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
         console.error('Error creating user vote:', error);
         return;
       }
-    } else if (bidPayloadData) {
+    } else if (bidPayloadData && selectedInteractionData?.id && userData?.id) {
       const userBidPayload = {
         interaction_id: selectedInteractionData?.id,
         user_id: userData?.id,
