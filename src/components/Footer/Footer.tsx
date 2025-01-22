@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
-import styles from "./Footer.module.css";
-import footerLogo from "../../assets/footerlogo.svg";
+import { Link } from 'react-router-dom';
+import styles from './Footer.module.css';
+import footerLogo from '../../assets/footerlogo.svg';
 
 const Footer = () => {
   return (
@@ -17,8 +17,8 @@ const Footer = () => {
           <Link to="/watch" className={styles.navLink} title="Watch Capy">
             Watch Capy
           </Link>
-          <Link to="#" className={`${styles.navLink} relative text-[#b1b1b1]`} title="Play with Capy">
-            <button disabled className="disabled:cursor-not-allowed after:content-['Coming_Soon'] after:text-[10px] after:font-commissioner after:block after:h-fit leading-3 after:w-fit after:bg-tomatoRed after:px-1 after:rounded-md after:py-1 after:-rotate-[20deg] after:-translate-y-6 after:animate-pulse after:text-white after:absolute after:-left-8">Play with Capy</button>
+          <Link to="/play" className={`${styles.navLink}`} title="Play with Capy">
+            Play with Capy
           </Link>
           <Link to="/profile" className={styles.navLink} title="Profile">
             Profile

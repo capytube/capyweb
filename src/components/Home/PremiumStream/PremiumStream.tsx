@@ -1,4 +1,3 @@
-import CrossShadowRibbon from '../../ComingSoonRibbon/CrossShadowRibbon';
 import styles from './PremiumStream.module.css';
 
 const PremiumStream = () => {
@@ -10,7 +9,6 @@ const PremiumStream = () => {
         className={`${styles.getCapyNftButton} relative disabled:cursor-not-allowed disabled:bg-buttonDisabled disabled:shadow-buttonDisabledShadow`}
         disabled
       >
-        <CrossShadowRibbon />
         Subscribe
       </button>
     </div>
