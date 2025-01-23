@@ -23,6 +23,7 @@ export interface InteractionsAtomType {
   session_date: string | null;
   result: string | null; // winning option ID
   vote_cost: number | null;
+  custom_request_cost: number | null; // additional cost if custom request
   current_bid: number | null;
   userVotes?: unknown;
   userBids?: unknown;

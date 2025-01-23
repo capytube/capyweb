@@ -53,6 +53,7 @@ const schema = a.schema({
       session_date: a.date(),
       result: a.string(), // winning option ID
       vote_cost: a.integer(),
+      custom_request_cost: a.integer(), // additional cost if custom request
       current_bid: a.integer(),
       userVotes: a.hasMany('UserVotes', 'interaction_id'),
       userBids: a.hasMany('UserBids', 'interaction_id'),

@@ -13,12 +13,11 @@ function ChooseCapySection({ handleCapySelection }: Readonly<Props>) {
   const capybaraData = useAtomValue(capybaraAtom);
 
   // states
-  const [isCapyDataLoading, setIsCapyDataLoading] = useState(false);
+  const [isCapyDataLoading, setIsCapyDataLoading] = useState(true);
 
   // effects
   useEffect(() => {
     const fetchAllCapyData = async () => {
-      setIsCapyDataLoading(true);
       await listCapybaras()
         .then(() => {
           setIsCapyDataLoading(false);
@@ -28,9 +27,7 @@ function ChooseCapySection({ handleCapySelection }: Readonly<Props>) {
         });
     };
 
-    if (capybaraData?.length === 0) {
-      fetchAllCapyData();
-    }
+    fetchAllCapyData();
   }, []);
 
   return (

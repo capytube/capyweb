@@ -44,6 +44,12 @@ export async function listPrivateLivestreams() {
   return response;
 }
 
+export async function getLivestreamByID(streamId: string) {
+  const response = await client.models.LiveStream.get({ id: streamId });
+
+  return response;
+}
+
 export async function createLivestream(params: LivestreamParams) {
   const response = await client.models.LiveStream.create({
     title: params.title,
@@ -57,6 +63,27 @@ export async function createLivestream(params: LivestreamParams) {
     s3_video_address: params.s3_video_address,
     streaming_address: params.streaming_address,
     ratingCounts: params.ratingCounts,
+  });
+
+  return response;
+}
+
+export async function updateStreamWithRatings({
+  streamId,
+  ratingCounts,
+}: {
+  streamId: string;
+  ratingCounts: {
+    capylove?: number | null;
+    capylike?: number | null;
+    capywow?: number | null;
+    capyangry?: number | null;
+    capyfire?: number | null;
+  };
+}) {
+  const response = await client.models.LiveStream.update({
+    id: streamId,
+    ratingCounts: ratingCounts,
   });
 
   return response;

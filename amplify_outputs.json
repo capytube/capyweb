@@ -186,6 +186,13 @@
               "isRequired": false,
               "attributes": []
             },
+            "custom_request_cost": {
+              "name": "custom_request_cost",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
             "current_bid": {
               "name": "current_bid",
               "isArray": false,

@@ -23,6 +23,7 @@ export default function ListingSection() {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isFetchingDataLoading, setIsFetchingDataLoading] = useState(true);
   const [sortedData, setSortedData] = useState(allNftData);
+  const [searchedText, setSearchedText] = useState<string>('');
 
   // variables
   const optionsStyle = 'text-left text-lg p-2 rounded-lg hover:bg-[#faceaf]';
@@ -30,7 +31,6 @@ export default function ListingSection() {
   // effects
   useEffect(() => {
     const fetchAllNfts = async () => {
-      setIsFetchingDataLoading(true);
       await listAllNfts()
         .then(() => {
           setIsFetchingDataLoading(false);
@@ -40,9 +40,7 @@ export default function ListingSection() {
         });
     };
 
-    if (allNftData?.length === 0) {
-      fetchAllNfts();
-    }
+    fetchAllNfts();
   }, []);
 
   // Sort data whenever `option` or `allNftData` changes
@@ -60,6 +58,12 @@ export default function ListingSection() {
     setSortedData(sortData);
   }, [option, allNftData]);
 
+  // filter nft data by search text
+  useEffect(() => {
+    const filteredData = [...allNftData].filter((nft) => String(nft?.name).includes(searchedText));
+    setSortedData(filteredData);
+  }, [searchedText]);
+
   return (
     <div className="lg:pt-10 py-8 lg:px-40 px-4 pb-20 flex flex-col lg:gap-y-10 gap-y-6 items-center">
       <div className="max-w-[1260px] flex lg:flex-row flex-col gap-y-4 justify-between items-end w-full">
@@ -67,7 +71,12 @@ export default function ListingSection() {
           <span className="font-ADLaM text-xl text-chocoBrown">Search by Token ID</span>
           <div className="mt-2 flex gap-x-2 items-center text-chocoBrown border-2 border-chocoBrown rounded-[4px] px-3 sm:py-2.5 py-1.5 font-commissioner max-h-11 w-full lg:max-w-[587px]">
             <SearchIcon />
-            <input type="text" className="outline-none " />
+            <input
+              type="text"
+              className="outline-none w-full"
+              value={searchedText}
+              onChange={(e) => setSearchedText(e.target.value)}
+            />
           </div>
         </div>
         <div className="relative md:w-max w-full">
@@ -114,6 +123,12 @@ export default function ListingSection() {
               {sortedData?.map((data) => (
                 <NFTCard key={data?.id} data={data} />
               ))}
+            </div>
+          );
+        } else if (searchedText && !sortedData?.length) {
+          return (
+            <div className="font-hanaleiFill text-chocoBrown md:text-4xl text-xl text-center px-3 sm:py-16">
+              No NFT matched with your searched value
             </div>
           );
         } else {

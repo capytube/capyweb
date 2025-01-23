@@ -56,31 +56,7 @@ const WatchRoom = () => {
   //     return 0;
   //   })() ?? 0;
 
-  // effects
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 500);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    const fetchPrivateStreams = async () => {
-      setIsStreamDataLoading(true);
-      await listPrivateLivestreams()
-        .then((res) => {
-          if (res?.data?.length) {
-            setIsStreamDataLoading(false);
-          }
-        })
-        .catch(() => {
-          setIsStreamDataLoading(false);
-        });
-    };
-
-    fetchPrivateStreams();
-  }, []);
-
-  useEffect(() => {
+  const handleSortingTheDisplayData = () => {
     const filterStreamsByCapyId = (streamData: typeof privateStreamData, capyId: string) => {
       return streamData?.filter(
         (stream) => Array.isArray(stream?.capybara_ids) && stream?.capybara_ids?.includes(capyId),
@@ -100,11 +76,39 @@ const WatchRoom = () => {
 
       if (sortedData?.length) {
         setLivestreamData(sortedData);
-        setVideoStreamAddress(sortedData?.[0]?.s3_video_address ?? '');
-        setCurrentStreamData(sortedData?.[0]);
+
+        return sortedData;
       }
     }
-  }, [privateStreamData, capyId]);
+  };
+
+  // effects
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 500);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const fetchPrivateStreams = async () => {
+      setIsStreamDataLoading(true);
+      await listPrivateLivestreams()
+        .then(() => {
+          setIsStreamDataLoading(false);
+        })
+        .catch(() => {
+          setIsStreamDataLoading(false);
+        });
+    };
+
+    fetchPrivateStreams();
+  }, []);
+
+  useEffect(() => {
+    const sortedData = handleSortingTheDisplayData();
+    setVideoStreamAddress(sortedData?.[0]?.s3_video_address ?? '');
+    if (sortedData?.[0]) setCurrentStreamData(sortedData?.[0]);
+  }, [capyId]);
 
   return (
     <>
@@ -128,6 +132,8 @@ const WatchRoom = () => {
                           setActiveCam(index);
                           setVideoStreamAddress(streamAddr);
                           setCurrentStreamData(data);
+
+                          handleSortingTheDisplayData(); // this is required to update the streams data after emoji ratings used
                         }
                       }}
                     >
@@ -198,14 +204,14 @@ const WatchRoom = () => {
                 </div>
                 <div className={styles.commentSection}>
                   <div className={styles.emojiRatingWrapper__mobile}>
-                    <EmojiRating streamId={videoStreamAddress ?? ''} />
+                    <EmojiRating currentStreamData={currentStreamData} setCurrentStreamData={setCurrentStreamData} />
                     <UserStreamCounter isVideoPlaying={isVideoPlaying} />
                   </div>
                   <ChatRoom streamId={currentStreamData?.id ?? ''} />
                 </div>
               </div>
               <div className={styles.emojiRatingWrapper}>
-                <EmojiRating streamId={videoStreamAddress ?? ''} />
+                <EmojiRating currentStreamData={currentStreamData} setCurrentStreamData={setCurrentStreamData} />
                 <UserStreamCounter isVideoPlaying={isVideoPlaying} />
               </div>
             </div>

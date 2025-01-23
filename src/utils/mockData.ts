@@ -60,7 +60,7 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'Public Stream',
     is_live: true,
-    capybara_ids: ['35199085-1a76-44f4-882c-3f4a70b0294a'],
+    capybara_ids: ['3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8'],
     access_type: 'public',
     price_per_10_sec: 1,
     s3_video_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
@@ -69,7 +69,7 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'main cam',
     is_live: true,
-    capybara_ids: ['35199085-1a76-44f4-882c-3f4a70b0294a', 'db4156be-fc5a-4851-89b1-0c7b07e9af09'],
+    capybara_ids: ['3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8', 'bdb54a62-b10e-4460-969c-4c7abb6a6ab4'],
     access_type: 'private',
     price_per_10_sec: 1,
     s3_video_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
@@ -78,7 +78,7 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'food cam',
     is_live: true,
-    capybara_ids: ['db4156be-fc5a-4851-89b1-0c7b07e9af09'],
+    capybara_ids: ['bdb54a62-b10e-4460-969c-4c7abb6a6ab4'],
     access_type: 'private',
     price_per_10_sec: 1,
     s3_video_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
@@ -87,7 +87,7 @@ export const handleCreateStreams = async () => {
 
 export const handleCreatingInteractions = async () => {
   await createInteractions({
-    capybara_id: 'b6a9d892-fc90-411a-85b7-e57d44f89292',
+    capybara_id: '3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8',
     interaction_type: 'vote',
     title: 'Buy capy a snack',
     title_icon_url: 'pictures/capyPlay/snackIcon.png',
@@ -118,7 +118,7 @@ export const handleCreatingInteractions = async () => {
       {
         id: '5',
         title: 'New request',
-        description: '+ 20 ',
+        description: '',
       },
     ],
     rules: [
@@ -129,11 +129,12 @@ export const handleCreatingInteractions = async () => {
     session_date: '2024-12-20',
     result: null,
     vote_cost: 5,
+    custom_request_cost: 20,
     current_bid: null,
   });
 
   await createInteractions({
-    capybara_id: 'b6a9d892-fc90-411a-85b7-e57d44f89292',
+    capybara_id: '3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8',
     interaction_type: 'bid',
     title: 'Capy safari',
     title_icon_url: 'pictures/capyPlay/safariIcon.png',
@@ -153,7 +154,7 @@ export const handleCreatingInteractions = async () => {
   });
 
   await createInteractions({
-    capybara_id: 'b6a9d892-fc90-411a-85b7-e57d44f89292',
+    capybara_id: '3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8',
     interaction_type: 'bid',
     title: 'Capy Vision Pro',
     title_icon_url: 'pictures/capyPlay/visionIcon.png',
@@ -184,7 +185,7 @@ export const handleCreatingNfts = async () => {
       { key: 'Climbing gym', value: '+10 minutes bonus video call' },
     ],
     price: 5,
-    is_for_sale: 0,
+    is_for_sale: 1,
     owner_id: null,
   });
 
@@ -198,7 +199,7 @@ export const handleCreatingNfts = async () => {
       { key: 'Climbing gym', value: '+10 minutes bonus video call' },
     ],
     price: 6,
-    is_for_sale: 0,
+    is_for_sale: 1,
     owner_id: null,
   });
 
@@ -212,7 +213,7 @@ export const handleCreatingNfts = async () => {
       { key: 'Climbing gym', value: '+10 minutes bonus video call' },
     ],
     price: 3,
-    is_for_sale: 0,
+    is_for_sale: 1,
     owner_id: null,
   });
 };

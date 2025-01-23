@@ -18,8 +18,8 @@ const Starring = () => {
   const privateStreamData = useAtomValue(livestreamPrivateAtom);
 
   // states
-  const [isCapyDataLoading, setIsCapyDataLoading] = useState(false);
-  const [isStreamDataLoading, setIsStreamDataLoading] = useState(false);
+  const [isCapyDataLoading, setIsCapyDataLoading] = useState(true);
+  const [isStreamDataLoading, setIsStreamDataLoading] = useState(true);
   const [updatedCapyData, setUpdatedCapyData] = useState<CapyDataType[]>([]);
 
   // variables
@@ -28,7 +28,6 @@ const Starring = () => {
   // effects
   useEffect(() => {
     const fetchAllCapyData = async () => {
-      setIsCapyDataLoading(true);
       await listCapybaras()
         .then(() => {
           setIsCapyDataLoading(false);
@@ -38,14 +37,11 @@ const Starring = () => {
         });
     };
 
-    if (capybaraData?.length === 0) {
-      fetchAllCapyData();
-    }
+    fetchAllCapyData();
   }, []);
 
   useEffect(() => {
     const fetchPrivateStreams = async () => {
-      setIsStreamDataLoading(true);
       await listPrivateLivestreams()
         .then(() => {
           setIsStreamDataLoading(false);
@@ -55,9 +51,7 @@ const Starring = () => {
         });
     };
 
-    if (privateStreamData?.length === 0) {
-      fetchPrivateStreams();
-    }
+    fetchPrivateStreams();
   }, []);
 
   useEffect(() => {

@@ -16,6 +16,8 @@ export async function listAllInteractionsByCapyId({ capyId }: { capyId: string }
 
   if (response?.data?.length) {
     defaultStore.set(interactionsAtom, response?.data);
+  } else {
+    defaultStore.set(interactionsAtom, []);
   }
 
   return response;
@@ -35,6 +37,7 @@ export async function createInteractions(params: InteractionsAtomParams) {
     session_date: params.session_date,
     result: params.result,
     vote_cost: params.vote_cost,
+    custom_request_cost: params.custom_request_cost,
     current_bid: params.current_bid,
   });
 
