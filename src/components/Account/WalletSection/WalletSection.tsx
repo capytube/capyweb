@@ -1,14 +1,13 @@
 import React from 'react';
 import { useAccount } from 'wagmi';
-import { useTokenBalances } from '@dynamic-labs/sdk-react-core';
+import { useAtom } from 'jotai';
 
 import { CapyCoin, CoinCurrency, PencilIcon, UnLinkedIcon } from '../Icons';
+import { userAtom } from '../../../store/atoms/userAtom';
 
 function WalletSection({ premium = false }: Readonly<{ premium?: boolean }>) {
   const { isConnected, address } = useAccount();
-  const token = useTokenBalances();
-
-  console.log('tokenBalances', token.tokenBalances);
+  const [user] = useAtom(userAtom);
 
   const [walletAddress, setWalletAddress] = React.useState<`0x${string}` | undefined>();
   const btnStyle =
@@ -30,7 +29,7 @@ function WalletSection({ premium = false }: Readonly<{ premium?: boolean }>) {
             <div className="flex gap-x-2 items-center md:justify-start justify-center">
               <CoinCurrency />
               <span className="sm:text-[64px] text-[45px] sm:leading-[76px] leading-[54px] font-ADLaM text-chocoBrown">
-                {0}
+                {user?.balance ?? 0}
               </span>
             </div>
             <span className="text-chocoBrown font-ADLaM sm:text-lg text-xs">My current balance</span>

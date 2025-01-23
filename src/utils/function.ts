@@ -1,3 +1,5 @@
+export type MakeSomeRequired<T, K extends keyof T> = Required<Pick<T, K>> & Partial<Omit<T, K>>;
+
 export function isFirstDateBeforeSecond(timestamp1: number, timestamp2: number) {
   // Normalize timestamps by creating new Date objects and setting them to midnight
   const date1 = new Date(timestamp1);
@@ -26,20 +28,30 @@ export function capitalizeWords(input: string): string {
 }
 
 /**
- * Calculates the age based on the birth year.
- * @param birthYear - The birth year as a number.
+ * Calculates the age based on the full date of birth.
+ * @param dateOfBirth - The date of birth as a string in the format 'YYYY-MM-DD'.
  * @returns The age as a formatted string (e.g., "X Months" or "X Years").
  */
-export function calculatedAge(birthYear: number): string {
-  if (!birthYear || birthYear > new Date().getFullYear()) {
-    console.log('Invalid birth year provided.');
+export function calculatedAge(dateOfBirth: string): string {
+  if (!dateOfBirth) {
+    console.log('Invalid date of birth provided.');
+    return '';
+  }
+
+  const birthDate = new Date(dateOfBirth);
+  if (isNaN(birthDate.getTime())) {
+    console.log('Invalid date format provided.');
+    return '';
   }
 
   const currentDate = new Date();
-  const birthDate = new Date(birthYear, 0); // Assuming January 1st of the birth year
-
-  const ageInMonths =
+  let ageInMonths =
     (currentDate.getFullYear() - birthDate.getFullYear()) * 12 + (currentDate.getMonth() - birthDate.getMonth());
+
+  if (currentDate.getDate() < birthDate.getDate()) {
+    // Adjust for days if the current day is less than the birth day
+    ageInMonths -= 1;
+  }
 
   if (ageInMonths < 12) {
     return `${ageInMonths} ${ageInMonths === 1 ? 'Month' : 'Months'}`;
@@ -49,9 +61,14 @@ export function calculatedAge(birthYear: number): string {
   return `${years} ${years === 1 ? 'Year' : 'Years'}`;
 }
 
-export function calculateTimeDifference(timestamp: number): string {
+export function calculateTimeDifference(dateString: string): string {
   const now = new Date();
-  const futureDate = new Date(timestamp);
+  const futureDate = new Date(dateString);
+
+  // Ensure the dateString is valid
+  if (isNaN(futureDate.getTime())) {
+    console.error('Invalid date string format. Expected format: YYYY-MM-DD.');
+  }
 
   // Calculate the difference in milliseconds
   const diff = futureDate.getTime() - now.getTime();
@@ -74,9 +91,14 @@ export function calculateTimeDifference(timestamp: number): string {
   return resultParts.join(' ');
 }
 
-export function calculateOfferExpiration(timestamp: number): string {
+export function calculateOfferExpiration(dateString: string): string {
   const now = new Date();
-  const futureDate = new Date(timestamp);
+  const futureDate = new Date(dateString);
+
+  // Ensure the dateString is valid
+  if (isNaN(futureDate.getTime())) {
+    console.error('Invalid date string format. Expected format: YYYY-MM-DD.');
+  }
 
   // Calculate the difference in milliseconds
   const diff = futureDate.getTime() - now.getTime();
@@ -100,9 +122,14 @@ export function calculateOfferExpiration(timestamp: number): string {
   }
 }
 
-export function calculateActivityLog(timestamp: number): string {
+export function calculateActivityLog(dateString: string): string {
   const now = new Date();
-  const pastDate = new Date(timestamp);
+  const pastDate = new Date(dateString);
+
+  // Ensure the dateString is valid
+  if (isNaN(pastDate.getTime())) {
+    console.error('Invalid date string format. Expected format: YYYY-MM-DD.');
+  }
 
   // Calculate the difference in milliseconds
   const diff = now.getTime() - pastDate.getTime();

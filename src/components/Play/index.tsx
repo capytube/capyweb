@@ -8,9 +8,7 @@ import { CapyCoin } from '../Account/Icons';
 import { CapybaraAtomType } from '../../store/atoms/capybaraAtom';
 import VideoPlayer from '../VideoPlayer';
 
-type Props = {};
-
-function index({}: Props) {
+function index() {
   const coins = 10;
   const [selection, setSelection] = React.useState(1);
   const [selectedCapy, setSelectedCapy] = React.useState<{

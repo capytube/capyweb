@@ -9,13 +9,11 @@ import DeletionInstructions from "./components/DeletionInstructions";
 import ProfilePage from "./components/Account/ProfilePage";
 import "@aws-amplify/ui-react/styles.css";
 import "./App.css";
-// import StreamingHome from "./components/Streaming/StreamingHome";
 import Home from "./components/Home";
 import Watch from "./components/Watch";
 import AboutUs from "./components/AboutUs";
 import NFTMarket from "./components/NFTMarket/index";
 import NFTDetails from "./components/NFTMarket/NFTDetails/index";
-// import FullScreenStream from "./components/Streaming/FullScreenStream";
 import WatchRoom from "./components/Watch/WatchRoom/WatchRoom";
 import FooterNavbar from "./components/FooterNavbar/FooterNavbar";
 import Header from "./components/Header/Header";
@@ -33,8 +31,6 @@ const App: React.FC = () => {
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
   const [, setWalletId] = useAtom(walletAtom);
-
-  console.log("dynamic___isLoggedIn", isLoggedIn);
 
   if (wagmiBalanceResult?.isSuccess) {
     const balanceData = wagmiBalanceResult?.data;

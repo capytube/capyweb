@@ -78,7 +78,7 @@ const Header = () => {
           <button className={styles.signedInProfileContainer} onClick={handleProfileClick}>
             <div className={styles.profile__coinCounts}>
               <img src={capyCoinIcon} alt="coin" />
-              <span>0</span>
+              <span>{user.balance ?? 0}</span>
             </div>
             <div className={styles.verticalSeparator}></div>
             <div className={styles.profile__details}>

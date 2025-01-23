@@ -2,6 +2,9 @@ import { generateClient } from 'aws-amplify/api';
 import { getDefaultStore } from 'jotai';
 import { Schema } from '../../../amplify/data/resource';
 import { CapybaraAtomType, capybaraAtom } from '../../store/atoms/capybaraAtom';
+import { MakeSomeRequired } from '../../utils/function';
+
+type CapybaraAtomParams = MakeSomeRequired<CapybaraAtomType, 'name'>;
 
 const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
@@ -33,11 +36,11 @@ export async function listCapybaras() {
   return response;
 }
 
-export async function createCapybara(params: Partial<CapybaraAtomType>) {
+export async function createCapybara(params: CapybaraAtomParams) {
   const response = await client.models.Capybara.create({
     name: params.name,
     gender: params.gender,
-    birth_year: params.birth_year,
+    birth_date: params.birth_date,
     born_place: params.born_place,
     description: params.description,
     bio: params.bio,

@@ -1,20 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
-import { useAtom } from 'jotai';
-import { generateClient } from 'aws-amplify/api';
-import { Schema } from '../../../../../amplify/data/resource';
 import styles from './EmojiRating.module.css';
 import capyangry from '../../../../assets/capyangry.svg';
 import capyfire from '../../../../assets/capyfire.svg';
 import capylike from '../../../../assets/capylike.svg';
 import capylove from '../../../../assets/capylove.svg';
 import capywow from '../../../../assets/capywow.svg';
-import { ratingsAtom } from '../../../../store/atoms/ratingsAtom';
-import { getRatings, updateRatings } from '../../../../api/ratings';
+import { LivestreamAtomType } from '../../../../store/atoms/livestreamAtom';
+import { getLivestreamByID, listPrivateLivestreams, updateStreamWithRatings } from '../../../../api/livestream';
 import { capitalizeWords } from '../../../../utils/function';
 
 interface EmojiRatingProps {
-  streamId: string;
+  currentStreamData: LivestreamAtomType | null;
+  setCurrentStreamData: React.Dispatch<React.SetStateAction<LivestreamAtomType | null>>;
 }
 
 const emojis = [
@@ -25,11 +23,9 @@ const emojis = [
   { name: 'capyfire', icon: capyfire },
 ];
 
-const EmojiRating = ({ streamId }: EmojiRatingProps) => {
+const EmojiRating = ({ currentStreamData, setCurrentStreamData }: EmojiRatingProps) => {
   const isLoggedIn = useIsLoggedIn();
-  const client = generateClient<Schema>();
-
-  const [savedRatings] = useAtom(ratingsAtom);
+  const streamId = currentStreamData?.id ?? '';
 
   const [emojiCounts, setEmojiCounts] = useState<{
     [streamId: string]: { [emojiName: string]: number };
@@ -41,13 +37,23 @@ const EmojiRating = ({ streamId }: EmojiRatingProps) => {
   const handleEmojiClick = async (streamId: string, emojiName: string) => {
     if (!isLoggedIn) return;
 
-    await updateRatings(streamId, {
-      ...savedRatings.ratingCounts,
-      // @ts-ignore
-      [emojiName]: savedRatings?.ratingCounts?.[emojiName] + 1,
+    await updateStreamWithRatings({
+      streamId,
+      ratingCounts: {
+        ...currentStreamData?.ratingCounts,
+        // @ts-ignore
+        [emojiName]: currentStreamData?.ratingCounts?.[emojiName] + 1,
+      },
+    }).then(async () => {
+      const updatedStreamData = await getLivestreamByID(streamId);
+      if (updatedStreamData?.data?.id) {
+        setCurrentStreamData(updatedStreamData?.data); // this updates the current tab stream local component state
+        await listPrivateLivestreams(); // this updates all the streams to latest in global jotai state
+      }
     });
 
     setEmojiCounts((prevCounts) => ({
+      ...prevCounts,
       [streamId]: {
         ...prevCounts[streamId],
         [emojiName]: (prevCounts[streamId]?.[emojiName] || 0) + 1,
@@ -56,11 +62,12 @@ const EmojiRating = ({ streamId }: EmojiRatingProps) => {
   };
 
   useEffect(() => {
-    const fetchRatingsOnce = async () => {
-      const response = await getRatings(streamId);
-      if (!response?.data) {
-        await client.models.Ratings.create({
-          id: streamId,
+    const loadRatingsOnce = async () => {
+      const ratingsData = currentStreamData?.ratingCounts;
+
+      if (!ratingsData) {
+        await updateStreamWithRatings({
+          streamId: streamId,
           ratingCounts: {
             capylove: 0,
             capylike: 0,
@@ -73,7 +80,7 @@ const EmojiRating = ({ streamId }: EmojiRatingProps) => {
     };
 
     if (isLoggedIn && streamId) {
-      fetchRatingsOnce();
+      loadRatingsOnce();
     }
   }, [streamId]);
 
@@ -90,12 +97,12 @@ const EmojiRating = ({ streamId }: EmojiRatingProps) => {
           key={emoji.name}
           className={`${styles.emojiRatingButton} disabled:cursor-not-allowed`}
           onClick={() => handleEmojiClick(streamId, emoji.name)}
-          disabled={!isLoggedIn || emojiCounts[streamId][emoji.name] >= 1}
+          disabled={!isLoggedIn || emojiCounts?.[streamId]?.[emoji.name] >= 1}
         >
           <img src={emoji.icon} alt={emoji.name} className={styles.emojiIcon} />
           <span className={styles.emojiCount}>
             {/* @ts-ignore */}
-            {(isLoggedIn ? savedRatings?.ratingCounts?.[emoji?.name] : 0) ?? 0}
+            {(isLoggedIn ? currentStreamData?.ratingCounts?.[emoji?.name] : 0) ?? 0}
           </span>
         </button>
       ))}

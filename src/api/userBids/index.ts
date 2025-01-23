@@ -1,16 +1,19 @@
 import { generateClient } from 'aws-amplify/api';
 import { Schema } from '../../../amplify/data/resource';
+import { MakeSomeRequired } from '../../utils/function';
 
 const client = generateClient<Schema>();
 
 export interface UserBidsType {
-  interaction_id: string | null; // Foreign Key to the Interactions Table
+  interaction_id: string; // Foreign Key to the Interactions Table
   interaction?: unknown;
-  user_id: string | null; // Foreign Key to User
+  user_id: string; // Foreign Key to User
   user?: unknown;
   bid_amount: number | null;
   tokenTransaction?: unknown;
 }
+
+type UserBidsParams = MakeSomeRequired<UserBidsType, 'interaction_id' | 'user_id'>;
 
 export async function listAllUserBids() {
   const response = await client.models.UserBids.list();
@@ -24,7 +27,7 @@ export async function listAllUserBidsByInteractionId(interactionId: string) {
   return response;
 }
 
-export async function createUserBids(params: Partial<UserBidsType>) {
+export async function createUserBids(params: UserBidsParams) {
   const response = await client.models.UserBids.create({
     interaction_id: params.interaction_id,
     user_id: params.user_id,

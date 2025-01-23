@@ -11,7 +11,7 @@ export async function listAllActivityLogsByNftId({ nftId }: { nftId: string }) {
       selectionSet: [
         'id',
         'event',
-        'price.*',
+        'price',
         'royalties',
         'from',
         'to',
@@ -29,11 +29,11 @@ export async function listAllActivityLogsByNftId({ nftId }: { nftId: string }) {
 export async function createNewActivityLog(params: Omit<ActivityLogAtomType, 'id'>) {
   const response = await client.models.ActivityLog.create({
     event: params.event ?? '',
-    price: params.price ?? { unit: 0, usd: 0 },
+    price: params.price,
     royalties: params.royalties ?? '',
     from: params.from ?? '',
     to: params.to ?? '',
-    timestamp: params.timestamp ?? new Date().getTime(),
+    timestamp: params.timestamp,
     nftId: params.nftId ?? '',
   });
 
