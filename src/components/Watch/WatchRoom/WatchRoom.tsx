@@ -113,7 +113,7 @@ const WatchRoom = () => {
   return (
     <>
       <div className={styles.watchRoomWrapper}>
-        {!isStreamDataLoading && videoStreamAddress ? (
+        {!isStreamDataLoading ? (
           <>
             <h1>{currCapyData?.name}’ ROOM</h1>
             <div className={styles.watchRoomContent}>
