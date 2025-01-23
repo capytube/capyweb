@@ -3,7 +3,7 @@ import { useAtomValue } from 'jotai';
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 import { TimeIcon } from '../../../Icons/Icons';
 import { userAtom } from '../../../../store/atoms/userAtom';
-import { createUsersWatchTimeOnce, getUsersWatchTime, updateUsersWatchTime } from '../../../../api/watchTimeInfo';
+import { getUserById, updateUserWatchTime } from '../../../../api/user';
 
 interface Props {
   isVideoPlaying: boolean;
@@ -31,18 +31,16 @@ const UserStreamCounter = ({ isVideoPlaying }: Props) => {
       if (isLoggedIn && userId) {
         try {
           // fetching watch time from the API first
-          const response = await getUsersWatchTime(userId);
+          const response = await getUserById(userId);
 
           if (response.data?.id) {
             const data = response?.data;
-            const initialTimeInSeconds = data?.watchTime ?? 0;
+            const initialTimeInSeconds = data?.totalWatchTime ?? 0;
 
             // Sync local state with API value
             setElapsedTimeInSeconds(initialTimeInSeconds); // UI
             elapsedTimeRef.current = initialTimeInSeconds; // API
           } else {
-            // If user doesn't exist in the watchTime table, create an entry
-            await createUsersWatchTimeOnce({ userId });
             setElapsedTimeInSeconds(0);
             elapsedTimeRef.current = 0;
           }
@@ -79,10 +77,9 @@ const UserStreamCounter = ({ isVideoPlaying }: Props) => {
     if (isLoggedIn && isVideoPlaying && userId) {
       const updateServerInterval = setInterval(async () => {
         try {
-          await updateUsersWatchTime({
-            id: userId,
+          await updateUserWatchTime({
+            userId: userId,
             watchTime: elapsedTimeRef.current,
-            lastUpdated: new Date().getTime(),
           });
         } catch (error) {
           console.error('Failed to update watch time:', error);

@@ -18,8 +18,8 @@ const Starring = () => {
   const privateStreamData = useAtomValue(livestreamPrivateAtom);
 
   // states
-  const [isCapyDataLoading, setIsCapyDataLoading] = useState(false);
-  const [isStreamDataLoading, setIsStreamDataLoading] = useState(false);
+  const [isCapyDataLoading, setIsCapyDataLoading] = useState(true);
+  const [isStreamDataLoading, setIsStreamDataLoading] = useState(true);
   const [updatedCapyData, setUpdatedCapyData] = useState<CapyDataType[]>([]);
 
   // variables
@@ -28,40 +28,30 @@ const Starring = () => {
   // effects
   useEffect(() => {
     const fetchAllCapyData = async () => {
-      setIsCapyDataLoading(true);
       await listCapybaras()
-        .then((res) => {
-          if (res?.data?.length) {
-            setIsCapyDataLoading(false);
-          }
+        .then(() => {
+          setIsCapyDataLoading(false);
         })
         .catch(() => {
           setIsCapyDataLoading(false);
         });
     };
 
-    if (capybaraData?.length === 0) {
-      fetchAllCapyData();
-    }
+    fetchAllCapyData();
   }, []);
 
   useEffect(() => {
     const fetchPrivateStreams = async () => {
-      setIsStreamDataLoading(true);
       await listPrivateLivestreams()
-        .then((res) => {
-          if (res?.data?.length) {
-            setIsStreamDataLoading(false);
-          }
+        .then(() => {
+          setIsStreamDataLoading(false);
         })
         .catch(() => {
           setIsStreamDataLoading(false);
         });
     };
 
-    if (privateStreamData?.length === 0) {
-      fetchPrivateStreams();
-    }
+    fetchPrivateStreams();
   }, []);
 
   useEffect(() => {
@@ -79,32 +69,43 @@ const Starring = () => {
 
   return (
     <div className={styles.starringWrapper}>
-      {!isLoading && updatedCapyData?.length ? (
-        <>
-          <h1>STARRING...</h1>
-
-          <div className={styles.starringCapyCardsWrapper}>
-            {updatedCapyData?.map((data, index) => {
-              return (
-                <CapyCards
-                  data={{
-                    ...data,
-                    streamCount: data.stream_count ?? 0,
-                  }}
-                  key={data.id}
-                  customCardStyle={{
-                    transform: `rotate(${index % 2 === 0 ? '-1deg' : '1deg'})`,
-                  }}
-                />
-              );
-            })}
-          </div>
-        </>
-      ) : (
-        <div className="animate-bounce font-hanaleiFill md:h-full h-[50dvh] text-chocoBrown md:text-7xl text-3xl flex justify-center items-center">
-          loading...
-        </div>
-      )}
+      {(() => {
+        if (isLoading) {
+          return (
+            <div className="animate-bounce font-hanaleiFill md:h-full h-[50dvh] text-chocoBrown md:text-7xl text-3xl flex justify-center items-center py-16">
+              loading...
+            </div>
+          );
+        } else if (updatedCapyData?.length) {
+          return (
+            <>
+              <h1>STARRING...</h1>
+              <div className={styles.starringCapyCardsWrapper}>
+                {updatedCapyData.map((data, index) => (
+                  <CapyCards
+                    data={{
+                      ...data,
+                      streamCount: data.stream_count ?? 0,
+                    }}
+                    key={data.id}
+                    customCardStyle={{
+                      transform: `rotate(${index % 2 === 0 ? '-1deg' : '1deg'})`,
+                    }}
+                  />
+                ))}
+              </div>
+            </>
+          );
+        } else {
+          return (
+            <div className="font-hanaleiFill text-chocoBrown md:text-4xl text-2xl text-center px-3 sm:py-16 py-32">
+              The Capybara streams isn´t available right now,
+              <br />
+              Try again later sometime
+            </div>
+          );
+        }
+      })()}
     </div>
   );
 };

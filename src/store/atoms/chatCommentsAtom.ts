@@ -3,9 +3,9 @@ import { UserAtomType } from './userAtom';
 
 export interface ChatCommentsAtomType {
   id: string | null;
-  stream_id: string | null;
-  user_id: string | null;
-  content: string | null;
+  stream_id: string;
+  user_id: string;
+  content: string;
   createdAt: string;
   stream?: unknown;
   user?: UserAtomType;

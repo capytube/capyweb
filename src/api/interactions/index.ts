@@ -2,6 +2,9 @@ import { generateClient } from 'aws-amplify/api';
 import { getDefaultStore } from 'jotai';
 import { Schema } from '../../../amplify/data/resource';
 import { InteractionsAtomType, interactionsAtom } from '../../store/atoms/interactionsAtom';
+import { MakeSomeRequired } from '../../utils/function';
+
+type InteractionsAtomParams = MakeSomeRequired<InteractionsAtomType, 'capybara_id' | 'title' | 'description'>;
 
 const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
@@ -13,12 +16,14 @@ export async function listAllInteractionsByCapyId({ capyId }: { capyId: string }
 
   if (response?.data?.length) {
     defaultStore.set(interactionsAtom, response?.data);
+  } else {
+    defaultStore.set(interactionsAtom, []);
   }
 
   return response;
 }
 
-export async function createInteractions(params: Partial<InteractionsAtomType>) {
+export async function createInteractions(params: InteractionsAtomParams) {
   const response = await client.models.Interactions.create({
     capybara_id: params.capybara_id,
     interaction_type: params.interaction_type,
@@ -32,6 +37,7 @@ export async function createInteractions(params: Partial<InteractionsAtomType>) 
     session_date: params.session_date,
     result: params.result,
     vote_cost: params.vote_cost,
+    custom_request_cost: params.custom_request_cost,
     current_bid: params.current_bid,
   });
 

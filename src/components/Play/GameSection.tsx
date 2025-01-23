@@ -1,6 +1,7 @@
 import { MouseEventHandler, useEffect, useState } from 'react';
 import { useAtomValue } from 'jotai';
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
+import toast from 'react-hot-toast';
 
 import SelectedCharacterCard from './SelectedCharacterCard';
 import ThanksSection from './ThanksSection/ThanksSection';
@@ -14,6 +15,7 @@ import { listAllInteractionsByCapyId } from '../../api/interactions';
 import { createUserVotes } from '../../api/userVotes';
 import { createUserBids } from '../../api/userBids';
 import { createTokenTransaction } from '../../api/tokenTransaction';
+import { updateUserTotalBalance } from '../../api/user';
 
 type Props = {
   capy: { id: string; name: string; image: string };
@@ -52,19 +54,47 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
       return;
     }
 
+    let isLowBalance = false;
+    const voteFee = votePayloadData?.totalFee ?? 0;
+    const bidFee = bidPayloadData?.bidAmount ?? 0;
+    const userBalance = userData?.balance ?? 0;
+    if (voteFee > userBalance || bidFee > userBalance) {
+      isLowBalance = true;
+    }
+
+    if (isLowBalance) {
+      toast.error(`You do not have enough coins to place your ${selectedInteractionData?.interaction_type}.`, {
+        id: 'low-balance',
+      });
+      return;
+    }
+
     setFinalInteractedData(selectedInteractionData);
     setCapySelectedFood(selectedFood);
 
     const createTransaction = async (amount: number | null, relatedId: string) => {
       try {
-        const transactionPayload = {
-          user_id: userData?.id,
-          transaction_type: selectedInteractionData?.interaction_type,
-          amount,
-          related_id: relatedId,
-          related_type: selectedInteractionData?.interaction_type,
-        };
-        const tokenTransactionResponse = await createTokenTransaction(transactionPayload);
+        // deducting coins from user's account
+        if (userData?.id && userData?.balance && amount) {
+          const leftOverBalance = userData?.balance - amount;
+          await updateUserTotalBalance({
+            userId: userData?.id,
+            totalBalance: leftOverBalance,
+          });
+        }
+
+        // hitting the transactional api
+        let tokenTransactionResponse;
+        if (userData?.id) {
+          const transactionPayload = {
+            user_id: userData?.id,
+            transaction_type: selectedInteractionData?.interaction_type,
+            amount,
+            related_id: relatedId,
+            related_type: selectedInteractionData?.interaction_type,
+          };
+          tokenTransactionResponse = await createTokenTransaction(transactionPayload);
+        }
         if (tokenTransactionResponse?.data?.id) {
           setThanksActive(true);
         }
@@ -75,7 +105,7 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
 
     const isVoteTypeInteracted = selectedInteractionData?.interaction_type === 'vote';
 
-    if (isVoteTypeInteracted && votePayloadData) {
+    if (isVoteTypeInteracted && votePayloadData && selectedInteractionData?.id && userData?.id) {
       const userVotePayload = {
         interaction_id: selectedInteractionData?.id,
         user_id: userData?.id,
@@ -96,7 +126,7 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
         console.error('Error creating user vote:', error);
         return;
       }
-    } else if (bidPayloadData) {
+    } else if (bidPayloadData && selectedInteractionData?.id && userData?.id) {
       const userBidPayload = {
         interaction_id: selectedInteractionData?.id,
         user_id: userData?.id,
@@ -136,10 +166,8 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
     const fetchAllAvailableInteractions = async () => {
       setIsListInteractionsLoading(true);
       await listAllInteractionsByCapyId({ capyId: capy?.id })
-        .then((res) => {
-          if (res?.data?.length) {
-            setIsListInteractionsLoading(false);
-          }
+        .then(() => {
+          setIsListInteractionsLoading(false);
         })
         .catch(() => {
           setIsListInteractionsLoading(false);
@@ -169,24 +197,36 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
             <div className="sticky z-10 h-fit top-0">
               <SelectedCharacterCard capy={capy} handleClick={handleSectionChange} />
             </div>
-            {!isListInteractionsLoading && interactionsData?.length ? (
-              <div className="flex flex-col gap-y-10 lg:pt-0 pt-10">
-                {voteTypeInteractionsList?.length
-                  ? voteTypeInteractionsList?.map((data) => {
-                      return <VoteInteractionCard key={data?.id} data={data} handleSubmit={handleSubmit} />;
-                    })
-                  : null}
-                {bidTypeInteractionsList?.length
-                  ? bidTypeInteractionsList?.map((data) => {
-                      return <BidInteractionCard key={data?.id} data={data} handleSubmit={handleSubmit} />;
-                    })
-                  : null}
-              </div>
-            ) : (
-              <div className="animate-bounce font-hanaleiFill md:h-full h-[50dvh] text-chocoBrown md:text-7xl text-3xl flex justify-center items-center">
-                loading...
-              </div>
-            )}
+            {(() => {
+              if (isListInteractionsLoading) {
+                return (
+                  <div className="animate-bounce font-hanaleiFill md:h-full h-[50dvh] text-chocoBrown md:text-7xl text-3xl flex justify-center items-center">
+                    loading...
+                  </div>
+                );
+              } else if (interactionsData?.length > 0) {
+                return (
+                  <div className="flex flex-col gap-y-10 lg:pt-0 pt-10">
+                    {voteTypeInteractionsList?.length
+                      ? voteTypeInteractionsList?.map((data) => {
+                          return <VoteInteractionCard key={data?.id} data={data} handleSubmit={handleSubmit} />;
+                        })
+                      : null}
+                    {bidTypeInteractionsList?.length
+                      ? bidTypeInteractionsList?.map((data) => {
+                          return <BidInteractionCard key={data?.id} data={data} handleSubmit={handleSubmit} />;
+                        })
+                      : null}
+                  </div>
+                );
+              } else {
+                return (
+                  <div className="font-hanaleiFill text-chocoBrown md:text-4xl text-2xl text-center px-3 sm:py-16 py-32">
+                    The interactive games aren´t available right now
+                  </div>
+                );
+              }
+            })()}
           </>
         ) : (
           <div className="md:pb-0 pb-10">

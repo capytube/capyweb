@@ -37,8 +37,10 @@ export async function createUser({
 }) {
   const response = await client.models.User.create({
     username: userName,
-    wallet_address: wallet_address,
     email: email_address,
+    wallet_address: wallet_address,
+    balance: 0,
+    totalWatchTime: 0,
   });
 
   if (response?.data?.id) {
@@ -48,13 +50,39 @@ export async function createUser({
   return response;
 }
 
-export async function updateUser({ userId, userName }: { userId: string; userName: string }) {
+export async function updateUserDetails({ userId, userName }: { userId: string; userName: string }) {
   const response = await client.models.User.update({
     id: userId,
     username: userName,
   });
 
-  if (response?.data?.username) {
+  if (response?.data?.id) {
+    await getUserById(userId);
+  }
+
+  return response;
+}
+
+export async function updateUserWatchTime({ userId, watchTime }: { userId: string; watchTime: number }) {
+  const response = await client.models.User.update({
+    id: userId,
+    totalWatchTime: watchTime,
+  });
+
+  if (response?.data?.id) {
+    await getUserById(userId);
+  }
+
+  return response;
+}
+
+export async function updateUserTotalBalance({ userId, totalBalance }: { userId: string; totalBalance: number }) {
+  const response = await client.models.User.update({
+    id: userId,
+    balance: totalBalance,
+  });
+
+  if (response?.data?.id) {
     await getUserById(userId);
   }
 

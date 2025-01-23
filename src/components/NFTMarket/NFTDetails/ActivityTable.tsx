@@ -63,7 +63,7 @@ export default function ActivityTable({ nftId }: Readonly<Props>) {
           allActivityData?.map((row) => (
             <tr key={row?.id}>
               <td className="text-chocoBrown font-commissioner pt-6">{row?.event}</td>
-              <td className="text-chocoBrown font-commissioner pt-6">{row?.price?.unit}</td>
+              <td className="text-chocoBrown font-commissioner pt-6">{row?.price}</td>
               <td
                 className={`${row?.royalties === 'paid' ? 'text-siteGreen' : 'text-chocoBrown'} font-commissioner pt-6`}
               >
@@ -76,7 +76,7 @@ export default function ActivityTable({ nftId }: Readonly<Props>) {
                 {shortenedWalletAddress(row?.toDetails?.wallet_address ?? '')}
               </td>
               <td className="text-chocoBrown font-commissioner pt-6">
-                {calculateActivityLog(row?.timestamp ?? 0)} ago
+                {calculateActivityLog(row?.timestamp ?? '')} ago
               </td>
             </tr>
           ))

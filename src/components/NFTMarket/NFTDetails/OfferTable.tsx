@@ -59,12 +59,12 @@ function OfferTable({ nftId }: Readonly<Props>) {
         {allOffersData?.length > 0 ? (
           allOffersData?.map((row) => (
             <tr key={row?.id}>
-              <td className="text-chocoBrown font-commissioner pt-6">{row?.price?.unit}</td>
+              <td className="text-chocoBrown font-commissioner pt-6">{row?.price}</td>
               <td className="text-chocoBrown font-commissioner pt-6" title={row?.fromDetails?.wallet_address ?? ''}>
                 {shortenedWalletAddress(row?.fromDetails?.wallet_address ?? '')}
               </td>
               <td className="text-chocoBrown font-commissioner pt-6">
-                in {calculateOfferExpiration(row?.expires_at ?? 0)}
+                in {calculateOfferExpiration(row?.expires_at ?? '')}
               </td>
             </tr>
           ))

@@ -41,9 +41,9 @@ function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
   const [newFoodRequest, setNewFoodRequest] = useState<string>('');
 
   // variables
-  const chosenFoodOption = selectedOption?.title === 'New request' ? newFoodRequest : selectedOption?.title;
-  const totalFee = votes * (data?.vote_cost ?? 1);
-  const isCustomRequest = Boolean(newFoodRequest);
+  const isCustomRequest = ['new', 'request']?.some((key) => selectedOption?.title?.toLowerCase()?.includes(key));
+  const chosenFoodOption = isCustomRequest ? newFoodRequest : selectedOption?.title;
+  const totalFee = votes * (data?.vote_cost ?? 1) + (isCustomRequest ? data?.custom_request_cost ?? 0 : 0);
 
   return (
     <div className="bg-babyCronYellow shadow-characterCard px-6 pt-6 pb-8 max-w-[744px]">
@@ -53,11 +53,11 @@ function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
         ) : null}
         <h2 className="md:text-5xl text-2xl font-dynapuff text-chocoBrown">{data?.title}</h2>
       </div>
-      {calculateTimeDifference(data?.session_date ?? 0) ? (
+      {calculateTimeDifference(data?.session_date ?? '') ? (
         <div className="flex gap-x-2 items-center justify-center font-bold pt-2">
           <ClockIcon />
           <span className="text-darkOrange text-2xl font-commissioner">
-            ends in {calculateTimeDifference(data?.session_date ?? 0)}
+            ends in {calculateTimeDifference(data?.session_date ?? '')}
           </span>
         </div>
       ) : null}
@@ -108,15 +108,15 @@ function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
                   {option?.title}
                 </h3>
                 <p className="md:text-base text-xs font-commissioner text-chocoBrown">
-                  {option?.id === '5' ? (
+                  {['new', 'request']?.some((key) => option?.title?.toLowerCase()?.includes(key)) ? (
                     <span className="inline-flex items-center gap-x-2">
-                      {option?.description} <CoinCurrency className="size-6" />
+                      + {data?.custom_request_cost} <CoinCurrency className="size-6" />
                     </span>
                   ) : (
                     option?.description
                   )}
                 </p>
-                {option?.id === '5' ? (
+                {['new', 'request']?.some((key) => option?.title?.toLowerCase()?.includes(key)) ? (
                   <input
                     className="mt-2 outline-none border-chocoBrown border-2 rounded-[4px] py-2 px-3 font-commissioner text-sm text-chocoBrown max-w-[316px]"
                     placeholder="Name your capy food"

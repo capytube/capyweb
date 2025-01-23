@@ -3,7 +3,7 @@ import { useAccount } from 'wagmi';
 import { useAtom } from 'jotai';
 
 import { userAtom } from '../../../store/atoms/userAtom';
-import { updateUser } from '../../../api/user';
+import { updateUserDetails } from '../../../api/user';
 
 import styles from './updateProfile.module.css';
 
@@ -17,7 +17,7 @@ const UpdateProfile = ({ onClose }: { onClose: Function }) => {
   const updateProfile = async (userId: string, name: string) => {
     try {
       setIsLoading(true);
-      const response = await updateUser({ userId: userId, userName: name });
+      const response = await updateUserDetails({ userId: userId, userName: name });
       if (response?.data) {
         onClose();
         setIsLoading(false);

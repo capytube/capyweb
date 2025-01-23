@@ -2,6 +2,9 @@ import { generateClient } from 'aws-amplify/api';
 import { getDefaultStore } from 'jotai';
 import { Schema } from '../../../amplify/data/resource';
 import { ChatCommentsAtomType, chatCommentsAtom } from '../../store/atoms/chatCommentsAtom';
+import { MakeSomeRequired } from '../../utils/function';
+
+type ChatCommentsAtomParams = MakeSomeRequired<ChatCommentsAtomType, 'stream_id' | 'user_id' | 'content'>;
 
 const client = generateClient<Schema>();
 const defaultStore = getDefaultStore();
@@ -20,7 +23,7 @@ export async function listAllComments({ streamId }: { streamId: string }) {
   return response;
 }
 
-export async function createChatComment(params: Partial<ChatCommentsAtomType>) {
+export async function createChatComment(params: ChatCommentsAtomParams) {
   const response = await client.models.ChatComments.create({
     stream_id: params.stream_id,
     user_id: params.user_id,

@@ -17,10 +17,8 @@ const PublicStream = () => {
     const fetchPublicStreams = async () => {
       setIsStreamDataLoading(true);
       await listPublicLivestreams()
-        .then((res) => {
-          if (res?.data?.length) {
-            setIsStreamDataLoading(false);
-          }
+        .then(() => {
+          setIsStreamDataLoading(false);
         })
         .catch(() => {
           setIsStreamDataLoading(false);
@@ -40,7 +38,7 @@ const PublicStream = () => {
         {publicStreamData?.length > 0 ? (
           <VideoPlayer
             streamId={publicStreamData?.[0]?.id ?? ''}
-            videoUrl={publicStreamData?.[0]?.streaming_address ?? ''}
+            videoUrl={publicStreamData?.[0]?.s3_video_address ?? ''}
           />
         ) : (
           <VideoFrameWithErrorMessage
