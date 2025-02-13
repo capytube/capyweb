@@ -16,7 +16,6 @@ export interface UserVotesType {
   is_custom_request: boolean | null; // Whether the vote is for a custom option
   custom_request: string | null; // custom request string
   approved: boolean | null; // Whether the custom request is approved (if applicable)
-  tokenTransaction?: unknown;
 }
 
 type UserVotesParams = MakeSomeRequired<UserVotesType, 'interaction_id' | 'user_id'>;
