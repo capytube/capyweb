@@ -10,7 +10,6 @@ export interface UserBidsType {
   user_id: string; // Foreign Key to User
   user?: unknown;
   bid_amount: number | null;
-  tokenTransaction?: unknown;
 }
 
 type UserBidsParams = MakeSomeRequired<UserBidsType, 'interaction_id' | 'user_id'>;

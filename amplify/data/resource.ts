@@ -7,6 +7,7 @@ const interaction_type = a.enum(['vote', 'bid']);
 const transaction_type = a.enum(['tip', 'reward', 'stream_payment', 'transfer', 'withdraw', 'deposit', 'vote', 'bid']);
 const rarity_level = a.enum(['ultra_rare', 'rare', 'epic']);
 const gender = a.enum(['male', 'female']);
+const signup_source = a.enum(['capytube', 'admin_panel']);
 
 const schema = a.schema({
   Options: a.customType({
@@ -75,7 +76,6 @@ const schema = a.schema({
       is_custom_request: a.boolean(), // Whether the vote is for a custom option
       custom_request: a.string(), // custom request string
       approved: a.boolean(), // Whether the custom request is approved (if applicable)
-      tokenTransaction: a.hasOne('TokenTransaction', 'related_id'),
     })
     .secondaryIndexes((index) => [index('interaction_id').name('InteractionTypeIndex')])
     .authorization((allow) => [allow.publicApiKey()]),
@@ -89,7 +89,6 @@ const schema = a.schema({
       user_id: a.id().required(), // Foreign Key to User
       user: a.belongsTo('User', 'user_id'),
       bid_amount: a.integer(),
-      tokenTransaction: a.hasOne('TokenTransaction', 'related_id'),
     })
     .secondaryIndexes((index) => [index('interaction_id').name('InteractionTypeIndex')])
     .authorization((allow) => [allow.publicApiKey()]),
@@ -104,8 +103,6 @@ const schema = a.schema({
       amount: a.integer(), // Transaction amount in tokens
       related_id: a.id(), // Can reference UserVotes or UserBids
       related_type: interaction_type,
-      relatedVote: a.belongsTo('UserVotes', 'related_id'),
-      relatedBid: a.belongsTo('UserBids', 'related_id'),
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
@@ -179,6 +176,7 @@ const schema = a.schema({
       bio: a.string(),
       balance: a.integer(), // total capycoin balance in the account
       totalWatchTime: a.integer(), // Total watch time in seconds
+      signupSource: signup_source,
       userVotes: a.hasMany('UserVotes', 'user_id'),
       userBids: a.hasMany('UserBids', 'user_id'),
       tokenTransaction: a.hasMany('TokenTransaction', 'user_id'),
@@ -188,7 +186,10 @@ const schema = a.schema({
       sellerActivityLog: a.hasMany('ActivityLog', 'from'),
       buyerActivityLog: a.hasMany('ActivityLog', 'to'),
     })
-    .secondaryIndexes((index) => [index('wallet_address').name('ByWalletAddress').queryField('getUserByWalletAddress')])
+    .secondaryIndexes((index) => [
+      index('wallet_address').name('ByWalletAddress').queryField('getUserByWalletAddress'),
+      index('email').name('ByEmailAddress').queryField('getUserByEmailAddress'),
+    ])
     .authorization((allow) => [allow.publicApiKey()]),
 
   // NFT schema
