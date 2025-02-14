@@ -8,23 +8,31 @@ import { createUser } from '../../../api/user';
 const YourProfile = ({ onClose }: { onClose: Function }) => {
   const { address, isConnected } = useAccount();
   const { user: allUserData } = useDynamicContext();
+  const authUserId = allUserData?.userId;
 
   const [email, setEmail] = useState(allUserData?.email ?? '');
   const [name, setName] = useState('');
   const [errors, setErrors] = useState({ email: '', name: '' });
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const createProfile = async (name: string, walletId: string) => {
-    try {
-      setIsLoading(true);
-      const response = await createUser({ userName: name, wallet_address: walletId, email_address: email });
-      if (response?.data?.username) {
-        onClose();
+  const createProfile = async () => {
+    if (authUserId && address) {
+      try {
+        setIsLoading(true);
+        const response = await createUser({
+          id: authUserId,
+          userName: name,
+          wallet_address: address,
+          email_address: email,
+        });
+        if (response?.data?.username) {
+          onClose();
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.log('error', error);
         setIsLoading(false);
       }
-    } catch (error) {
-      console.log('error', error);
-      setIsLoading(false);
     }
   };
 
@@ -35,7 +43,7 @@ const YourProfile = ({ onClose }: { onClose: Function }) => {
       }
 
       if (name && email) {
-        createProfile(name, address);
+        createProfile();
         setName('');
       }
     }
