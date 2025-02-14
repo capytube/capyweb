@@ -10,15 +10,7 @@ frontend:
     build:
       commands:
         - npm run build
-        - |
-          case "${AWS_BRANCH}" in
-          main)
-              curl -X POST -d {} "https://webhooks.amplify.ap-southeast-1.amazonaws.com/prod/webhooks?id=78ec49c3-613d-4bd5-8393-98f69f40c561&token=TEcC2reboC9MCEz2sykmouppkIbDnS0BJCCdoq2LUJw&operation=startbuild" -H "Content-Type:application/json"
-              ;;         
-          devs_deployment)
-              curl -X POST -d {} "https://webhooks.amplify.ap-southeast-1.amazonaws.com/prod/webhooks?id=8201411a-a73c-401f-9349-1dfcbcac72b8&token=YKp4EWcuthS716kQYki2Ee7JZgHJh6wRqu7PTUfujE&operation=startbuild" -H "Content-Type:application/json"
-              ;; 
-          esac
+        - curl -X POST -d {} "https://webhooks.amplify.ap-southeast-1.amazonaws.com/prod/webhooks?id=78ec49c3-613d-4bd5-8393-98f69f40c561&token=TEcC2reboC9MCEz2sykmouppkIbDnS0BJCCdoq2LUJw&operation=startbuild" -H "Content-Type:application/json"
   artifacts:
     baseDirectory: dist
     files:
