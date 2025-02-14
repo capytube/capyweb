@@ -27,24 +27,28 @@ export async function getUserByWalletAddress(walletAddress: string) {
 }
 
 export async function createUser({
+  id,
   userName,
   wallet_address,
   email_address,
 }: {
+  id: string;
   userName: string;
   wallet_address: string;
   email_address: string;
 }) {
   const response = await client.models.User.create({
+    id: id,
     username: userName,
     email: email_address,
     wallet_address: wallet_address,
     balance: 0,
     totalWatchTime: 0,
+    signupSource: 'capytube',
   });
 
   if (response?.data?.id) {
-    await getUserByWalletAddress(wallet_address);
+    await getUserById(id);
   }
 
   return response;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DynamicWidget, useDynamicContext, useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 import { useAccount } from 'wagmi';
 import { Link } from 'react-router-dom';
+import { useAtom } from 'jotai';
 
 import styles from './Header.module.css';
 import capytube from '../../assets/capytube.svg';
@@ -13,9 +14,8 @@ import nonNFTprofile from '../../assets/nonNFTprofile.svg';
 import NFTprofile from '../../assets/NFTprofile.svg';
 import Modal from '../Modal/Modal';
 import YourProfile from './YourProfile/YourProfile';
-import { useAtom } from 'jotai';
 import { userAtom } from '../../store/atoms/userAtom';
-import { getUserByWalletAddress } from '../../api/user';
+import { getUserById } from '../../api/user';
 
 const Header = () => {
   const isNftProfile = true;
@@ -23,7 +23,8 @@ const Header = () => {
   const isLoggedIn = useIsLoggedIn();
   const isUserAuthenticated = isLoggedIn || localStorage.getItem('dynamic_authentication_token');
   const { address, isConnected } = useAccount();
-  const { setShowDynamicUserProfile } = useDynamicContext();
+  const { setShowDynamicUserProfile, user: authUserData } = useDynamicContext();
+  const authUserId = authUserData?.userId;
 
   const [user] = useAtom(userAtom);
 
@@ -35,9 +36,9 @@ const Header = () => {
 
   useEffect(() => {
     const getProfile = async () => {
-      if (isLoggedIn && address) {
-        const response = await getUserByWalletAddress(address);
-        if (!response?.data?.[0]?.id) {
+      if (isLoggedIn && address && authUserId) {
+        const response = await getUserById(authUserId);
+        if (authUserId !== response?.data?.id) {
           setIsSetProfileModalOpen(true);
         } else {
           setIsSetProfileModalOpen(false);
