@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { StorageImage } from '@aws-amplify/ui-react-storage';
+import { Loader } from '@aws-amplify/ui-react';
 import styles from './CapyProfile.module.css';
-import magnusImg from '../../../../assets/magnus.jpg';
 import { calculatedAge, capitalizeWords } from '../../../../utils/function';
 import { CapybaraAtomType } from '../../../../store/atoms/capybaraAtom';
 
@@ -11,18 +12,28 @@ interface CapyProfileProps {
 
 const CapyProfile = (props: CapyProfileProps) => {
   const { data, customCardStyle } = props;
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(true);
 
   return (
     <div className={styles.card} style={customCardStyle}>
-      {data?.card_image_url ? (
-        <StorageImage
-          alt={data?.name ?? ''}
-          path={data?.card_image_url ?? ''}
-          fallbackSrc={magnusImg}
-          loading="lazy"
-          className={styles.image}
-        />
-      ) : null}
+      <div className="relative md:min-w-[210px]">
+        {/* Loading Spinner */}
+        {isImageLoading && (
+          <div className="absolute w-full h-full rounded-3xl flex justify-center items-center">
+            <Loader width="3rem" height="3rem" filledColor="#7a3f3e" />
+          </div>
+        )}
+        {/* Actual Image */}
+        {data?.card_image_url ? (
+          <StorageImage
+            alt=""
+            path={data?.card_image_url ?? ''}
+            loading="lazy"
+            className={styles.image}
+            onLoad={() => setIsImageLoading(false)}
+          />
+        ) : null}
+      </div>
       <div className={styles.content}>
         <h2 className={styles.name}>{data?.name}</h2>
         <p className={styles.age_info}>

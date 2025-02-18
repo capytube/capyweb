@@ -1,5 +1,6 @@
 import React from 'react';
 import { StorageImage } from '@aws-amplify/ui-react-storage';
+import { Loader } from '@aws-amplify/ui-react';
 import { CoinCurrency, MinusIcon, PlusIcon, QuestionMark } from '../Account/Icons';
 import { ClockIcon } from './Icons';
 import RulesPopup from './RulesPopup/RulesPopup';
@@ -31,6 +32,7 @@ const rulesContent = (data: InteractionsAtomType) => (
 function BidInteractionCard({ data, handleSubmit }: Readonly<Props>) {
   const [bid, setBid] = React.useState<number>((data?.current_bid ?? 1) + 1);
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
+  const [isImageLoading, setIsImageLoading] = React.useState<boolean>(true);
 
   return (
     <div
@@ -40,7 +42,7 @@ function BidInteractionCard({ data, handleSubmit }: Readonly<Props>) {
     >
       <div className="flex gap-x-6 items-center justify-center gap-y-2">
         {data?.title_icon_url ? (
-          <StorageImage alt="icon" path={data?.title_icon_url ?? ''} loading="lazy" className="max-w-11" />
+          <StorageImage alt="" path={data?.title_icon_url ?? ''} loading="lazy" className="max-w-11 min-w-11" />
         ) : null}
         <h2 className="md:text-5xl text-2xl font-dynapuff text-chocoBrown">{data?.title}</h2>
       </div>
@@ -53,14 +55,24 @@ function BidInteractionCard({ data, handleSubmit }: Readonly<Props>) {
         </div>
       ) : null}
       <div className="md:py-9 py-6 flex justify-center">
-        {data?.image_url ? (
-          <StorageImage
-            alt="game image"
-            path={data?.image_url ?? ''}
-            loading="lazy"
-            className="md:max-w-max max-w-[262px]"
-          />
-        ) : null}
+        <div className="relative min-h-[254px]">
+          {/* Loading Spinner */}
+          {isImageLoading && (
+            <div className="absolute w-full h-full rounded-3xl flex justify-center items-center">
+              <Loader width="3rem" height="3rem" filledColor="#7a3f3e" />
+            </div>
+          )}
+          {/* Actual Image */}
+          {data?.image_url ? (
+            <StorageImage
+              alt=""
+              path={data?.image_url ?? ''}
+              loading="lazy"
+              className="md:max-w-max max-w-[262px]"
+              onLoad={() => setIsImageLoading(false)}
+            />
+          ) : null}
+        </div>
       </div>
       <div id="description" className="flex md:flex-row flex-col items-center md:pb-10 pb-6 relative">
         <p className="text-chocoBrown font-ADLaM md:text-[26px] md:leading-8 text-sm text-center font-semibold">

@@ -47,7 +47,7 @@ function ChooseCapySection({ handleCapySelection }: Readonly<Props>) {
                   Click to choose your capybara
                 </p>
               </div>
-              <div className="flex gap-x-12 md:flex-nowrap flex-wrap md:gap-y-0 gap-y-[18px] justify-center">
+              <div className="md:flex gap-x-12 md:flex-nowrap md:gap-y-0 gap-y-[18px] justify-center">
                 {[...capybaraData]
                   ?.sort((a, b) => (a?.name ?? '')?.localeCompare(b?.name ?? ''))
                   ?.map((character) => (

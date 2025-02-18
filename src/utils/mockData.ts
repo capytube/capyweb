@@ -15,9 +15,9 @@ export const handleAddCapy = async () => {
     bio: 'Watch our biggest naughty boy munching and chasing his little brother',
     personality:
       'Magnus is the softest soul in the gang. He loves being the center of attention and is happiest when he’s close to someone. Big on snuggles and endless belly rubs, Magnus just can’t get enough love!',
-    card_image_url: 'pictures/capyHome/magnus.jpg',
-    avatar_image_url: 'pictures/capyWatch/starringMagnus.jpg',
-    profile_image_url: 'pictures/capyPlay/magnus.png',
+    card_image_url: 'public/magnus.jpg',
+    avatar_image_url: 'public/starringMagnus.jpg',
+    profile_image_url: 'public/magnus.png',
     favorite_activities: ['Eating 🍎 (but in moderation!)'],
     fun_fact: null,
   });
@@ -31,9 +31,9 @@ export const handleAddCapy = async () => {
     bio: 'This fearless bad boy doesn’t afraid of anything. Chatty and full of energy. A truely socialised capy.',
     personality:
       'Fearless and full of energy, Elon is always looking for his next thrill! He’s a natural daredevil, whether it’s jumping from high places or scaling fences.',
-    card_image_url: 'pictures/capyHome/elon.jpg',
-    avatar_image_url: 'pictures/capyWatch/starringElon.jpeg',
-    profile_image_url: 'pictures/capyPlay/elon.png',
+    card_image_url: 'public/elon.jpg',
+    avatar_image_url: 'public/starringElon.jpeg',
+    profile_image_url: 'public/elon.png',
     favorite_activities: ['Exploring every nook and cranny he can find 🔍'],
     fun_fact: null,
   });
@@ -47,9 +47,9 @@ export const handleAddCapy = async () => {
     bio: 'The youngest and shy baby loves to plan a prison break. Brainy of the boys. The mastermind capy lord.',
     personality:
       'Einstein may be shy, but don’t let that fool you—he’s the smartest one in the gang! Although he scares easily, he’s always hatching little plans to explore and even once plotted an escape!',
-    card_image_url: 'pictures/capyHome/einstein.jpg',
-    avatar_image_url: 'pictures/capyWatch/starringEinstein.jpeg',
-    profile_image_url: 'pictures/capyPlay/einstien.png',
+    card_image_url: 'public/einstein.jpg',
+    avatar_image_url: 'public/starringEinstein.jpeg',
+    profile_image_url: 'public/einstien.png',
     favorite_activities: null,
     fun_fact:
       'Beneath his timid shell lies a clever capybara who’s always one step ahead, ready to explore… as long as it’s safe!',
@@ -60,7 +60,7 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'Public Stream',
     is_live: true,
-    capybara_ids: ['3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8'],
+    capybara_ids: ['f72aa2f2-ebf4-4b8e-b140-584aecf00425'],
     access_type: 'public',
     price_per_10_sec: 1,
     s3_video_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
@@ -69,7 +69,7 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'main cam',
     is_live: true,
-    capybara_ids: ['3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8', 'bdb54a62-b10e-4460-969c-4c7abb6a6ab4'],
+    capybara_ids: ['f72aa2f2-ebf4-4b8e-b140-584aecf00425', '8ece8cf9-04b2-43fa-a507-937bc441e844'],
     access_type: 'private',
     price_per_10_sec: 1,
     s3_video_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
@@ -78,7 +78,7 @@ export const handleCreateStreams = async () => {
   await createLivestream({
     title: 'food cam',
     is_live: true,
-    capybara_ids: ['bdb54a62-b10e-4460-969c-4c7abb6a6ab4'],
+    capybara_ids: ['8ece8cf9-04b2-43fa-a507-937bc441e844'],
     access_type: 'private',
     price_per_10_sec: 1,
     s3_video_address: 'https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4',
@@ -87,13 +87,13 @@ export const handleCreateStreams = async () => {
 
 export const handleCreatingInteractions = async () => {
   await createInteractions({
-    capybara_id: '3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8',
+    capybara_id: 'f72aa2f2-ebf4-4b8e-b140-584aecf00425',
     interaction_type: 'vote',
     title: 'Buy capy a snack',
-    title_icon_url: 'pictures/capyPlay/snackIcon.png',
+    title_icon_url: 'public/snackIcon.png',
     description: 'Vote what capy should eat today?',
     device_required: null,
-    image_url: 'pictures/capyPlay/dineTable.png',
+    image_url: 'public/dineTable.png',
     options: [
       {
         id: '1',
@@ -134,13 +134,13 @@ export const handleCreatingInteractions = async () => {
   });
 
   await createInteractions({
-    capybara_id: '3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8',
+    capybara_id: 'f72aa2f2-ebf4-4b8e-b140-584aecf00425',
     interaction_type: 'bid',
     title: 'Capy safari',
-    title_icon_url: 'pictures/capyPlay/safariIcon.png',
+    title_icon_url: 'public/safariIcon.png',
     description: 'Bid for a chance to be the safari guide and explore the world of capybaras from your screen!',
     device_required: null,
-    image_url: 'pictures/capyPlay/capySafari.png',
+    image_url: 'public/capySafari.png',
     options: null,
     rules: [
       'Pay with your coins to join. 💰',
@@ -154,13 +154,13 @@ export const handleCreatingInteractions = async () => {
   });
 
   await createInteractions({
-    capybara_id: '3bc9fad6-0f2e-44c2-88ed-2f61e7088fc8',
+    capybara_id: 'f72aa2f2-ebf4-4b8e-b140-584aecf00425',
     interaction_type: 'bid',
     title: 'Capy Vision Pro',
-    title_icon_url: 'pictures/capyPlay/visionIcon.png',
+    title_icon_url: 'public/visionIcon.png',
     description: 'Get up close and personal with the world’s cutest capybaras, right through your Apple Vision Pro!',
     device_required: '*Apple Vision Pro required for this experience',
-    image_url: 'pictures/capyPlay/visionCat.png',
+    image_url: 'public/visionCat.png',
     options: null,
     rules: [
       'Pay with your coins to join. 💰',
@@ -177,7 +177,7 @@ export const handleCreatingInteractions = async () => {
 export const handleCreatingNfts = async () => {
   await createNft({
     name: 'Capy #1234',
-    image_url: 'pictures/nft/brownRat.png',
+    image_url: 'public/brownRat.png',
     rarity: 'ultra_rare',
     labels: ['Capybara', 'Chalk Bonus'],
     properties: [
@@ -191,7 +191,7 @@ export const handleCreatingNfts = async () => {
 
   await createNft({
     name: 'Capy #5687',
-    image_url: 'pictures/nft/pinkRat.png',
+    image_url: 'public/pinkRat.png',
     rarity: 'rare',
     labels: ['Capybara', 'Chalk Bonus'],
     properties: [
@@ -205,7 +205,7 @@ export const handleCreatingNfts = async () => {
 
   await createNft({
     name: 'Capy #632574',
-    image_url: 'pictures/nft/slateRat.png',
+    image_url: 'public/slateRat.png',
     rarity: 'epic',
     labels: ['Capybara', 'Chalk Bonus'],
     properties: [
