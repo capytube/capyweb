@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { StorageImage } from '@aws-amplify/ui-react-storage';
+import { Loader } from '@aws-amplify/ui-react';
 import { NftAtomType } from '../../../store/atoms/nftAtom';
 
 type Props = {
@@ -16,11 +18,28 @@ function getTagBG(value: string) {
 }
 
 function NFTDetailsCard({ data }: Readonly<Props>) {
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(true);
+
   return (
     <div className="w-fit min-w-[172px] flex flex-col gap-y-6 rounded-lg border border-chocoBrown p-8 max-w-[544px]">
-      {data?.image_url ? (
-        <StorageImage alt="image" path={data?.image_url ?? ''} loading="lazy" width={480} className="rounded-t-lg" />
-      ) : null}
+      <div className="relative lg:min-h-96 min-h-64">
+        {/* Loading Spinner */}
+        {isImageLoading && (
+          <div className="absolute w-full h-full rounded-3xl flex justify-center items-center">
+            <Loader width="3rem" height="3rem" filledColor="#7a3f3e" />
+          </div>
+        )}
+        {/* Actual Image */}
+        {data?.image_url ? (
+          <StorageImage
+            alt=""
+            path={data?.image_url ?? ''}
+            width={480}
+            className="rounded-t-lg"
+            onLoad={() => setIsImageLoading(false)}
+          />
+        ) : null}
+      </div>
       {data?.rarity ? (
         <span
           className={`${getTagBG(

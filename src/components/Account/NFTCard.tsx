@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { StorageImage } from '@aws-amplify/ui-react-storage';
+import { Loader } from '@aws-amplify/ui-react';
 import { CoinCurrency } from './Icons';
 import { NftAtomType } from '../../store/atoms/nftAtom';
 
@@ -19,13 +21,28 @@ function getTagBG(value: string) {
 
 function NFTCard({ data }: Readonly<Props>) {
   const pathName = useLocation()?.pathname?.slice(1);
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(true);
 
   return (
     <div className="w-fit min-w-[172px] flex flex-col rounded-lg">
       <div className="md:min-w-[282px] md:h-[282px] h-auto border-2 border-b-0 border-persimmon rounded-t-lg ">
-        {data?.image_url ? (
-          <StorageImage alt={data?.name ?? 'capybara'} path={data?.image_url ?? ''} loading="lazy" className="h-full" />
-        ) : null}
+        <div className="relative w-full h-full">
+          {/* Loading Spinner */}
+          {isImageLoading && (
+            <div className="absolute w-full h-full rounded-3xl flex justify-center items-center">
+              <Loader width="3rem" height="3rem" filledColor="#7a3f3e" />
+            </div>
+          )}
+          {/* Actual Image */}
+          {data?.image_url ? (
+            <StorageImage
+              alt=""
+              path={data?.image_url ?? ''}
+              className="h-full"
+              onLoad={() => setIsImageLoading(false)}
+            />
+          ) : null}
+        </div>
       </div>
       <div className="bg-white flex flex-col md:items-start items-center p-4 gap-y-4 rounded-b-lg border-2 border-persimmon">
         <div>

@@ -1,5 +1,6 @@
-import React from 'react';
+import { useState } from 'react';
 import { StorageImage } from '@aws-amplify/ui-react-storage';
+import { Loader } from '@aws-amplify/ui-react';
 import ring from '/src/assets/ring.png';
 import { CapybaraAtomType } from '../../store/atoms/capybaraAtom';
 
@@ -9,7 +10,8 @@ type Props = {
 };
 
 function CharacterCard({ data, handleCapySelection }: Props) {
-  const [active, setActive] = React.useState(false);
+  const [active, setActive] = useState<boolean>(false);
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(true);
 
   const rotate = () => {
     if (data?.name === 'Magnus') {
@@ -29,15 +31,26 @@ function CharacterCard({ data, handleCapySelection }: Props) {
       onMouseOver={() => setActive(true)}
       onMouseLeave={() => setActive(false)}
     >
-      {data?.profile_image_url ? (
-        <StorageImage
-          alt={data?.name ?? 'capybara'}
-          path={data?.profile_image_url ?? ''}
-          loading="lazy"
-          className="relative z-10"
-        />
-      ) : null}
-      {active && (
+      <div className="relative xl:w-[400px] xl:h-[300px] h-[200px]">
+        {/* Loading Spinner */}
+        {isImageLoading && (
+          <div className="absolute w-full h-full rounded-3xl flex justify-center items-center">
+            <Loader width="4rem" height="4rem" filledColor="#7a3f3e" />
+          </div>
+        )}
+        {/* Actual Image */}
+        {data?.profile_image_url ? (
+          <StorageImage
+            alt=""
+            path={data?.profile_image_url ?? ''}
+            loading="lazy"
+            className="relative z-10"
+            onLoad={() => setIsImageLoading(false)}
+          />
+        ) : null}
+      </div>
+
+      {active && !isImageLoading && (
         <div className={`absolute ${data?.name === 'Magnus' ? '-top-9' : ''} left-0 z-0`}>
           <img className={data?.name === 'Magnus' ? 'w-[500px] h-[300px]' : ''} src={ring} alt="ring" />
         </div>

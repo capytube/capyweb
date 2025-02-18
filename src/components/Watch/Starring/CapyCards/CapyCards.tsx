@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StorageImage } from '@aws-amplify/ui-react-storage';
+import { Loader } from '@aws-amplify/ui-react';
 
 import styles from './CapyCards.module.css';
 import { CapybaraAtomType } from '../../../../store/atoms/capybaraAtom';
@@ -16,6 +18,7 @@ interface CapyProfileProps {
 const CapyProfile = (props: CapyProfileProps) => {
   const { data, customCardStyle } = props;
   const navigate = useNavigate();
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(true);
 
   const handleWatchStream = (capyId: string) => {
     navigate(`/stream/${capyId}`, { state: { capyData: JSON.stringify(data) } });
@@ -23,14 +26,24 @@ const CapyProfile = (props: CapyProfileProps) => {
 
   return (
     <div className={styles.card} style={customCardStyle}>
-      {data?.avatar_image_url ? (
-        <StorageImage
-          alt={data?.name ?? 'capybara'}
-          path={data?.avatar_image_url ?? ''}
-          loading="lazy"
-          className={styles.image}
-        />
-      ) : null}
+      <div className="relative">
+        {/* Loading Spinner */}
+        {isImageLoading && (
+          <div className="absolute w-full h-full rounded-3xl flex justify-center items-center">
+            <Loader width="2.5rem" height="2.5rem" filledColor="#7a3f3e" />
+          </div>
+        )}
+        {/* Actual Image */}
+        {data?.avatar_image_url ? (
+          <StorageImage
+            alt=""
+            path={data?.avatar_image_url ?? ''}
+            loading="lazy"
+            className={styles.image}
+            onLoad={() => setIsImageLoading(false)}
+          />
+        ) : null}
+      </div>
       <div className={styles.content}>
         <h2 className={styles.name}>{data?.name}</h2>
         <div className={styles.detail}>
