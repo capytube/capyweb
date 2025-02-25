@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAtom } from 'jotai';
-import { useAccount } from 'wagmi';
-
 import { PencilIcon } from './Icons';
 
 import NftSection from './NftSection';
@@ -18,8 +16,6 @@ import UpdateProfile from './UpdateProfile/UpdateProfile';
 
 const ProfilePage: React.FC = () => {
   const isLoggedIn = useIsLoggedIn();
-  const { isConnected } = useAccount();
-
   const [userData] = useAtom(userAtom);
 
   const [openNameModal, setOpenNameModal] = useState(false);
@@ -32,7 +28,7 @@ const ProfilePage: React.FC = () => {
   }, []);
 
   return isLoggedIn ? (
-    isConnected ? (
+    isLoggedIn ? (
       <>
         <div className="bg-grassGreen lg:py-10 py-8">
           <h1 className="font-hanaleiFill text-darkGreen md:text-titleSize text-titleSizeSM text-center md:pb-6 pb-4">
@@ -59,7 +55,7 @@ const ProfilePage: React.FC = () => {
           </form>
         </div>
         <NftSection />
-        <WalletSection premium={isConnected} />
+        <WalletSection premium={isLoggedIn} />
         {!isMobile && <Footer />}
         <Modal
           isOpen={openNameModal}

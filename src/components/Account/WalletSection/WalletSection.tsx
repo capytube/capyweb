@@ -1,20 +1,22 @@
 import React from 'react';
-import { useAccount } from 'wagmi';
 import { useAtom } from 'jotai';
+import { useDynamicContext, useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 
 import { CapyCoin, CoinCurrency, PencilIcon, UnLinkedIcon } from '../Icons';
 import { userAtom } from '../../../store/atoms/userAtom';
 
 function WalletSection({ premium = false }: Readonly<{ premium?: boolean }>) {
-  const { isConnected, address } = useAccount();
+  const isLoggedIn = useIsLoggedIn();
+  const { primaryWallet } = useDynamicContext();
+  const address = primaryWallet?.address;
   const [user] = useAtom(userAtom);
 
-  const [walletAddress, setWalletAddress] = React.useState<`0x${string}` | undefined>();
+  const [walletAddress, setWalletAddress] = React.useState<string | undefined>();
   const btnStyle =
     'sm:text-3xl text-base font-ADLaM text-white shadow-buttonShadow rounded-lg sm:py-2.5 py-1.5 sm:px-5 px-[18px]';
 
   React.useEffect(() => {
-    if (isConnected) {
+    if (isLoggedIn) {
       setWalletAddress(address);
     }
   }, []);
