@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { useDynamicContext, useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 
 import styles from './YourProfile.module.css';
 import { createUser } from '../../../api/user';
 
 const YourProfile = ({ onClose }: { onClose: Function }) => {
-  const { address, isConnected } = useAccount();
-  const { user: allUserData } = useDynamicContext();
+  const isLoggedIn = useIsLoggedIn();
+  const { user: allUserData, primaryWallet } = useDynamicContext();
   const authUserId = allUserData?.userId;
+  const walletAddress = primaryWallet?.address;
 
   const [email, setEmail] = useState(allUserData?.email ?? '');
   const [name, setName] = useState('');
@@ -16,13 +16,13 @@ const YourProfile = ({ onClose }: { onClose: Function }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const createProfile = async () => {
-    if (authUserId && address) {
+    if (authUserId && walletAddress) {
       try {
         setIsLoading(true);
         const response = await createUser({
           id: authUserId,
           userName: name,
-          wallet_address: address,
+          wallet_address: walletAddress,
           email_address: email,
         });
         if (response?.data?.username) {
@@ -37,7 +37,7 @@ const YourProfile = ({ onClose }: { onClose: Function }) => {
   };
 
   const onSaveHandler = () => {
-    if (isConnected && address) {
+    if (isLoggedIn && walletAddress) {
       if (!name) {
         setErrors((prev) => ({ ...prev, name: 'Required' }));
       }

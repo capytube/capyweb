@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
 import { useAtom } from 'jotai';
+import { useDynamicContext, useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 
 import { userAtom } from '../../../store/atoms/userAtom';
 import { updateUserDetails } from '../../../api/user';
@@ -8,8 +8,9 @@ import { updateUserDetails } from '../../../api/user';
 import styles from './updateProfile.module.css';
 
 const UpdateProfile = ({ onClose }: { onClose: Function }) => {
-  const { address, isConnected } = useAccount();
-
+  const isLoggedIn = useIsLoggedIn();
+  const { primaryWallet } = useDynamicContext();
+  const walletAddress = primaryWallet?.address;
   const [user] = useAtom(userAtom);
   const [name, setName] = useState<string>(user?.username ?? '');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -29,7 +30,7 @@ const UpdateProfile = ({ onClose }: { onClose: Function }) => {
   };
 
   const onSaveHandler = () => {
-    if (isConnected && address && user?.id) {
+    if (isLoggedIn && walletAddress && user?.id) {
       updateProfile(user?.id, name);
       setName('');
     }

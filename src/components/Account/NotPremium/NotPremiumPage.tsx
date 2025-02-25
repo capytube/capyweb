@@ -3,9 +3,7 @@ import { PencilIcon } from '../Icons';
 import NftSection from '../NoLoginPage/NftSection';
 import WalletSection from '../WalletSection/WalletSection';
 
-type Props = {};
-
-export default function NotPremiumPage({}: Props) {
+export default function NotPremiumPage() {
   const handleScrollTop = () => {
     const ele = document.getElementById('no-premium0-section');
     ele?.scrollIntoView({ block: 'start', behavior: 'smooth' });

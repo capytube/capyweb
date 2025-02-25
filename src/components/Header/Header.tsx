@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { DynamicWidget, useDynamicContext, useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
-import { useAccount } from 'wagmi';
 import { Link } from 'react-router-dom';
 import { useAtom } from 'jotai';
 
@@ -22,9 +21,9 @@ const Header = () => {
 
   const isLoggedIn = useIsLoggedIn();
   const isUserAuthenticated = isLoggedIn || localStorage.getItem('dynamic_authentication_token');
-  const { address, isConnected } = useAccount();
-  const { setShowDynamicUserProfile, user: authUserData } = useDynamicContext();
+  const { setShowDynamicUserProfile, user: authUserData, primaryWallet } = useDynamicContext();
   const authUserId = authUserData?.userId;
+  const walletAddress = primaryWallet?.address;
 
   const [user] = useAtom(userAtom);
 
@@ -36,7 +35,7 @@ const Header = () => {
 
   useEffect(() => {
     const getProfile = async () => {
-      if (isLoggedIn && address && authUserId) {
+      if (isLoggedIn && walletAddress && authUserId) {
         const response = await getUserById(authUserId);
         if (authUserId !== response?.data?.id) {
           setIsSetProfileModalOpen(true);
@@ -47,7 +46,7 @@ const Header = () => {
     };
 
     getProfile();
-  }, [isLoggedIn, address]);
+  }, [isLoggedIn, walletAddress]);
 
   // overriding dynamic widget styling
   const host = document.getElementById('dynamic-widget');
@@ -86,10 +85,10 @@ const Header = () => {
               {isNftProfile ? <img src={NFTprofile} alt="user" /> : <img src={nonNFTprofile} alt="user" />}
               <div className={styles.profile__nameAndAddress}>
                 <p>Hi, {user?.username || '...'}</p>
-                {isConnected ? (
+                {isLoggedIn ? (
                   <div className={styles.profile__walletAddress}>
                     <img src={walletLinkIcon} alt="link" />
-                    <span>{address?.substring(address?.length - 15, address?.length)}</span>
+                    <span>{walletAddress?.substring(walletAddress?.length - 15, walletAddress?.length)}</span>
                   </div>
                 ) : null}
               </div>
