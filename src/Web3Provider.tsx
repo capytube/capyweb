@@ -4,11 +4,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
 
+export const ENV_ID = '066bc44d-7c4b-44f5-95a4-5ce8b41b1d33';
+// personal: 4d5f28d0-7cb4-48d6-a91a-d43e68c53d27
+// capytube: 066bc44d-7c4b-44f5-95a4-5ce8b41b1d33
+
 export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   return (
     <DynamicContextProvider
       settings={{
-        environmentId: '066bc44d-7c4b-44f5-95a4-5ce8b41b1d33',
+        environmentId: ENV_ID,
         walletConnectors: [SolanaWalletConnectors],
       }}
     >

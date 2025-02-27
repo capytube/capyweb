@@ -1,31 +1,74 @@
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
-import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
-import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+import { useState, useEffect } from 'react';
+import { ENV_ID } from '../Web3Provider';
 
-const connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed'); // mainnet URL for production
-const CAPYL_TOKEN_MINT = new PublicKey('4x3rzZ72Cwthrh5TRiPeCv3uY9yWZkXCKdDzhLbRpump'); // capyl actual mint address
+interface TokenBalance {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  logoURI: string;
+  balance: number;
+  rawBalance: number;
+  networkId?: number;
+  price?: number;
+  marketValue?: number;
+}
 
-const useCapylBalance = async () => {
-  const { primaryWallet } = useDynamicContext();
-  const userWalletAddress = primaryWallet?.address;
+interface UseCapylBalanceResult {
+  data: TokenBalance | null;
+  loading: boolean;
+  error: string | null;
+}
 
-  if (!userWalletAddress) return { balance: 0, error: 'No wallet connected' };
+const API_URL = `https://app.dynamicauth.com/api/v0/sdk/${ENV_ID}/chains/SOL/balances`;
+export const capylMintAddress = '4x3rzZ72Cwthrh5TRiPeCv3uY9yWZkXCKdDzhLbRpump';
 
-  try {
-    const userWallet = new PublicKey(userWalletAddress);
+export const useCapylBalance = (accountAddress: string): UseCapylBalanceResult => {
+  const [data, setData] = useState<TokenBalance | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-    // Get Associated Token Account (ATA) for CAPYL
-    const capylATA = await getAssociatedTokenAddress(CAPYL_TOKEN_MINT, userWallet);
+  useEffect(() => {
+    const fetchBalance = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const authToken = localStorage.getItem('dynamic_authentication_token');
+        if (!authToken) {
+          throw new Error('Authentication token not found');
+        }
+        const parsedToken = JSON.parse(authToken);
 
-    // Fetch account balance
-    const capylAccount = await getAccount(connection, capylATA);
-    const balance = Number(capylAccount.amount) / Math.pow(10, 6); // As CAPYL has 6 decimals
+        const response = await fetch(
+          `${API_URL}?accountAddress=${accountAddress}&includePrices=true&includeNative=true`,
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${parsedToken}`,
+            },
+          },
+        );
 
-    return { balance, error: null };
-  } catch (error) {
-    console.error('Error fetching CAPYL balance:', error);
-    return { balance: 0, error: error };
-  }
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        const result: TokenBalance[] = await response.json();
+        const filteredToken = result.find((token) => token.address === capylMintAddress) || null;
+        setData(filteredToken);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (accountAddress) {
+      fetchBalance();
+    } else {
+      setData(null);
+    }
+  }, [accountAddress]);
+
+  return { data, loading, error };
 };
-
-export default useCapylBalance;

@@ -18,18 +18,25 @@ import FooterNavbar from './components/FooterNavbar/FooterNavbar';
 import Header from './components/Header/Header';
 import Navbar from './components/Navbar/Navbar';
 import PlayPage from './components/Play/index';
-import { useAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import { walletAtom } from './store/atoms';
-import useCapylBalance from './utils/useCapylBalance';
+import { useCapylBalance } from './utils/useCapylBalance';
+import { updateUserTotalBalance } from './api/user';
+
+export const calculateCapylBalance = (rawBalance: number, decimals: number, price: number) => {
+  return Math.floor((rawBalance / Math.pow(10, decimals)) * price);
+};
 
 const App = () => {
   const isLoggedIn = useIsLoggedIn();
-  const balancePromise = useCapylBalance();
-  const { primaryWallet } = useDynamicContext();
-  const walletAddress = primaryWallet?.address;
+  const { primaryWallet, user: allUserData } = useDynamicContext();
+  const walletAddress = primaryWallet?.address; // user's wallet address
+  const authUserId = allUserData?.userId;
+
+  const { data: capylBalData } = useCapylBalance(walletAddress ?? ''); // user's capyl token balance data
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 500);
-  const [, setWalletId] = useAtom(walletAtom);
+  const setWalletId = useSetAtom(walletAtom);
 
   // clearing ratings key from local storage on sign out
   useEffect(() => {
@@ -37,6 +44,23 @@ const App = () => {
       localStorage.setItem('ratings', '');
     }
   }, [isLoggedIn]);
+
+  // updating the user balance if capyl balance data is available
+  useEffect(() => {
+    (async () => {
+      const decimals = 6;
+      const price = 1;
+      if (capylBalData?.rawBalance) {
+        const capylBalance = calculateCapylBalance(capylBalData.rawBalance, decimals, price);
+        if (authUserId) {
+          await updateUserTotalBalance({
+            userId: authUserId,
+            totalBalance: capylBalance,
+          });
+        }
+      }
+    })();
+  }, [capylBalData, authUserId]);
 
   useEffect(() => {
     if (isLoggedIn && walletAddress) {
@@ -46,17 +70,6 @@ const App = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  useEffect(() => {
-    balancePromise
-      .then(({ balance, error }) => {
-        console.log('balance', balance);
-        console.log('error', error);
-      })
-      .catch((err) => {
-        console.error('Failed to fetch balance:', err);
-      });
-  }, [balancePromise]);
 
   return (
     <Router>
