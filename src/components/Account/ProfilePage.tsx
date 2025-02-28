@@ -13,6 +13,7 @@ import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 import { userAtom } from '../../store/atoms/userAtom';
 import Modal from '../Modal/Modal';
 import UpdateProfile from './UpdateProfile/UpdateProfile';
+import TransactionsTable from './CapylTransactionsTable/CapylTransactionsTable';
 
 const ProfilePage: React.FC = () => {
   const isLoggedIn = useIsLoggedIn();
@@ -54,6 +55,7 @@ const ProfilePage: React.FC = () => {
             </div>
           </form>
         </div>
+        <TransactionsTable />
         <NftSection />
         <WalletSection premium={isLoggedIn} />
         {!isMobile && <Footer />}
