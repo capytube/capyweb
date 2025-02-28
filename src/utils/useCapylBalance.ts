@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ENV_ID } from '../Web3Provider';
-
+import { CAPYL_MINT_ADDRESS, DYNAMIC_SOL_BALANCE_API_URL } from './constants';
 interface TokenBalance {
   address: string;
   name: string;
@@ -20,9 +19,6 @@ interface UseCapylBalanceResult {
   error: string | null;
 }
 
-const API_URL = `https://app.dynamicauth.com/api/v0/sdk/${ENV_ID}/chains/SOL/balances`;
-export const capylMintAddress = '4x3rzZ72Cwthrh5TRiPeCv3uY9yWZkXCKdDzhLbRpump';
-
 export const useCapylBalance = (accountAddress: string): UseCapylBalanceResult => {
   const [data, setData] = useState<TokenBalance | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -40,7 +36,7 @@ export const useCapylBalance = (accountAddress: string): UseCapylBalanceResult =
         const parsedToken = JSON.parse(authToken);
 
         const response = await fetch(
-          `${API_URL}?accountAddress=${accountAddress}&includePrices=true&includeNative=true`,
+          `${DYNAMIC_SOL_BALANCE_API_URL}?accountAddress=${accountAddress}&includePrices=true&includeNative=true`,
           {
             method: 'GET',
             headers: {
@@ -54,7 +50,7 @@ export const useCapylBalance = (accountAddress: string): UseCapylBalanceResult =
         }
 
         const result: TokenBalance[] = await response.json();
-        const filteredToken = result.find((token) => token.address === capylMintAddress) || null;
+        const filteredToken = result.find((token) => token.address === CAPYL_MINT_ADDRESS) || null;
         setData(filteredToken);
       } catch (err) {
         setError((err as Error).message);

@@ -16,6 +16,9 @@ import { createUserVotes } from '../../api/userVotes';
 import { createUserBids } from '../../api/userBids';
 import { createTokenTransaction } from '../../api/tokenTransaction';
 import { updateUserTotalBalance } from '../../api/user';
+import { useSendCAPYL } from '../../utils/useSendCapyl';
+import { MASTER_SOL_RECIPIENT_WALLET_ADDRESS } from '../../utils/constants';
+import { useSolanaTransactions } from '../../utils/useSolanaTransactions';
 
 type Props = {
   capy: { id: string; name: string; image: string };
@@ -27,6 +30,8 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
   const isLoggedIn = useIsLoggedIn();
   const interactionsData = useAtomValue(interactionsAtom);
   const userData = useAtomValue(userAtom);
+  const { sendCAPYL } = useSendCAPYL();
+  const { fetchTransactions } = useSolanaTransactions({ page: 'play' });
 
   // states
   const [isListInteractionsLoading, setIsListInteractionsLoading] = useState(false);
@@ -97,6 +102,7 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
         }
         if (tokenTransactionResponse?.data?.id) {
           setThanksActive(true);
+          fetchTransactions(); // reloads recent transaction list on the account page
         }
       } catch (error) {
         console.error('Error creating token transaction:', error);
@@ -104,6 +110,16 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
     };
 
     const isVoteTypeInteracted = selectedInteractionData?.interaction_type === 'vote';
+
+    let capylAmount = 0;
+    if (isVoteTypeInteracted && votePayloadData) {
+      capylAmount = votePayloadData?.totalFee;
+    } else if (bidPayloadData) {
+      capylAmount = bidPayloadData?.bidAmount;
+    }
+
+    const txSignature = await sendCAPYL(MASTER_SOL_RECIPIENT_WALLET_ADDRESS, capylAmount); // Sending CAPYL tokens first
+    if (!txSignature) return;
 
     if (isVoteTypeInteracted && votePayloadData && selectedInteractionData?.id && userData?.id) {
       const userVotePayload = {

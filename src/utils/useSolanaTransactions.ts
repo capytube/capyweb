@@ -1,35 +1,32 @@
+import { useAtom } from 'jotai';
 import { useState, useEffect } from 'react';
 import { Connection, PublicKey, ParsedConfirmedTransaction } from '@solana/web3.js';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { isSolanaWallet } from '@dynamic-labs/solana';
+import { CAPYL_MINT_ADDRESS } from './constants';
+import { AllTransactionData, allTransactionsData } from '../store/atoms';
 
-interface TransactionData {
-  signature: string;
-  time: string;
-  from: string;
-  to: string;
-  amount: number;
-  status: string;
-}
+export const useSolanaTransactions = ({ page }: { page: 'play' | 'account' }) => {
+  const { primaryWallet } = useDynamicContext();
+  const currWalletAddress = primaryWallet?.address;
 
-const mainnetUrl =
-  'https://solana-mainnet.api.syndica.io/api-key/31XK4MAY4riQcjjEa78Zfre6C728JAwsV5WAySUuqmBVBUCtXmTHucp7evLydqbfmeGJJijXHzrYQD7d8Lb1zJC54URU8fayshY';
-// const devnetUrl = 'https://api.devnet.solana.com';
+  const [transactions, setTransactions] = useAtom(allTransactionsData);
 
-const SOLANA_RPC_URL = mainnetUrl;
-
-export const useSolanaTransactions = (CURR_WALLET_ADDR: string, CAPYL_MINT_ADDR: string) => {
-  const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTransactions = async () => {
-    if (!CURR_WALLET_ADDR) return;
+    if (!primaryWallet || !currWalletAddress || !isSolanaWallet(primaryWallet)) {
+      console.error('No Solana wallet connected');
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-      const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
-      const address = new PublicKey(CAPYL_MINT_ADDR);
+      const connection: Connection = await primaryWallet.getConnection();
+      const address = new PublicKey(CAPYL_MINT_ADDRESS);
 
       // Fetch recent transaction signatures
       const signatures = await connection.getSignaturesForAddress(address, { limit: 5 });
@@ -45,8 +42,8 @@ export const useSolanaTransactions = (CURR_WALLET_ADDR: string, CAPYL_MINT_ADDR:
           if (!details) return null; // Skip if no details found
 
           const formattedTx = formatTransactionData(details);
-          // Filter: Include only transactions where "from" or "to" matches CURR_WALLET_ADDR
-          if (formattedTx?.from === CURR_WALLET_ADDR || formattedTx?.to === CURR_WALLET_ADDR) {
+          // Filter: Include only transactions where "from" or "to" matches currWalletAddress
+          if (formattedTx?.from === currWalletAddress || formattedTx?.to === currWalletAddress) {
             return formattedTx;
           }
 
@@ -55,7 +52,7 @@ export const useSolanaTransactions = (CURR_WALLET_ADDR: string, CAPYL_MINT_ADDR:
       );
 
       // Filter out null transactions (if any)
-      setTransactions(fetchedTransactions.filter((tx): tx is TransactionData => tx !== null));
+      setTransactions(fetchedTransactions.filter((tx): tx is AllTransactionData => tx !== null));
     } catch (err) {
       setError('Error fetching transactions');
       console.error('Error fetching transactions:', err);
@@ -65,14 +62,16 @@ export const useSolanaTransactions = (CURR_WALLET_ADDR: string, CAPYL_MINT_ADDR:
   };
 
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    if (page === 'account') {
+      fetchTransactions();
+    }
+  }, [page]);
 
   return { transactions, fetchTransactions, loading, error };
 };
 
 // Helper function to extract transaction details
-const formatTransactionData = (tx: ParsedConfirmedTransaction): TransactionData | null => {
+const formatTransactionData = (tx: ParsedConfirmedTransaction): AllTransactionData | null => {
   if (!tx.meta || !tx.transaction.message.accountKeys) return null;
 
   const signature = tx.transaction.signatures[0];

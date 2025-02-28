@@ -1,6 +1,4 @@
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { useSolanaTransactions } from '../../../utils/useSolanaTransactions';
-import { capylMintAddress } from '../../../utils/useCapylBalance';
 import { RefreshIcon } from '../Icons';
 
 const tableHeader = [
@@ -13,12 +11,7 @@ const tableHeader = [
 ];
 
 const TransactionsTable = () => {
-  const { primaryWallet } = useDynamicContext();
-  const walletAddress = primaryWallet?.address;
-  const { transactions, fetchTransactions, loading, error } = useSolanaTransactions(
-    walletAddress ?? '',
-    capylMintAddress ?? '',
-  );
+  const { transactions, fetchTransactions, loading, error } = useSolanaTransactions({ page: 'account' });
 
   return (
     <div className="p-6 bg-grassGreen shadow-md">
@@ -36,7 +29,7 @@ const TransactionsTable = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full overflow-x-auto">
-            <thead className={transactions.length === 0 ? 'border-b' : 'border-t border-chocoBrown'}>
+            <thead className={transactions.length === 0 ? 'border-b border-chocoBrown' : 'border-t border-chocoBrown'}>
               <tr>
                 {tableHeader.map((header) => (
                   <th
