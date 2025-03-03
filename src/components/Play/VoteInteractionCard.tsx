@@ -24,6 +24,8 @@ interface HandleSubmitProps {
 type Props = {
   data: InteractionsAtomType;
   handleSubmit: ({ selectedInteractionData, selectedFood, votePayloadData }: HandleSubmitProps) => Promise<void>;
+  isProcessingPayment: boolean;
+  processingPayItemId: string | null;
 };
 
 const rulesContent = (data: InteractionsAtomType) => (
@@ -34,7 +36,7 @@ const rulesContent = (data: InteractionsAtomType) => (
   </ul>
 );
 
-function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
+function VoteInteractionCard({ data, handleSubmit, isProcessingPayment, processingPayItemId }: Readonly<Props>) {
   // states
   const [votes, setVotes] = React.useState<number>(1);
   const [rulePopup, setRulePopup] = React.useState<boolean>(false);
@@ -172,7 +174,7 @@ function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
           </span>
           <button
             type="submit"
-            disabled={votes === 0}
+            disabled={votes === 0 || isProcessingPayment}
             className="text-white bg-darkOrange font-ADLaM font-bold md:text-3xl text-base rounded-lg shadow-buttonShadow md:py-2.5 py-1.5 px-4 hover:bg-chocoBrown hover:text-white disabled:cursor-not-allowed disabled:bg-buttonDisabled disabled:shadow-buttonDisabledShadow"
             onClick={() =>
               handleSubmit({
@@ -188,7 +190,7 @@ function VoteInteractionCard({ data, handleSubmit }: Readonly<Props>) {
               })
             }
           >
-            Place your vote
+            {processingPayItemId === data.id ? 'Processing...' : 'Place your vote'}
           </button>
         </div>
       </div>

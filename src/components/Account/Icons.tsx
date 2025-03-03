@@ -1,12 +1,6 @@
 export function PencilIcon() {
   return (
-    <svg
-      width="37"
-      height="36"
-      viewBox="0 0 37 36"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width="37" height="36" viewBox="0 0 37 36" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g clipPath="url(#clip0_238_4602)">
         <path
           d="M5.12922 31.2615L13.5665 28.4649L7.92578 22.8242L5.12922 31.2615Z"
@@ -51,12 +45,7 @@ export function PencilIcon() {
       </g>
       <defs>
         <clipPath id="clip0_238_4602">
-          <rect
-            width="9.99496"
-            height="40"
-            fill="white"
-            transform="translate(29.166 0.157227) rotate(45)"
-          />
+          <rect width="9.99496" height="40" fill="white" transform="translate(29.166 0.157227) rotate(45)" />
         </clipPath>
       </defs>
     </svg>
@@ -65,21 +54,9 @@ export function PencilIcon() {
 
 export function CapyCoin({ clx }: { clx?: string }) {
   return (
-    <svg
-      width="184"
-      height="185"
-      viewBox="0 0 184 185"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={clx}
-    >
+    <svg width="184" height="185" viewBox="0 0 184 185" fill="none" xmlns="http://www.w3.org/2000/svg" className={clx}>
       <g clipPath="url(#clip0_226_17720)">
-        <rect
-          width="184"
-          height="184"
-          transform="translate(0 0.914062)"
-          fill="white"
-        />
+        <rect width="184" height="184" transform="translate(0 0.914062)" fill="white" />
         <path
           d="M92.0083 172.071C135.731 172.071 171.175 136.627 171.175 92.9048C171.175 49.1823 135.731 13.7383 92.0083 13.7383C48.2858 13.7383 12.8418 49.1823 12.8418 92.9048C12.8418 136.627 48.2858 172.071 92.0083 172.071Z"
           fill="#FCC749"
@@ -199,12 +176,7 @@ export function CapyCoin({ clx }: { clx?: string }) {
       </g>
       <defs>
         <clipPath id="clip0_226_17720">
-          <rect
-            width="184"
-            height="184"
-            fill="white"
-            transform="translate(0 0.914062)"
-          />
+          <rect width="184" height="184" fill="white" transform="translate(0 0.914062)" />
         </clipPath>
       </defs>
     </svg>
@@ -231,12 +203,7 @@ export function CoinCurrency({ className }: { className?: string }) {
       </g>
       <defs>
         <clipPath id="clip0_226_18018">
-          <rect
-            width="13.44"
-            height="27.1304"
-            fill="white"
-            transform="translate(15.3594 10.8516)"
-          />
+          <rect width="13.44" height="27.1304" fill="white" transform="translate(15.3594 10.8516)" />
         </clipPath>
       </defs>
     </svg>
@@ -245,13 +212,7 @@ export function CoinCurrency({ className }: { className?: string }) {
 
 export function PlusIcon() {
   return (
-    <svg
-      width="33"
-      height="33"
-      viewBox="0 0 33 33"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width="33" height="33" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect
         x="1.00665"
         y="1.33222"
@@ -282,13 +243,7 @@ export function PlusIcon() {
 
 export function MinusIcon() {
   return (
-    <svg
-      width="33"
-      height="33"
-      viewBox="0 0 33 33"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width="33" height="33" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect
         x="1.00665"
         y="0.996281"
@@ -414,12 +369,7 @@ export function VisionProIcon() {
       </g>
       <defs>
         <clipPath id="clip0_306_27146">
-          <rect
-            width="72.07"
-            height="43.79"
-            fill="white"
-            transform="translate(0.0976562 0.858398)"
-          />
+          <rect width="72.07" height="43.79" fill="white" transform="translate(0.0976562 0.858398)" />
         </clipPath>
       </defs>
     </svg>
@@ -436,20 +386,8 @@ export function CancelIcon() {
       xmlns="http://www.w3.org/2000/svg"
       className="md:max-w-max max-w-3.5"
     >
-      <path
-        d="M1.20117 17L17.2012 1"
-        stroke="#7A3F3E"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M17.2012 17L1.20117 1"
-        stroke="#7A3F3E"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M1.20117 17L17.2012 1" stroke="#7A3F3E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17.2012 17L1.20117 1" stroke="#7A3F3E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -524,13 +462,7 @@ export function XIcon({ clx }: { clx?: string }) {
 
 export function UnLinkedIcon() {
   return (
-    <svg
-      width="32"
-      height="33"
-      viewBox="0 0 32 33"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width="32" height="33" viewBox="0 0 32 33" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
         fillRule="evenodd"
         clipRule="evenodd"
@@ -543,6 +475,25 @@ export function UnLinkedIcon() {
         d="M25.5035 7.6747C25.9265 8.10378 25.9215 8.79449 25.4924 9.21744L8.52274 25.9447C8.09366 26.3677 7.40296 26.3627 6.98001 25.9336C6.55706 25.5045 6.56202 24.8138 6.99111 24.3909L23.9608 7.6636C24.3899 7.24065 25.0806 7.24562 25.5035 7.6747Z"
         fill="#CA5000"
       />
+    </svg>
+  );
+}
+
+export function RefreshIcon() {
+  return (
+    <svg
+      fill="#000000"
+      height="25"
+      width="25"
+      version="1.1"
+      id="Layer_1"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 383.748 383.748"
+    >
+      <g>
+        <path d="M62.772,95.042C90.904,54.899,137.496,30,187.343,30c83.743,0,151.874,68.13,151.874,151.874h30   C369.217,81.588,287.629,0,187.343,0c-35.038,0-69.061,9.989-98.391,28.888C70.368,40.862,54.245,56.032,41.221,73.593   L2.081,34.641v113.365h113.91L62.772,95.042z" />
+        <path d="M381.667,235.742h-113.91l53.219,52.965c-28.132,40.142-74.724,65.042-124.571,65.042   c-83.744,0-151.874-68.13-151.874-151.874h-30c0,100.286,81.588,181.874,181.874,181.874c35.038,0,69.062-9.989,98.391-28.888   c18.584-11.975,34.707-27.145,47.731-44.706l39.139,38.952V235.742z" />
+      </g>
     </svg>
   );
 }

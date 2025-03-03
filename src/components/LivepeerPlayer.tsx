@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useAccount } from 'wagmi';
 import { Src } from '@livepeer/react';
 import { useLocation } from 'react-router-dom';
+import { useDynamicContext, useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 
 import { Schema } from '../../amplify/data/resource';
 import { generateClient } from 'aws-amplify/api';
@@ -20,9 +20,11 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
   setIsCapyCoinIncrementing,
   setIsVideoPlaying,
 }) => {
+  const isLoggedIn = useIsLoggedIn();
+  const { primaryWallet } = useDynamicContext();
+  const walletAddress = primaryWallet?.address;
   const { pathname } = useLocation();
   const isHomePage = pathname === '/';
-  const { address, isConnected } = useAccount();
   const [vodSource, setVodSource] = useState<Src[] | null>(null);
   const [, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,10 +32,10 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
   const videoRef = React.useRef<any>(null);
 
   useEffect(() => {
-    if (isConnected && address) {
-      setViewerId(address);
+    if (isLoggedIn && walletAddress) {
+      setViewerId(walletAddress);
     }
-  }, [isConnected, address]);
+  }, [isLoggedIn, walletAddress]);
 
   // useEffect(() => {
   //   if (isConnected && address) {
@@ -96,7 +98,7 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
 
   return (
     <div>
-      {(isHomePage || isConnected) && vodSource && !error ? (
+      {(isHomePage || isLoggedIn) && vodSource && !error ? (
         <LiveStream
           vodSource={vodSource}
           title={title}
