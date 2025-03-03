@@ -19,6 +19,8 @@ interface HandleSubmitProps {
 type Props = {
   data: InteractionsAtomType;
   handleSubmit: ({ selectedInteractionData, selectedFood, bidPayloadData }: HandleSubmitProps) => Promise<void>;
+  isProcessingPayment: boolean;
+  processingPayItemId: string | null;
 };
 
 const rulesContent = (data: InteractionsAtomType) => (
@@ -29,7 +31,7 @@ const rulesContent = (data: InteractionsAtomType) => (
   </ul>
 );
 
-function BidInteractionCard({ data, handleSubmit }: Readonly<Props>) {
+function BidInteractionCard({ data, handleSubmit, isProcessingPayment, processingPayItemId }: Readonly<Props>) {
   const [bid, setBid] = React.useState<number>((data?.current_bid ?? 1) + 1);
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
   const [isImageLoading, setIsImageLoading] = React.useState<boolean>(true);
@@ -119,7 +121,7 @@ function BidInteractionCard({ data, handleSubmit }: Readonly<Props>) {
         </div>
         <button
           type="submit"
-          disabled={bid === data?.current_bid}
+          disabled={bid === data?.current_bid || isProcessingPayment}
           className="text-white bg-darkOrange font-ADLaM font-bold md:text-3xl text-base rounded-lg shadow-buttonShadow md:py-2.5 py-1.5 px-4 hover:bg-chocoBrown hover:text-white disabled:cursor-not-allowed disabled:bg-buttonDisabled disabled:shadow-buttonDisabledShadow"
           onClick={() =>
             handleSubmit({
@@ -131,7 +133,7 @@ function BidInteractionCard({ data, handleSubmit }: Readonly<Props>) {
             })
           }
         >
-          Place your bid
+          {processingPayItemId === data.id ? 'Processing...' : 'Place your bid'}
         </button>
       </div>
     </div>

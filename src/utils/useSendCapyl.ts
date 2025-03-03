@@ -16,7 +16,7 @@ export const useSendCAPYL = () => {
   const sendCAPYL = async (recipientAddress: string, amount: number) => {
     if (!primaryWallet || !isSolanaWallet(primaryWallet)) {
       toast.error('No Solana wallet connected');
-      return;
+      return null;
     }
 
     console.log('⏳ Sending CAPYL...');
@@ -27,25 +27,25 @@ export const useSendCAPYL = () => {
     try {
       // Check if recipient has a CAPYL token account
       const tokenAccounts = await connection.getParsedTokenAccountsByOwner(toKey, {
-        mint: new PublicKey(CAPYL_TOKEN_MINT),
+        mint: CAPYL_TOKEN_MINT,
       });
 
       if (tokenAccounts.value.length === 0) {
         console.error('Recipient does not have a CAPYL token account!');
         toast.error('Recipient does not have a CAPYL token account!');
-        return null; // Exit
+        return null;
       }
     } catch (err) {
       console.error('Error fetching recipient token accounts:', err);
       toast.error('Error fetching recipient token accounts!');
-      return null; // Exit
+      return null;
     }
 
     // Get Associated Token Accounts (ATA)
     const senderTokenAccount = await getAssociatedTokenAddress(CAPYL_TOKEN_MINT, fromKey);
     const recipientTokenAccount = await getAssociatedTokenAddress(CAPYL_TOKEN_MINT, toKey);
 
-    // Amount in smallest unit (CAPYL = 6 decimals)
+    // Convert amount to smallest unit (CAPYL = 6 decimals)
     const amountInSmallestUnit = amount * Math.pow(10, 6);
 
     // Create transfer instruction
@@ -73,8 +73,6 @@ export const useSendCAPYL = () => {
 
     // Sign and send transaction
     const signer = await primaryWallet.getSigner();
-
-    // Show pending toast and store the toast ID
     const loadingToastId = toast.loading('Transaction Pending... We will notify you when confirmed.');
 
     try {
@@ -85,8 +83,33 @@ export const useSendCAPYL = () => {
       // Store transaction in Jotai state with "pending" status
       setCapylTransactions((prev) => [...prev, { signature, status: 'pending' } as CapylPaymentTransactionData]);
 
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed');
+      // Wait for confirmation using getSignatureStatuses
+      let isConfirmed = false;
+      for (let i = 0; i < 30; i++) {
+        const statusResponse = await connection.getSignatureStatuses([signature], { searchTransactionHistory: true });
+        const status = statusResponse?.value?.[0];
+
+        if (status) {
+          // Stop polling if finalized, but check for errors
+          if (status.confirmationStatus === 'finalized') {
+            if (status.err) {
+              console.error('Transaction failed:', status.err);
+              toast.error('Transaction Failed ❌', { id: loadingToastId });
+
+              return null; // Stop execution since the transaction failed
+            }
+
+            isConfirmed = true;
+            break; // Stop polling if successfully finalized
+          }
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2s before retrying
+      }
+
+      if (!isConfirmed) {
+        throw new Error('Transaction did not reach finalization.');
+      }
 
       // Update transaction status to "confirmed"
       setCapylTransactions((prev) =>
@@ -94,18 +117,14 @@ export const useSendCAPYL = () => {
       );
 
       console.log(`✅ Transaction Confirmed: ${signature}`);
-      // Update the toast from loading to success
-      toast.success(`Transaction Confirmed! ✅`, {
-        id: loadingToastId,
-      });
+      toast.success(`Transaction Confirmed! ✅`, { id: loadingToastId });
 
-      return signature;
+      return signature; // Return only if fully confirmed
     } catch (err) {
       console.error('Transaction failed:', err);
-      // Update the toast from loading to error
       toast.error('Transaction Failed ❌', { id: loadingToastId });
 
-      return null;
+      return null; // Ensures no signature is returned on failure
     }
   };
 

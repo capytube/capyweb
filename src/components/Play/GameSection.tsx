@@ -41,6 +41,8 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
   const [finalInteractedData, setFinalInteractedData] = useState<InteractionsAtomType | null>(null);
   const [capySelectedFood, setCapySelectedFood] = useState<string | null>(null);
   const [isLoginPopupVisible, setIsLoginPopupVisible] = useState<boolean>(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
+  const [processingPayItemId, setProcessingPayItemId] = useState<string | null>(null);
 
   // functions
   const handleSubmit = async ({
@@ -58,6 +60,8 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
       setIsLoginPopupVisible(true);
       return;
     }
+
+    if (isProcessingPayment) return; // Prevent multiple payment submissions at once
 
     let isLowBalance = false;
     const voteFee = votePayloadData?.totalFee ?? 0;
@@ -118,8 +122,14 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
       capylAmount = bidPayloadData?.bidAmount;
     }
 
+    setIsProcessingPayment(true); // Disabling all Vote or Bid buttons while payment processing
+    setProcessingPayItemId(selectedInteractionData?.id); // For tracking which Vote or Bid button is being processed now
     const txSignature = await sendCAPYL(MASTER_SOL_RECIPIENT_WALLET_ADDRESS, capylAmount); // Sending CAPYL tokens first
-    if (!txSignature) return;
+    if (!txSignature) {
+      setIsProcessingPayment(false);
+      setProcessingPayItemId(null);
+      return;
+    }
 
     if (isVoteTypeInteracted && votePayloadData && selectedInteractionData?.id && userData?.id) {
       const userVotePayload = {
@@ -159,6 +169,10 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
         return;
       }
     }
+
+    // Reset payment states after processing
+    setIsProcessingPayment(false);
+    setProcessingPayItemId(null);
   };
 
   const handleVoteAgain = () => {
@@ -225,12 +239,28 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
                   <div className="flex flex-col gap-y-10 lg:pt-0 pt-10">
                     {voteTypeInteractionsList?.length
                       ? voteTypeInteractionsList?.map((data) => {
-                          return <VoteInteractionCard key={data?.id} data={data} handleSubmit={handleSubmit} />;
+                          return (
+                            <VoteInteractionCard
+                              key={data?.id}
+                              data={data}
+                              handleSubmit={handleSubmit}
+                              isProcessingPayment={isProcessingPayment}
+                              processingPayItemId={processingPayItemId}
+                            />
+                          );
                         })
                       : null}
                     {bidTypeInteractionsList?.length
                       ? bidTypeInteractionsList?.map((data) => {
-                          return <BidInteractionCard key={data?.id} data={data} handleSubmit={handleSubmit} />;
+                          return (
+                            <BidInteractionCard
+                              key={data?.id}
+                              data={data}
+                              handleSubmit={handleSubmit}
+                              isProcessingPayment={isProcessingPayment}
+                              processingPayItemId={processingPayItemId}
+                            />
+                          );
                         })
                       : null}
                   </div>
