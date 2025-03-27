@@ -67,7 +67,7 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
           setVodSource(source);
         } else {
           setIsLoading(false);
-          setError('The Capybara streams isn´t available');
+          setError('The Capybara streams is not available');
         }
       } catch (err) {
         setIsLoading(false);
@@ -88,7 +88,7 @@ const LivepeerPlayer: React.FC<LivepeerPlayerProps> = ({
         if (response?.status === 200) {
           setError(null);
         } else {
-          setError('The Capybara streams isn´t available');
+          setError('The Capybara streams aren\'t available');
         }
       }
     };

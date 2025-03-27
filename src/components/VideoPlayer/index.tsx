@@ -73,7 +73,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoErrorMessage = () => {
     let msg = '';
     if (!isHomePage && !isLoggedIn) msg = 'Please Login to Watch the Stream';
-    else msg = 'The Capybara streams isn´t available';
+    else msg = 'The Capybara streams is not available';
     return msg;
   };
 

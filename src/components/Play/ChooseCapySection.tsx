@@ -57,7 +57,7 @@ function ChooseCapySection({ handleCapySelection }: Readonly<Props>) {
             </>
           ) : (
             <div className="font-hanaleiFill text-chocoBrown md:text-4xl text-2xl text-center px-3">
-              The Capybara data isn´t available right now,
+              The Capybara data is not available right now,
               <br />
               Try again later sometime
             </div>

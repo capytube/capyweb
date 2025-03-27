@@ -5,7 +5,7 @@ interface Props {
 }
 
 const DemoSiteRibbon = ({ clsx }: Props) => {
-  return <div className={`${styles.demoSiteRibbon} ${clsx ?? ''}`}>Demo Site</div>;
+  return <div className={`${styles.demoSiteRibbon} ${clsx ?? ''}`}>Beta</div>;
 };
 
 export default DemoSiteRibbon; 

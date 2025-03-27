@@ -42,7 +42,7 @@ const PublicStream = () => {
           />
         ) : (
           <VideoFrameWithErrorMessage
-            message={isStreamDataLoading ? 'Loading stream...' : 'The Capybara streams isn´t available'}
+            message={isStreamDataLoading ? 'Loading stream...' : 'The Capybara streams is not available'}
           />
         )}
       </div>

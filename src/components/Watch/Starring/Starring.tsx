@@ -99,7 +99,7 @@ const Starring = () => {
         } else {
           return (
             <div className="font-hanaleiFill text-chocoBrown md:text-4xl text-2xl text-center px-3 sm:py-16 py-32">
-              The Capybara streams isn´t available right now,
+              The Capybara streams are not available right now,
               <br />
               Try again later sometime
             </div>

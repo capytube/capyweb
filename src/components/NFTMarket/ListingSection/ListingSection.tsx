@@ -134,7 +134,7 @@ export default function ListingSection() {
         } else {
           return (
             <div className="font-hanaleiFill text-chocoBrown md:text-4xl text-xl text-center px-3 sm:py-16">
-              The NFTs aren't available right now
+              The NFTs are not available right now
             </div>
           );
         }
