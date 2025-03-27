@@ -15,6 +15,7 @@ import Modal from '../Modal/Modal';
 import YourProfile from './YourProfile/YourProfile';
 import { userAtom } from '../../store/atoms/userAtom';
 import { getUserById } from '../../api/user';
+import DemoSiteRibbon from '../DemoSiteRibbon';
 
 const Header = () => {
   const isNftProfile = true;
@@ -62,7 +63,10 @@ const Header = () => {
     <>
       <div className={styles.headerContainer}>
         <Link to="/" className={styles.navLink} title="Home">
-          <img src={capytube} alt="CapyTube" className={isLoggedIn ? styles.hideCapyInMobile : styles.capyMainIcon} />
+          <div className="relative">
+            <img src={capytube} alt="CapyTube" className={isLoggedIn ? styles.hideCapyInMobile : styles.capyMainIcon} />
+            <DemoSiteRibbon />
+          </div>
           {isUserAuthenticated ? <img src={capyOnlyLogo} alt="CapyTube" className={styles.capyMobileIcon} /> : null}
         </Link>
         <div className={styles.logoAndSignoutButton} style={{ display: isUserAuthenticated ? 'none' : 'initial' }}>
