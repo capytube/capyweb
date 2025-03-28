@@ -81,16 +81,16 @@ function index() {
               >
                 Today’s session
               </button>
-              <button
-                type="button"
-                className={optionsStyle}
-                onClick={() => {
-                  setSelection(2);
-                  setOpenMenu(!openMenu);
-                }}
-              >
-                Past session
-              </button>
+              {/*<button*/}
+              {/*  type="button"*/}
+              {/*  className={optionsStyle}*/}
+              {/*  onClick={() => {*/}
+              {/*    setSelection(2);*/}
+              {/*    setOpenMenu(!openMenu);*/}
+              {/*  }}*/}
+              {/*>*/}
+              {/*  Past session*/}
+              {/*</button>*/}
             </div>
           ) : null}
         </div>

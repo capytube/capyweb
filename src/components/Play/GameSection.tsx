@@ -268,7 +268,7 @@ function GameSection({ capy, handleSectionChange }: Readonly<Props>) {
               } else {
                 return (
                   <div className="font-hanaleiFill text-chocoBrown md:text-4xl text-2xl text-center px-3 sm:py-16 py-32">
-                    The interactive games are not available right now
+                    No interactive games available for {capy?.name} at the moment.
                   </div>
                 );
               }
