@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
 
-type InteractionType = 'vote' | 'bid' | 'other';
+type InteractionType = 'vote' | 'bid';
 
 export interface VoteOptions {
   id: string | null;

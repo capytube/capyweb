@@ -4,8 +4,8 @@ import { MakeSomeRequired } from '../../utils/function';
 
 const client = generateClient<Schema>();
 
-type TransactionType = 'tip' | 'reward' | 'stream_payment' | 'transfer' | 'withdraw' | 'deposit' | 'vote' | 'bid' | 'other';
-type InteractionType = 'vote' | 'bid' | 'other';
+type TransactionType = 'tip' | 'reward' | 'stream_payment' | 'transfer' | 'withdraw' | 'deposit' | 'vote' | 'bid';
+type InteractionType = 'vote' | 'bid';
 
 export interface TokenTransactionType {
   user_id: string; // Foreign Key to User
