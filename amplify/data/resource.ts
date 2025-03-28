@@ -3,7 +3,7 @@ import { getStream } from '../functions/getStream/resource';
 import { getViewership } from '../functions/getViewership/resource';
 
 const access_type = a.enum(['public', 'private']);
-const interaction_type = a.enum(['vote', 'bid']);
+const interaction_type = a.enum(['vote', 'bid', 'other']);
 const transaction_type = a.enum(['tip', 'reward', 'stream_payment', 'transfer', 'withdraw', 'deposit', 'vote', 'bid']);
 const rarity_level = a.enum(['ultra_rare', 'rare', 'epic']);
 const gender = a.enum(['male', 'female']);
