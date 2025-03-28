@@ -4,7 +4,7 @@ import { MakeSomeRequired } from '../../utils/function';
 
 const client = generateClient<Schema>();
 
-type TransactionType = 'tip' | 'reward' | 'stream_payment' | 'transfer' | 'withdraw' | 'deposit' | 'vote' | 'bid';
+type TransactionType = 'tip' | 'reward' | 'stream_payment' | 'transfer' | 'withdraw' | 'deposit' | 'vote' | 'bid' | 'other';
 type InteractionType = 'vote' | 'bid' | 'other';
 
 export interface TokenTransactionType {
