@@ -15,8 +15,8 @@ const FooterNavbar = () => {
         <Link to="/watch" className={styles.navLink} title="Watch">
           <WatchIcon className="navIcon max-w-20" fill={pathName === 'watch' ? '#FFB26F' : '#FFEEE2'} />
         </Link>
-        <Link to="/play" className={styles.navLink} title="Play">
-          <PlayIcon className="navIcon scale-[1.4] max-w-[83px]" fill={pathName === 'play' ? '#FFB26F' : '#FFEEE2'} />
+        <Link to="/robot" className={styles.navLink} title="Robot experience">
+          <PlayIcon className="navIcon scale-[1.4] max-w-[83px]" fill={pathName === 'robot' ? '#FFB26F' : '#FFEEE2'} />
         </Link>
         <Link to="/profile" className={styles.navLink} title="Account">
           <AccountIcon className="navIcon max-w-[80px]" fill={pathName === 'profile' ? '#FFB26F' : '#FFEEE2'} />

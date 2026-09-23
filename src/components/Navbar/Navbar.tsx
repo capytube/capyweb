@@ -12,8 +12,8 @@ export default function Navbar() {
       <Link to="/watch" className="navLink" title="Watch">
         <WatchIcon className="navIcon" fill={pathName?.includes('watch') ? '#FFB26F' : '#FFEEE2'} />
       </Link>
-      <Link to="/play" className="navLink" title="Play">
-        <PlayIcon className="navIcon scale-[1.4]" fill={pathName?.includes('play') ? '#FFB26F' : '#FFEEE2'} />
+      <Link to="/robot" className="navLink" title="Robot experience">
+        <PlayIcon className="navIcon scale-[1.4]" fill={pathName?.includes('robot') ? '#FFB26F' : '#FFEEE2'} />
       </Link>
       <Link to="/profile" className="navLink" title="Account">
         <AccountIcon className="navIcon" fill={pathName?.includes('profile') ? '#FFB26F' : '#FFEEE2'} />

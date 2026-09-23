@@ -1,0 +1,65 @@
+.page {
+  color: #2f201c;
+  background: linear-gradient(180deg, #f7f1dc 0%, #fffdf7 42%, #edf4e4 100%);
+  min-height: 100vh;
+  font-family: Commissioner, sans-serif;
+}
+
+.hero, .viewerGrid, .marketplace, .howItWorks { max-width: 1180px; margin: 0 auto; }
+.hero { padding: 72px 32px 44px; display: grid; grid-template-columns: 1.65fr .75fr; gap: 48px; align-items: end; }
+.eyebrow, .sectionLabel { color: #986236; text-transform: uppercase; letter-spacing: .13em; font-size: 12px; font-weight: 800; }
+.hero h1 { margin: 10px 0 18px; max-width: 830px; color: #294b32; font: 400 clamp(44px, 7vw, 86px)/.96 'ADLaM Display', sans-serif; letter-spacing: -.045em; }
+.intro { max-width: 720px; color: #65554d; font-size: 18px; line-height: 1.65; }
+.badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.badges span, .demoPill { border: 1px solid #d8ccae; background: rgba(255,255,255,.7); border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 700; }
+.liveBadge i, .statusLine i { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #df6b45; }
+.robotSummary { background: #294b32; color: white; border-radius: 26px; padding: 26px; box-shadow: 0 20px 50px rgba(41,75,50,.18); }
+.robotSummary span, .robotSummary small { display: block; color: #d6dfc4; }
+.robotSummary strong { display: block; margin: 7px 0; font-size: 28px; }
+.statusLine { border-top: 1px solid rgba(255,255,255,.18); margin-top: 22px; padding-top: 18px; font-size: 13px; }
+
+.viewerGrid { padding: 16px 32px 68px; display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(280px, .7fr); gap: 20px; }
+.videoCard, .controlCard, .marketplace { background: rgba(255,255,255,.88); border: 1px solid #e6dcc6; border-radius: 28px; box-shadow: 0 14px 40px rgba(72,55,34,.08); }
+.videoCard { overflow: hidden; }
+.videoHeader, .videoFooter { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 22px; }
+.videoHeader div span, .videoHeader div strong { display: block; }
+.videoHeader div span { color: #8c7a6d; font-size: 12px; }
+.videoHeader div strong { font-size: 18px; }
+.videoFooter { color: #74675e; font-size: 12px; }
+.videoFooter button { color: #294b32; border: 1px solid #9daf92; border-radius: 999px; padding: 9px 13px; font-weight: 800; white-space: nowrap; }
+.controlCard { padding: 26px; }
+.controlCard h2, .marketHeader h2 { margin: 6px 0 12px; color: #294b32; font: 400 30px/1.05 'ADLaM Display', sans-serif; }
+.controlCard p { color: #75655d; line-height: 1.5; }
+.controls { margin: 28px auto; display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(3, 58px); gap: 8px; justify-content: center; }
+.controls button { border-radius: 16px; background: #ecf1df; color: #294b32; font-size: 23px; font-weight: 900; opacity: 1; }
+.controls button:nth-child(1) { grid-column: 2; }.controls button:nth-child(2) { grid-column: 1; grid-row: 2; }.controls .stop { grid-column: 2; grid-row: 2; color: #fff; background: #df6b45; font-size: 12px; }.controls button:nth-child(4) { grid-column: 3; grid-row: 2; }.controls button:nth-child(5) { grid-column: 2; grid-row: 3; }
+.controlsLocked { filter: grayscale(1); opacity: .42; }
+.safetyList { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; color: #5f5a4f; font-size: 13px; }
+.safetyList li::before { content: '✓'; margin-right: 8px; color: #548163; font-weight: 900; }
+
+.marketplace { padding: 32px; }
+.marketHeader { display: flex; justify-content: space-between; gap: 20px; align-items: end; }
+.tabs { display: flex; background: #f2edde; padding: 4px; border-radius: 999px; }
+.tabs button { padding: 10px 16px; border-radius: 999px; font-weight: 800; font-size: 13px; color: #786c62; }
+.tabs .activeTab { background: #294b32; color: white; }
+.slotGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 24px 0; }
+.slotCard { position: relative; display: flex; min-height: 190px; flex-direction: column; align-items: start; text-align: left; border: 1px solid #ded4bd; border-radius: 20px; padding: 22px; background: #fffdf8; transition: .2s ease; }
+.slotCard:hover, .selectedSlot { transform: translateY(-2px); border-color: #6f9175; box-shadow: 0 10px 28px rgba(50,80,53,.13); }
+.slotNumber { position: absolute; right: 18px; top: 14px; color: #d9cfb7; font: 400 34px 'ADLaM Display', sans-serif; }
+.slotTime { color: #986236; font-size: 12px; font-weight: 800; max-width: 75%; }
+.slotCard strong { margin-top: auto; font-size: 23px; color: #294b32; }.slotCard small { margin-top: 4px; color: #7b7067; }.slotMeta { margin-top: 16px; font-size: 12px; font-weight: 800; }
+.emptyState { margin: 24px 0; padding: 42px; text-align: center; border: 1px dashed #cfc4ad; border-radius: 20px; color: #6f635b; }.emptyState strong { display: block; color: #294b32; font-size: 22px; }.emptyState p { max-width: 650px; margin: 8px auto; }
+.bidPanel { display: flex; justify-content: space-between; align-items: center; gap: 22px; background: #294b32; border-radius: 20px; padding: 22px 24px; color: white; }
+.bidPanel div span, .bidPanel div strong, .bidPanel div small { display: block; }.bidPanel div span, .bidPanel div small { color: #d3ddc3; }.bidPanel div strong { margin: 5px 0; font-size: 18px; }.bidPanel button { padding: 13px 18px; color: #294b32; background: #f7d58a; border-radius: 999px; font-weight: 900; white-space: nowrap; }
+
+.howItWorks { padding: 70px 32px 90px; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; margin-top: 20px; }.steps article { border-top: 1px solid #beb99e; padding-top: 20px; }.steps span { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #f2c778; color: #294b32; font-weight: 900; }.steps h3 { margin: 17px 0 7px; color: #294b32; font-size: 20px; }.steps p { color: #72665c; line-height: 1.55; font-size: 14px; }
+
+@media (max-width: 800px) {
+  .hero { grid-template-columns: 1fr; padding: 44px 18px 26px; gap: 20px; }.hero h1 { font-size: 46px; }.intro { font-size: 16px; }
+  .viewerGrid { grid-template-columns: 1fr; padding: 12px 18px 48px; }.videoHeader, .videoFooter { align-items: flex-start; }.videoFooter { flex-direction: column; }
+  .marketplace { margin: 0 18px; padding: 20px; }.marketHeader { align-items: flex-start; flex-direction: column; }.slotGrid { grid-template-columns: 1fr; }.slotCard { min-height: 155px; }
+  .bidPanel { align-items: flex-start; flex-direction: column; }.bidPanel button { width: 100%; }
+  .howItWorks { padding: 54px 18px 70px; }.steps { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 430px) { .steps { grid-template-columns: 1fr; }.badges { align-items: flex-start; flex-direction: column; }.hero h1 { font-size: 40px; }.marketplace { border-radius: 22px; }.tabs { width: 100%; }.tabs button { flex: 1; } }

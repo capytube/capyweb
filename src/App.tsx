@@ -18,6 +18,7 @@ import FooterNavbar from './components/FooterNavbar/FooterNavbar';
 import Header from './components/Header/Header';
 import Navbar from './components/Navbar/Navbar';
 import PlayPage from './components/Play/index';
+import RobotExperience from './components/RobotExperience/RobotExperience';
 import { useSetAtom } from 'jotai';
 import { walletAtom } from './store/atoms';
 import { useCapylBalance } from './utils/useCapylBalance';
@@ -87,6 +88,7 @@ const App = () => {
               <Route path="/stream/:capyId" element={<WatchRoom />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/play" element={<PlayPage />} />
+              <Route path="/robot" element={<RobotExperience />} />
               <Route path="/shop" element={<NFTMarket />} />
               <Route path="/shop/:id" element={<NFTDetails />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
