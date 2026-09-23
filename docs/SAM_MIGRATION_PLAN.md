@@ -27,6 +27,10 @@ Allowed services (Nic): Lambda, DynamoDB, API Gateway, CloudFront, Route 53 (cap
 - Env: `VITE_API_BASE_URL`, `VITE_MEDIA_BASE_URL` at build time. Types move from the Amplify `Schema` to `src/domain/*.ts`.
 - Nice side effect: a much smaller bundle, since the Amplify libs are heavy.
 
+## 2a. Implementation notes (found during build)
+- **Auth:** Dynamic has no OIDC discovery document. Only the JWKS exists: `https://app.dynamic.xyz/api/v0/sdk/066bc44d-7c4b-44f5-95a4-5ce8b41b1d33/.well-known/jwks` returns keys, so the env ID is live. The API Gateway built-in JWT authorizer needs discovery, so write routes use a small **Lambda authorizer** that verifies against that JWKS, with results cached for 5 minutes. It's still serverless and needs no new IAM.
+- **Where deploys run:** secrets in the vault can only be filled into web forms, never given to a shell. So deploys run in **GitHub Actions** (`.github/workflows/capyweb-aws.yml`), with the keys stored as repo secrets `CAPY_AWS_ACCESS_KEY_ID`, `CAPY_AWS_SECRET_ACCESS_KEY`, `AL_DNS_AWS_ACCESS_KEY_ID`, `AL_DNS_AWS_SECRET_ACCESS_KEY`. It triggers only on push to main or by hand, never on PRs. Each run first checks both keys' identity and scope (it expects denials for IAM, EC2, list-all-buckets, list-hosted-zones and domains), then refuses to deploy if any provisioned capacity shows up in the template.
+
 ## 3. Repo layout
 - `infra/backend/template.yaml` (SAM, Capy account, ap-southeast-1): HTTP API, Lambdas, DynamoDB tables, media bucket.
 - `infra/site/template.yaml` (CloudFormation, Capy account, us-east-1): ACM cert (DNS validation), site bucket, CloudFront.
