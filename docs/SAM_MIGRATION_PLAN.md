@@ -36,7 +36,7 @@ Status: plan only. Nothing is migrated until Nic approves. Regions: backend in a
 ## 5. Least-privilege IAM
 Pattern: the deploy user can **only** drive CloudFormation stacks named `capyweb-*` and pass **one** CloudFormation execution role. The resource-creating permissions live on that role, scoped to `capyweb-*` names. The user itself can't create IAM, Lambda, DynamoDB and so on directly.
 
-Replace `ACCOUNT_ID` and `ZONE_ID` (capytube.xyz hosted zone).
+Known values: account 360122305252 (holds capytube.xyz registration and hosted zone), hosted zone Z01748582U1VPM60UY0TW. (Account 619071347239 "capy" holds capy.life/capy.zone/capybank.ai and is not used here.)
 
 ### 5a. IAM user `capyweb-deploy`: inline policy
 ```json
@@ -45,49 +45,49 @@ Replace `ACCOUNT_ID` and `ZONE_ID` (capytube.xyz hosted zone).
   "Statement": [
     {"Sid": "CfnCapywebStacks", "Effect": "Allow",
      "Action": ["cloudformation:CreateStack","cloudformation:UpdateStack","cloudformation:DeleteStack","cloudformation:DescribeStacks","cloudformation:DescribeStackEvents","cloudformation:DescribeStackResources","cloudformation:GetTemplate","cloudformation:GetTemplateSummary","cloudformation:CreateChangeSet","cloudformation:DescribeChangeSet","cloudformation:ExecuteChangeSet","cloudformation:DeleteChangeSet","cloudformation:ListStackResources"],
-     "Resource": ["arn:aws:cloudformation:*:ACCOUNT_ID:stack/capyweb-*/*",
+     "Resource": ["arn:aws:cloudformation:*:360122305252:stack/capyweb-*/*",
                   "arn:aws:cloudformation:*:aws:transform/Serverless-2016-10-31"]},
     {"Sid": "CfnValidate", "Effect": "Allow", "Action": ["cloudformation:ValidateTemplate","cloudformation:ListStacks"], "Resource": "*"},
     {"Sid": "PassExecRole", "Effect": "Allow", "Action": "iam:PassRole",
-     "Resource": "arn:aws:iam::ACCOUNT_ID:role/capyweb-cfn-exec",
+     "Resource": "arn:aws:iam::360122305252:role/capyweb-cfn-exec",
      "Condition": {"StringEquals": {"iam:PassedToService": "cloudformation.amazonaws.com"}}},
     {"Sid": "SamArtifacts", "Effect": "Allow", "Action": ["s3:PutObject","s3:GetObject","s3:ListBucket","s3:GetBucketLocation"],
-     "Resource": ["arn:aws:s3:::capyweb-sam-artifacts-ACCOUNT_ID","arn:aws:s3:::capyweb-sam-artifacts-ACCOUNT_ID/*"]},
+     "Resource": ["arn:aws:s3:::capyweb-sam-artifacts-360122305252","arn:aws:s3:::capyweb-sam-artifacts-360122305252/*"]},
     {"Sid": "SiteAndMediaSync", "Effect": "Allow", "Action": ["s3:PutObject","s3:DeleteObject","s3:GetObject","s3:ListBucket"],
-     "Resource": ["arn:aws:s3:::capyweb-site-ACCOUNT_ID","arn:aws:s3:::capyweb-site-ACCOUNT_ID/*",
-                  "arn:aws:s3:::capyweb-media-ACCOUNT_ID","arn:aws:s3:::capyweb-media-ACCOUNT_ID/*"]},
+     "Resource": ["arn:aws:s3:::capyweb-site-360122305252","arn:aws:s3:::capyweb-site-360122305252/*",
+                  "arn:aws:s3:::capyweb-media-360122305252","arn:aws:s3:::capyweb-media-360122305252/*"]},
     {"Sid": "Invalidate", "Effect": "Allow", "Action": ["cloudfront:CreateInvalidation","cloudfront:GetInvalidation","cloudfront:ListDistributions"], "Resource": "*"},
     {"Sid": "ReadLogsForDebug", "Effect": "Allow", "Action": ["logs:FilterLogEvents","logs:GetLogEvents","logs:DescribeLogStreams"],
-     "Resource": "arn:aws:logs:ap-southeast-1:ACCOUNT_ID:log-group:/aws/lambda/capyweb-*"},
+     "Resource": "arn:aws:logs:ap-southeast-1:360122305252:log-group:/aws/lambda/capyweb-*"},
     {"Sid": "DnsReadOnly", "Effect": "Allow", "Action": ["route53:ListResourceRecordSets","route53:GetHostedZone","route53:GetChange"],
-     "Resource": ["arn:aws:route53:::hostedzone/ZONE_ID","arn:aws:route53:::change/*"]}
+     "Resource": ["arn:aws:route53:::hostedzone/Z01748582U1VPM60UY0TW","arn:aws:route53:::change/*"]}
   ]
 }
 ```
-Nic creates bucket `capyweb-sam-artifacts-ACCOUNT_ID` (ap-southeast-1, private) once, so the user needs no CreateBucket. (`CreateInvalidation` can't be limited by resource until the distribution exists. After the site stack is up I'll give him the distribution ARN to pin it.)
+Nic creates bucket `capyweb-sam-artifacts-360122305252` (ap-southeast-1, private) once, so the user needs no CreateBucket. (`CreateInvalidation` can't be limited by resource until the distribution exists. After the site stack is up I'll give him the distribution ARN to pin it.)
 
 ### 5b. Role `capyweb-cfn-exec` (trusted by `cloudformation.amazonaws.com`): inline policy
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
-    {"Sid": "Lambda", "Effect": "Allow", "Action": ["lambda:*"], "Resource": "arn:aws:lambda:ap-southeast-1:ACCOUNT_ID:function:capyweb-*"},
+    {"Sid": "Lambda", "Effect": "Allow", "Action": ["lambda:*"], "Resource": "arn:aws:lambda:ap-southeast-1:360122305252:function:capyweb-*"},
     {"Sid": "LambdaRoles", "Effect": "Allow",
      "Action": ["iam:CreateRole","iam:DeleteRole","iam:GetRole","iam:PassRole","iam:PutRolePolicy","iam:DeleteRolePolicy","iam:GetRolePolicy","iam:AttachRolePolicy","iam:DetachRolePolicy","iam:TagRole","iam:UntagRole","iam:UpdateAssumeRolePolicy"],
-     "Resource": "arn:aws:iam::ACCOUNT_ID:role/capyweb-*"},
+     "Resource": "arn:aws:iam::360122305252:role/capyweb-*"},
     {"Sid": "DynamoDB", "Effect": "Allow", "Action": ["dynamodb:CreateTable","dynamodb:UpdateTable","dynamodb:DeleteTable","dynamodb:DescribeTable","dynamodb:TagResource","dynamodb:UntagResource","dynamodb:ListTagsOfResource","dynamodb:UpdateContinuousBackups","dynamodb:DescribeContinuousBackups","dynamodb:UpdateTimeToLive","dynamodb:DescribeTimeToLive"],
-     "Resource": ["arn:aws:dynamodb:ap-southeast-1:ACCOUNT_ID:table/capyweb-*"]},
+     "Resource": ["arn:aws:dynamodb:ap-southeast-1:360122305252:table/capyweb-*"]},
     {"Sid": "HttpApi", "Effect": "Allow", "Action": ["apigateway:GET","apigateway:POST","apigateway:PUT","apigateway:PATCH","apigateway:DELETE","apigateway:TagResource"],
      "Resource": ["arn:aws:apigateway:ap-southeast-1::/apis","arn:aws:apigateway:ap-southeast-1::/apis/*","arn:aws:apigateway:ap-southeast-1::/tags/*"]},
     {"Sid": "Buckets", "Effect": "Allow", "Action": ["s3:CreateBucket","s3:DeleteBucket","s3:PutBucketPolicy","s3:GetBucketPolicy","s3:DeleteBucketPolicy","s3:PutBucketPublicAccessBlock","s3:PutEncryptionConfiguration","s3:PutBucketCORS","s3:PutBucketOwnershipControls","s3:PutBucketTagging","s3:PutBucketVersioning","s3:GetBucketLocation"],
-     "Resource": ["arn:aws:s3:::capyweb-site-ACCOUNT_ID","arn:aws:s3:::capyweb-media-ACCOUNT_ID"]},
-    {"Sid": "SamArtifactsRead", "Effect": "Allow", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::capyweb-sam-artifacts-ACCOUNT_ID/*"},
-    {"Sid": "SsmParamRef", "Effect": "Allow", "Action": ["ssm:GetParameters","ssm:GetParameter"], "Resource": "arn:aws:ssm:ap-southeast-1:ACCOUNT_ID:parameter/capyweb/*"},
-    {"Sid": "LogGroups", "Effect": "Allow", "Action": ["logs:CreateLogGroup","logs:DeleteLogGroup","logs:PutRetentionPolicy","logs:DescribeLogGroups","logs:TagResource"], "Resource": "arn:aws:logs:*:ACCOUNT_ID:log-group:/aws/lambda/capyweb-*"},
+     "Resource": ["arn:aws:s3:::capyweb-site-360122305252","arn:aws:s3:::capyweb-media-360122305252"]},
+    {"Sid": "SamArtifactsRead", "Effect": "Allow", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::capyweb-sam-artifacts-360122305252/*"},
+    {"Sid": "SsmParamRef", "Effect": "Allow", "Action": ["ssm:GetParameters","ssm:GetParameter"], "Resource": "arn:aws:ssm:ap-southeast-1:360122305252:parameter/capyweb/*"},
+    {"Sid": "LogGroups", "Effect": "Allow", "Action": ["logs:CreateLogGroup","logs:DeleteLogGroup","logs:PutRetentionPolicy","logs:DescribeLogGroups","logs:TagResource"], "Resource": "arn:aws:logs:*:360122305252:log-group:/aws/lambda/capyweb-*"},
     {"Sid": "CloudFront", "Effect": "Allow", "Action": ["cloudfront:CreateDistribution","cloudfront:UpdateDistribution","cloudfront:DeleteDistribution","cloudfront:GetDistribution","cloudfront:GetDistributionConfig","cloudfront:TagResource","cloudfront:CreateOriginAccessControl","cloudfront:UpdateOriginAccessControl","cloudfront:DeleteOriginAccessControl","cloudfront:GetOriginAccessControl","cloudfront:CreateFunction","cloudfront:UpdateFunction","cloudfront:DeleteFunction","cloudfront:DescribeFunction","cloudfront:PublishFunction","cloudfront:GetFunction"], "Resource": "*"},
     {"Sid": "Cert", "Effect": "Allow", "Action": ["acm:RequestCertificate","acm:DescribeCertificate","acm:DeleteCertificate","acm:AddTagsToCertificate"], "Resource": "*"},
     {"Sid": "Dns", "Effect": "Allow", "Action": ["route53:ChangeResourceRecordSets","route53:ListResourceRecordSets","route53:GetHostedZone","route53:GetChange"],
-     "Resource": ["arn:aws:route53:::hostedzone/ZONE_ID","arn:aws:route53:::change/*"]}
+     "Resource": ["arn:aws:route53:::hostedzone/Z01748582U1VPM60UY0TW","arn:aws:route53:::change/*"]}
   ]
 }
 ```
@@ -97,12 +97,12 @@ The Lambda runtime roles that SAM creates get only: DynamoDB CRUD on `capyweb-*`
 
 ### 5c. What Nic does by hand (once)
 1. Rotate both Livepeer keys. Store the new one: SSM SecureString `/capyweb/livepeer-api-key` (ap-southeast-1).
-2. Create bucket `capyweb-sam-artifacts-ACCOUNT_ID`.
+2. Create bucket `capyweb-sam-artifacts-360122305252`.
 3. Create role `capyweb-cfn-exec` (5b) and user `capyweb-deploy` (5a) with an access key -> vault link.
-4. Send me: ACCOUNT_ID, ZONE_ID, Dynamic environment ID (not secret, it's in the frontend already).
+4. Send me the Dynamic environment ID (not secret, it is in the frontend already). Account and zone IDs are known.
 
 ### 5d. Optional, only if old data matters (one-off, read-only, remove afterwards)
-`dynamodb:ListTables`, `dynamodb:DescribeTable`, `dynamodb:Scan` on `arn:aws:dynamodb:ap-southeast-1:ACCOUNT_ID:table/*`, plus `s3:ListAllMyBuckets`, `s3:ListBucket`/`s3:GetObject` on the old Amplify storage bucket, so I can export existing capybaras/users/images.
+`dynamodb:ListTables`, `dynamodb:DescribeTable`, `dynamodb:Scan` on `arn:aws:dynamodb:ap-southeast-1:360122305252:table/*`, plus `s3:ListAllMyBuckets`, `s3:ListBucket`/`s3:GetObject` on the old Amplify storage bucket, so I can export existing capybaras/users/images.
 
 ## 6. Open calls for Nic (unchanged)
 - Stream viewing public vs account-gated: current behavior kept.
