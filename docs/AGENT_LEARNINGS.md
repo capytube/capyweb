@@ -24,3 +24,4 @@ Read this before each work session on capyweb. Add a line whenever something fai
 - Robot control stays a labeled stub until the hardware API is proven.
 - Marketplace writes must not use the current public API-key auth.
 - 2026-09-23: The vault only fills browser forms and never gives secrets to the shell. So cloud keys (AWS etc.) collected by vault link can't be used for CLI deploys from the sandbox. For CLI or pipeline secrets, use GitHub Actions repo secrets (or OIDC) and run deploys in CI. Check how a secret will be used BEFORE asking the user for it.
+- 2026-09-23 14:55: The refilled capyreadonly password (31 chars) was still rejected by GitHub. Two vault passwords for this account have failed, so don't keep retrying web login. Ask Nic to do the GitHub UI step himself or check the password first.
