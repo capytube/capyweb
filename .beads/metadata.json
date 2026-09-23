@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "capyweb",
+  "project_id": "5771b1c0-b0c4-4516-ae00-bbe4f4a19d84"
+}
