@@ -447,6 +447,14 @@ This is a one-off, read-only grant added to `capyweb-deploy` and removed afterwa
 - **CloudFront:** PriceClass_100 (cheapest edge locations), long cache on hashed assets, compressed. No Lambda@Edge.
 - **Budget (admin, manual, both accounts):** AWS Budgets monthly cost budget of $20 on the Capy account, with email alerts at 50% and 80% actual and 100% forecast. Enable Cost Anomaly Detection (free). Optionally a $5 budget on the AL account. The pipeline has no billing permissions.
 
+
+### 6a. Serverless / on-demand guarantee (nothing provisioned)
+The templates aren't written yet. When they are, they must meet these rules, and each deploy checks them with grep:
+- DynamoDB: every table has `BillingMode: PAY_PER_REQUEST` plus an `OnDemandThroughput` ceiling. No `ProvisionedThroughput`, no Application Auto Scaling.
+- Lambda: plain on-demand functions. No `ProvisionedConcurrencyConfig` and no `AutoPublishAlias`-based provisioned concurrency. `ReservedConcurrentExecutions` is only a free upper cap: it reserves no capacity, costs nothing and bills nothing when idle. Nic can have it removed, but then the only cap left is the API throttle.
+- API Gateway: an HTTP API (pay per request), with no REST API caching cluster.
+- CloudFront + S3: pay per use by default. No reserved capacity or savings plans.
+
 ## 7. One-time admin steps
 (These are the same steps that went out as the admin message.)
 
