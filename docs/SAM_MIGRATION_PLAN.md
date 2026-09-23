@@ -186,7 +186,10 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "lambda:UntagResource",
         "lambda:ListTags",
         "lambda:PublishVersion",
-        "lambda:ListVersionsByFunction"
+        "lambda:ListVersionsByFunction",
+        "lambda:GetFunctionCodeSigningConfig",
+        "lambda:GetRuntimeManagementConfig",
+        "lambda:GetFunctionConcurrency"
       ],
       "Resource": "arn:aws:lambda:ap-southeast-1:619071347239:function:capyweb-*"
     },
@@ -221,7 +224,8 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "dynamodb:UntagResource",
         "dynamodb:ListTagsOfResource",
         "dynamodb:UpdateContinuousBackups",
-        "dynamodb:DescribeContinuousBackups"
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:DescribeTimeToLive"
       ],
       "Resource": "arn:aws:dynamodb:ap-southeast-1:619071347239:table/capyweb-*"
     },
@@ -329,6 +333,14 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "acm:ListTagsForCertificate"
       ],
       "Resource": "arn:aws:acm:us-east-1:619071347239:certificate/*"
+    },
+    {
+      "Sid": "SamTransform",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateChangeSet"
+      ],
+      "Resource": "arn:aws:cloudformation:ap-southeast-1:aws:transform/Serverless-2016-10-31"
     }
   ]
 }
