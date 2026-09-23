@@ -72,6 +72,7 @@ jobs:
           grep -q "BillingMode: PAY_PER_REQUEST" infra/backend/template.yaml
       - name: Build
         run: |
+          npm install -g esbuild@0.21
           cd backend/src && npm install --no-audit --no-fund && cd ../..
           sam build --template-file infra/backend/template.yaml --build-dir .aws-sam/build
       - name: Deploy dev
