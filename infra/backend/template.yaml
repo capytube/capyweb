@@ -34,12 +34,27 @@ Globals:
       Stage: !Ref Stage
 
 Resources:
-  # NOTE: this stack originally used an API Gateway HTTP API. The capyapp-deployers IAM
-  # group grants no apigateway:* actions at all (not denied - simply absent), so the API
-  # could not be created. Lambda Function URLs are used instead: they are covered by
-  # lambda:* on capyapp-*, cost nothing per request (API Gateway is ~$1.23/million), and
-  # CloudFront fronts them anyway. Rate limiting comes from ReservedConcurrentExecutions.
-  # To switch back, grant apigateway:* on capyapp-* and restore the HttpApi resource.
+  # API layer: HTTP API. Decision capyweb-xfp (2026-09-26) - apigateway was granted to
+  # capyapp-deployers on 2026-09-24 via the capyapp-deploy-apigw policy, so the HTTP API is
+  # deployable again and keeps JWT verification out of the Lambda. Function URLs (the earlier
+  # workaround) cost nothing per request but would have pushed auth into every handler.
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+      DefaultRouteSettings:
+        ThrottlingRateLimit: 10
+        ThrottlingBurstLimit: 20
+      CorsConfiguration:
+        AllowOrigins: !Ref AllowedOrigins
+        AllowMethods: [GET, POST, PUT, DELETE, OPTIONS]
+        AllowHeaders: [authorization, content-type]
+        MaxAge: 600
+      Tags:
+        Project: capyweb
+        Stage: !Ref Stage
+      # Write routes attach a native Cognito JWT authorizer here - zero Lambda invocations
+      # for auth. Blocked on capyweb-w26: the deploy identity has NO cognito-idp grants.
 
   HealthFunction:
     Type: AWS::Serverless::Function
@@ -49,13 +64,8 @@ Resources:
       CodeUri: ../../backend/src/
       Handler: health.handler
       ReservedConcurrentExecutions: 2
-      FunctionUrlConfig:
-        AuthType: NONE
-        Cors:
-          AllowOrigins: !Ref AllowedOrigins
-          AllowMethods: [GET]
-          AllowHeaders: [content-type]
-          MaxAge: 600
+      Events:
+        Get: {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /health, Method: GET}}
 
   HealthLogGroup:
     Type: AWS::Logs::LogGroup
@@ -78,13 +88,9 @@ Resources:
             - Effect: Allow
               Action: [ssm:GetParameter]
               Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/capyapp/capyweb/${Stage}/livepeer-api-key
-      FunctionUrlConfig:
-        AuthType: NONE
-        Cors:
-          AllowOrigins: !Ref AllowedOrigins
-          AllowMethods: [GET]
-          AllowHeaders: [authorization, content-type]
-          MaxAge: 600
+      Events:
+        Stream: {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/stream/{id}", Method: GET}}
+        Viewership: {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/viewership/{id}", Method: GET}}
 
   StreamLogGroup:
     Type: AWS::Logs::LogGroup
@@ -131,11 +137,8 @@ Resources:
         - {Key: Stage, Value: !Ref Stage}
 
 Outputs:
-  HealthUrl:
-    Description: Health check Function URL
-    Value: !GetAtt HealthFunctionUrl.FunctionUrl
-  StreamUrl:
-    Description: Stream/viewership Function URL. Append /stream/<id> or /viewership/<id>.
-    Value: !GetAtt StreamFunctionUrl.FunctionUrl
+  ApiUrl:
+    Description: HTTP API base URL. Routes /health, /stream/{id}, /viewership/{id}.
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
   MainTableName:
     Value: !Ref MainTable

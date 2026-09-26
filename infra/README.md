@@ -5,7 +5,7 @@ Deploy identity is the `capy` AWS profile: IAM user `capyapp-macbook-pro-14`, gr
 ap-southeast-1 and us-east-1. Read `docs/AGENT_LEARNINGS.md` before changing anything here.
 
 - `backend/template.yaml`: SAM stack `capyapp-capyweb-backend-<stage>` in ap-southeast-1.
-  On-demand only. Lambda Function URLs, not API Gateway (see `docs/PLAN.md` section 8).
+  On-demand only. API Gateway HTTP API (see `docs/PLAN.md` section 8).
 - `site/template.yaml` + `site/dns.yaml` + `site/deploy.sh`: site stack
   `capyapp-capyweb-site-<stage>` (private S3 + CloudFront OAC, PriceClass_100) on
   `<stage>.capytube.xyz`, and its DNS stack `capyapp-capyweb-dns-<stage>` in the **autonomous-lab**

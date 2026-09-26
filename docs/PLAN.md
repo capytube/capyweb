@@ -107,14 +107,13 @@ Constraint from Nic: *serverless only — Lambda + DynamoDB — cheap and scalab
   admin.capytube.xyz│  /*        → S3 site bucket (SPA)   │
                     │  /admin/*  → S3 admin bucket (SPA)  │
                     │  /media/*  → S3 media bucket        │
-                    │  /api/*    → Lambda Function URLs   │
+                    │  /api/*    → API Gateway HTTP API   │
                     └──────────────┬──────────────────────┘
                                    │
                     ┌──────────────▼──────────────────────┐
-                    │ Lambda Function URLs                │
-                    │  free per request; rate limited by  │
-                    │  reserved concurrency               │
-                    │  (API Gateway unavailable - see §8) │
+                    │ API Gateway HTTP API                │
+                    │  native Cognito JWT authorizer      │
+                    │  throttle 10 rps / 20 burst         │
                     └──────────────┬──────────────────────┘
                                    │
                     ┌──────────────▼──────────────────────┐
@@ -139,9 +138,8 @@ The existing SAM plan proposes verifying Dynamic wallet JWTs in a custom Lambda 
 Cognito with passwordless email OTP instead, and keeping Dynamic as an *optional linked* identity for
 the CAPYL/Solana features:
 
-- Cognito tokens are cheap to verify either way. (The native HTTP API authorizer was the original
-  argument here; with Function URLs the JWT is verified inside the Lambda instead — still one
-  invocation, where the Dynamic route would have cost two. See `capyweb-xfp`.)
+- HTTP API has a **native** Cognito JWT authorizer — it costs **zero Lambda invocations**. The Dynamic
+  route needs a Lambda authorizer on every request, so Cognito is both cheaper and faster.
 - Cognito Essentials is free to 10,000 MAU. At 100 customers: $0.
 - The Notion research is explicit that wallet-only identity is wrong for a paid, bookable, refundable
   experience: *"Do not make wallet possession the only recovery method for a paid one-hour experience."*
@@ -182,7 +180,7 @@ Assumptions, deliberately generous: 100 customers × 3 sessions × 10 minutes = 
 | SSM standard params, ACM | — | $0.00 |
 | **Total** | | **≈ $2.30/month** |
 
-Revised to **≈ $1.75/month** after the API Gateway line dropped out — see section 8.
+Confirmed at **≈ $2.30/month**: the API Gateway line briefly dropped out on 24 Sep and returned on 26 Sep — see section 8.
 
 That is **4× headroom** under the $10 cap. Scaling to 1,000 customers lands near $8–10, which is where
 the cap starts to bite — so the cap is well-calibrated as an early-warning line.
@@ -344,6 +342,7 @@ Stack `capyapp-capyweb-backend-dev`, ap-southeast-1, `CREATE_COMPLETE`.
 | Lambda | `capyapp-capyweb-dev-health` | reserved concurrency 2, arm64, 256 MB |
 | Lambda | `capyapp-capyweb-dev-stream` | reserved concurrency 2, arm64, 256 MB |
 | DynamoDB | `capyapp-capyweb-dev-main` | `PAY_PER_REQUEST`, ceiling 50 read / 20 write, PITR on |
+| HTTP API | `capyapp-capyweb-backend-dev` | throttle 10 rps / 20 burst, CORS locked to the site origins |
 | Log groups | both functions | `RetentionInDays: 14` |
 | IAM roles | SAM-generated, per function | boundary `capyapp-lambda-boundary` attached |
 | Tags | every resource | `Project=capyweb`, `Stage=dev` |
@@ -351,9 +350,12 @@ Stack `capyapp-capyweb-backend-dev`, ap-southeast-1, `CREATE_COMPLETE`.
 Smoke tests:
 
 ```
-GET  /                    -> 200 {"ok":true,"stage":"dev"}
+GET  /health              -> 200 {"ok":true,"stage":"dev"}
 GET  /stream/x            -> 400 {"error":"bad id"}
 GET  /stream/abcd1234     -> 502 {"error":"livepeer 401"}
+GET  /viewership/abcd1234 -> 502 {"error":"livepeer 401"}
+GET  /nope                -> 404 {"message":"Not Found"}
+OPTIONS /health (CORS)    -> 204
 ```
 
 The 401 is the point: it proves Lambda → SSM SecureString → KMS decrypt → outbound HTTPS
@@ -372,16 +374,16 @@ a well-built, cost-conscious deployer policy and it is the right thing to build 
    `capyweb-cfn-exec` no longer matters. Everything is renamed `capyapp-capyweb-*` and
    deploys directly as the user with no service role.
 
-2. **API Gateway is not available, so the API layer is Lambda Function URLs.** None of the
-   four attached policies mentions `apigateway:*` — absent, not denied. The first deploy
-   rolled back on `AWS::ApiGatewayV2::Api`. Function URLs are covered by `lambda:*` on
-   `capyapp-*`, and they are **free per request** where an HTTP API is about $1.23 per
-   million, so the cost model in section 3 drops from $2.30 to roughly **$1.75/month**.
+2. **API Gateway was briefly unavailable; now restored.** On 24 Sep none of the four attached
+   policies mentioned `apigateway:*` — absent, not denied — so the first deploy rolled back on
+   `AWS::ApiGatewayV2::Api` and the stack shipped with Lambda Function URLs instead. A fifth
+   policy, `capyapp-deploy-apigw`, was attached later that day granting `apigateway:*` on
+   `/apis` and `/apis/*` in both allowed regions.
 
-   What this costs us: per-route throttling (now reserved concurrency instead), the native
-   Cognito JWT authorizer (writes will verify the JWT inside the Lambda), and route
-   templates (`stream.ts` now parses the id off `rawPath`, and works behind either front
-   end). Decision open as `capyweb-xfp`.
+   **Resolved 26 Sep (`capyweb-xfp`): back on the HTTP API** with per-route throttling and, once
+   `capyweb-w26` unblocks, the native Cognito JWT authorizer — which keeps auth out of the
+   Lambda entirely. The cost model in section 3 stands at ~$2.30/month. `stream.ts` reads the
+   id off `rawPath` with a `pathParameters` fallback, so it works behind either front end.
 
 3. **Billing actions are out of reach from here.** This identity is denied `budgets:*` and
    `ce:GetCostAndUsage`, so the tag-scoped $10 budget, the cost-allocation-tag activation,
