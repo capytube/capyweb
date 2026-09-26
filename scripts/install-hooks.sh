@@ -57,7 +57,10 @@ if [ -d "$capyweb_root/backend/src/node_modules" ]; then
   ( cd "$capyweb_root/backend/src" && npm test --silent ) || { echo "backend tests failed"; exit 1; }
 else
   echo "note: backend/src/node_modules missing, skipping tests (npm install there to enable)"
-fi'
+fi
+# The frontend client tests need no dependencies - they stub fetch and run on plain Node.
+node --test --experimental-strip-types "$capyweb_root/src/api/" >/dev/null 2>&1 || {
+  echo "frontend api tests failed"; exit 1; }'
 
 echo
 echo "Hooks live in $HOOKS, appended after any beads block. Verify: scripts/guard-selftest.sh"

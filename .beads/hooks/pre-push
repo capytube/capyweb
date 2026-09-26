@@ -73,4 +73,7 @@ if [ -d "$capyweb_root/backend/src/node_modules" ]; then
 else
   echo "note: backend/src/node_modules missing, skipping tests (npm install there to enable)"
 fi
+# The frontend client tests need no dependencies - they stub fetch and run on plain Node.
+node --test --experimental-strip-types "$capyweb_root/src/api/" >/dev/null 2>&1 || {
+  echo "frontend api tests failed"; exit 1; }
 # --- END CAPYWEB GUARD ---
