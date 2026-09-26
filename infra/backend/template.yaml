@@ -162,7 +162,9 @@ Resources:
       Environment:
         Variables:
           TARGETS: !Sub
-            - "api=${ApiBase}/health|\"ok\":true,site=https://${Stage}.capytube.xyz/"
+            # Each target carries a body marker: a 200 with the wrong content (a parked page,
+            # someone else's default index) must count as unhealthy, not healthy.
+            - "api=${ApiBase}/health|\"ok\":true,site=https://${Stage}.capytube.xyz/|CapyTube"
             - ApiBase: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
       Policies:
         - Statement:

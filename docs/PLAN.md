@@ -173,6 +173,7 @@ Assumptions, deliberately generous: 100 customers × 3 sessions × 10 minutes = 
 | Lambda (arm64, 256 MB, ~80 ms) | 450k invocations, 9k GB-s | $0.24 |
 | DynamoDB on-demand | ~600k RRU, ~30k WRU | $0.24 |
 | CloudWatch Logs (14-day retention) | ~0.45 GB ingest | $0.26 |
+| CloudWatch custom metrics + alarms (synthetic check) | 4 metrics, 4 alarms | $0.00 (within the 10/10 free allowance; ~$1.29 at list) |
 | S3 storage | 20 GB media | $0.50 |
 | CloudFront | 120 GB egress | $0.00 (1 TB/mo always-free tier) |
 | Route 53 hosted zone | 1 zone (AL account) | $0.50 |
@@ -184,6 +185,13 @@ Confirmed at **≈ $2.30/month**: the API Gateway line briefly dropped out on 24
 
 That is **4× headroom** under the $10 cap. Scaling to 1,000 customers lands near $8–10, which is where
 the cap starts to bite — so the cap is well-calibrated as an early-warning line.
+
+**The CloudFront row is the load-bearing assumption in this table.** 120 GB of egress is free only
+if this account's free tier includes the 1 TB/month allowance; if it does not, that line is about
+$14/month on its own — more than the whole cap. Everything else in the table is small enough that
+being wrong about it barely matters; this one is not. The `capyapp-capyweb-dev-cloudfront-egress`
+alarm exists precisely so the budget does not rest on an unverified assumption. Confirming the
+account's actual free-tier status needs billing access (`capyweb-0v3`).
 
 ### The five ways this budget actually gets blown
 

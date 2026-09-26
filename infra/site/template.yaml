@@ -58,13 +58,22 @@ Resources:
           # answers 403 (ListBucket is denied, so it cannot say 404). Serve index.html with
           # 200 and let the client router resolve the path - answering 404 here breaks every
           # deep link and every shared URL.
+          # ErrorCachingMinTTL is set for completeness but does NOT govern here: because the
+          # response is rewritten to 200, CloudFront caches it like any success, using
+          # index.html's own Cache-Control. deploy.sh uploads index.html as no-cache for
+          # exactly this reason - otherwise a missing path would be pinned to HTML for 24h.
           - {ErrorCode: 403, ResponseCode: 200, ResponsePagePath: /index.html, ErrorCachingMinTTL: 10}
           - {ErrorCode: 404, ResponseCode: 200, ResponsePagePath: /index.html, ErrorCachingMinTTL: 10}
           # Tradeoff: a genuinely missing asset (e.g. /assets/stale.js after a deploy) also
-          # returns index.html with 200, which surfaces in the browser as
-          # "Unexpected token '<'" rather than a 404. That is the usual SPA bargain. If it
-          # becomes a nuisance, add a second cache behaviour for /assets/* with no custom
-          # error response - these responses are distribution-wide, not per-path.
+          # returns index.html with 200, surfacing as "Unexpected token '<'" rather than a
+          # 404. Custom error responses are DISTRIBUTION-wide - there is no per-behaviour
+          # override - so this cannot be fixed with an /assets/* cache behaviour. The sharp
+          # edge is blunted by index.html being no-cache (above), so a stale asset URL
+          # recovers on the next request rather than being pinned for a day. A real 404 for
+          # assets would need a viewer-response CloudFront Function, which is not worth it
+          # until it actually bites.
+          # Also note: every unknown path now returns 200 with the same shell, i.e. soft-404s.
+          # Harmless on dev; revisit for crawlers at the production cutover (capyweb-1w5).
 Outputs:
   Url: {Value: !Sub "https://${DomainName}/"}
   Bucket: {Value: !Ref SiteBucket}

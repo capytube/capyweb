@@ -44,12 +44,29 @@ aws cloudformation deploy --profile capytube-dns --stack-name capyapp-capyweb-dn
   --template-file infra/site/dns.yaml --no-fail-on-empty-changeset \
   --parameter-overrides DomainName=$DOMAIN CdnDomain=$CDN
 
-# 4. content
-aws s3 sync "$SRC/" "s3://$BUCKET/" --delete --exclude ".DS_Store"
+# 4. content, uploaded with explicit Cache-Control.
+# This matters more than it looks. The SPA fallback serves index.html with status 200, so
+# CloudFront caches it under the MISSING path's URL according to that object's cache headers -
+# ErrorCachingMinTTL does not apply to a 200. Without no-cache on index.html, a stale asset URL
+# would serve HTML for the full default TTL (24h), long after a redeploy.
+aws s3 sync "$SRC/" "s3://$BUCKET/" --delete --exclude ".DS_Store" --exclude "index.html" \
+  --exclude "assets/*" --cache-control "public,max-age=300"
+aws s3 sync "$SRC/assets/" "s3://$BUCKET/assets/" --delete --exclude ".DS_Store" \
+  --cache-control "public,max-age=86400"
+aws s3 cp "$SRC/index.html" "s3://$BUCKET/index.html" \
+  --cache-control "no-cache,must-revalidate" --content-type "text/html; charset=utf-8"
+
+# `s3 sync` compares size and mtime, not metadata, so an UNCHANGED file keeps whatever
+# Cache-Control it was uploaded with. Changing the policy above therefore has no effect on
+# files that did not change - re-stamp them explicitly. Cheap: these are small and few.
+aws s3 cp "s3://$BUCKET/" "s3://$BUCKET/" --recursive --exclude "index.html" --exclude "assets/*" \
+  --metadata-directive REPLACE --cache-control "public,max-age=300" >/dev/null
+aws s3 cp "s3://$BUCKET/assets/" "s3://$BUCKET/assets/" --recursive \
+  --metadata-directive REPLACE --cache-control "public,max-age=86400" >/dev/null
 aws cloudfront create-invalidation --distribution-id "$DIST" --paths '/*' --query Invalidation.Id --output text
 echo "live: https://$DOMAIN/"
 
-# 4. CloudFront egress alarm. us-east-1 is not a choice: CloudFront publishes its metrics only
+# 5. CloudFront egress alarm. us-east-1 is not a choice: CloudFront publishes its metrics only
 # there, whatever region the distribution serves from.
 aws cloudformation deploy --stack-name capyapp-capyweb-alarms-$STAGE --region us-east-1 \
   --template-file infra/site/alarms-use1.yaml --no-fail-on-empty-changeset \
