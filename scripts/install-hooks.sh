@@ -46,6 +46,13 @@ install_hook() {
 install_hook pre-commit '"$capyweb_root/scripts/guard.sh" --quiet || exit 1'
 
 install_hook pre-push '"$capyweb_root/scripts/guard.sh" --quiet || exit 1
+# guard.sh only sees the working tree. This catches a secret that was committed and then
+# deleted - which is how all eight secrets already in this history got there. ~1s.
+"$capyweb_root/scripts/scan-history.py" --known-ok >/dev/null 2>&1 || {
+  echo "a secret not recorded in scripts/history-secrets-known.txt is in the history:"
+  "$capyweb_root/scripts/scan-history.py" --known-ok 2>&1 | grep "\[NEW" || true
+  exit 1
+}
 if [ -d "$capyweb_root/backend/src/node_modules" ]; then
   ( cd "$capyweb_root/backend/src" && npm test --silent ) || { echo "backend tests failed"; exit 1; }
 else

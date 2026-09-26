@@ -59,3 +59,10 @@ Read this before each work session on capyweb. Add a line whenever something fai
 - `core.hooksPath` is set to `.beads/hooks` in this repo, so hooks must be installed there, not `.git/hooks`. The installer preserves and chains any hook it did not write.
 - Pre-existing violations go in `scripts/guard-baseline.txt` with an issue id. A guard that fails on day one for legacy code gets switched off.
 - Two real traps the guard caught on first run: `package.json` had `npx tsc --noEmit` and `mockServer.sh` had `npx ampx` — without `--no-install`, npx downloads and executes whatever is published under that name. Five frontend files stream video straight from S3, bypassing CloudFront's free 1TB/month egress tier (capyweb-c24, baselined).
+
+## History secrets (2026-09-26, capyweb-py9)
+- `scripts/guard.sh` sees the WORKING TREE only. A secret that was committed and later deleted passes every check it makes — which is exactly how all eight secrets in this repo's history got there.
+- `scripts/scan-history.py` scans every unique blob ever committed (2,122 blobs in ~0.8s, by listing `git rev-list --objects --all` and streaming through one `git cat-file --batch`, so each blob is read once rather than once per commit). Wired into pre-push as `--known-ok`.
+- **It found 8, where hand-searching found 4**: six AppSync API keys (all dead — the APIs are deleted, every endpoint NXDOMAIN) and both Livepeer keys (live and unrotated, `capyweb-962`, across three files).
+- Known findings live in `scripts/history-secrets-known.txt` as REDACTED identifiers with rotation status. Never put a full secret there. A new, unrecorded finding fails the push.
+- The name-vs-secret heuristic is shared with `guard.sh`: a literal of only `[A-Za-z0-9_]` that contains an underscore is an identifier (`GOOGLE_CLIENT_SECRET`), not a secret; real keys are hex, base64 or hyphenated UUIDs.
