@@ -2,6 +2,13 @@
   "name": "capyweb-backend",
   "private": true,
   "type": "module",
-  "dependencies": { "@aws-sdk/client-ssm": "^3.600.0" },
-  "devDependencies": { "esbuild": "^0.21.0" }
+  "dependencies": {
+    "@aws-sdk/client-ssm": "^3.600.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.0"
+  },
+  "scripts": {
+    "test": "node --test --experimental-strip-types lib/"
+  }
 }
