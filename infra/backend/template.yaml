@@ -100,6 +100,42 @@ Resources:
       Tags:
         - {Key: Project, Value: capyweb}
 
+  # Public catalog reads (capyweb-qu7). No authorizer: these are the highest-traffic routes
+  # and must not pay for auth. Responses carry s-maxage so CloudFront absorbs the repeats.
+  CatalogFunction:
+    Type: AWS::Serverless::Function
+    Metadata: {BuildMethod: esbuild, BuildProperties: {EntryPoints: [catalog.ts], Target: es2022, Minify: true, Format: esm, OutExtension: [".js=.mjs"], External: ["@aws-sdk/*"]}}
+    Properties:
+      FunctionName: !Sub capyapp-capyweb-${Stage}-catalog
+      CodeUri: ../../backend/src/
+      Handler: catalog.handler
+      ReservedConcurrentExecutions: 5
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:Query]
+              Resource:
+                - !GetAtt MainTable.Arn
+                - !Sub "${MainTable.Arn}/index/*"
+      Events:
+        ListCapybaras:    {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /capybaras, Method: GET}}
+        GetCapybara:      {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/capybaras/{id}", Method: GET}}
+        ListInteractions: {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/capybaras/{id}/interactions", Method: GET}}
+        ListStreams:      {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /streams, Method: GET}}
+        GetStreamItem:    {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}", Method: GET}}
+        ListNfts:         {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /nfts, Method: GET}}
+        GetNft:           {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/nfts/{id}", Method: GET}}
+        ListOffers:       {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/nfts/{id}/offers", Method: GET}}
+        ListActivity:     {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/nfts/{id}/activity", Method: GET}}
+
+  CatalogLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/capyapp-capyweb-${Stage}-catalog
+      RetentionInDays: 14
+      Tags:
+        - {Key: Project, Value: capyweb}
+
   # Single table. On-demand with a hard ceiling: past it, requests throttle instead of billing.
   # PK/SK plus two overloaded GSIs cover the 11 former Amplify models and the robot/slot types.
   MainTable:
@@ -138,7 +174,7 @@ Resources:
 
 Outputs:
   ApiUrl:
-    Description: HTTP API base URL. Routes /health, /stream/{id}, /viewership/{id}.
+    Description: HTTP API base URL. Catalog routes /capybaras, /streams, /nfts (+ /{id} and sub-resources).
     Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
   MainTableName:
     Value: !Ref MainTable
