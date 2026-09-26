@@ -17,24 +17,40 @@ export const TABLE = process.env.TABLE_MAIN ?? "";
 const INTERNAL = new Set(["PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK", "expiresAt"]);
 
 /**
- * Playback locators. These are how you actually WATCH a stream, so on a private (paid) stream
- * they are the paywall: anyone holding the Livepeer playback id or the S3 video URL can watch
- * without paying. The public catalog serves metadata only - a client obtains playback through
- * GET /stream/{id}, which resolves it server-side and can be gated.
+ * Playback locators: how you actually WATCH a stream. On a private (paid) stream these are the
+ * paywall - anyone holding the Livepeer playback id or the video URL can watch without paying.
+ * The public catalog serves metadata only; playback is resolved by GET /stream/{id}.
+ *
+ * Matched by SHAPE, not by an exact list. Naming two fields only protects those two:
+ * `playback_id`, `hls_url`, `m3u8_url` or `video_url` would sail straight through.
  */
-const PLAYBACK = new Set(["streaming_address", "s3_video_address"]);
+const PLAYBACK_NAME =
+  /(playback|hls|m3u8|manifest|streaming_address|s3_video|(stream|streaming|video|media)_?(url|uri|address|src))/i;
 
 /**
- * Defence in depth for fields nobody has added yet: anything whose NAME ends in a credential
- * word never leaves this process, whatever entity carries it. Anchored at the end on purpose -
- * matching anywhere would also strip honest fields like `token_count`.
- * Applies to top-level attributes, which is where these fields live; nested maps such as an
- * NFT's `properties[].key` are domain data and are left alone.
+ * Anything whose name reads like a credential never leaves this process, whatever entity
+ * carries it. Underscore and camelCase boundaries both count, so `access_token` and
+ * `accessToken` are treated alike. Anchored at the END of the name on purpose: matching
+ * anywhere would also strip honest fields such as `token_count`.
  */
-const SECRET_NAME = /(^|_)((api|private|access|secret)_?key|secret|token|password|passwd|credentials?|signature)$/i;
+const SECRET_WORD =
+  "(secret|token|password|passwd|passphrase|credentials?|signature" +
+  "|(api|private|access|secret|client|session|auth)_?(key|token|secret))";
+const SECRET_NAME = new RegExp(`(^|_)${SECRET_WORD}(_?hash)?$`, "i");
 
-const isHidden = (name: string): boolean =>
-  INTERNAL.has(name) || PLAYBACK.has(name) || SECRET_NAME.test(name);
+/** Split camelCase into underscore segments so `accessToken` reads as `access_token`. */
+const normaliseName = (name: string): string =>
+  name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+
+/**
+ * Applies to top-level attributes, which is where these fields live. Nested maps such as an
+ * NFT's `properties[].key` are domain data and are deliberately left alone.
+ */
+const isHidden = (name: string): boolean => {
+  if (INTERNAL.has(name)) return true;
+  const n = normaliseName(name);
+  return PLAYBACK_NAME.test(n) || SECRET_NAME.test(n);
+};
 
 export type Item = Record<string, unknown>;
 

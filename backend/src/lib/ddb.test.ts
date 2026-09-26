@@ -144,3 +144,34 @@ test("credential-shaped field names are stripped whatever entity carries them", 
   assert.deepEqual(out, { id: "x", name: "kept", token_count: 5 },
     "only genuine domain fields survive; token_count is a count, not a token");
 });
+
+test("playback locators are matched by shape, not by a list of two names", () => {
+  // An enumeration of streaming_address/s3_video_address protects only those two. A writer
+  // adding any of these would have leaked the paywall straight through.
+  const item: Record<string, unknown> = { id: "s1", title: "keep me", access_type: "private" };
+  const leaky = [
+    "streaming_address", "s3_video_address", "playback_id", "playbackId", "playback_url",
+    "hls_url", "hlsUrl", "m3u8_url", "manifest_url", "video_url", "videoUrl",
+    "stream_url", "streamUri", "media_src", "streaming_address2",
+  ];
+  for (const f of leaky) item[f] = "LEAK";
+  const out = clean(item)!;
+  for (const f of leaky) assert.ok(!(f in out), `${f} must be stripped`);
+  assert.deepEqual(out, { id: "s1", title: "keep me", access_type: "private" });
+});
+
+test("camelCase credential names are stripped like snake_case ones", () => {
+  const out = clean({
+    id: "u1",
+    accessToken: "a", access_token: "b",
+    clientSecret: "c", client_secret: "d",
+    livepeerApiKey: "e", livepeer_api_key: "f",
+    sessionToken: "g", password_hash: "h", passphrase: "i",
+    // must survive: these are domain fields, not credentials
+    totalWatchTime: 10, token_count: 5, wallet_address: "0xabc", ratingCounts: { capylove: 1 },
+  })!;
+  assert.deepEqual(out, {
+    id: "u1", totalWatchTime: 10, token_count: 5, wallet_address: "0xabc",
+    ratingCounts: { capylove: 1 },
+  });
+});

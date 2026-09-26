@@ -45,6 +45,17 @@ Resources:
       DefaultRouteSettings:
         ThrottlingRateLimit: 10
         ThrottlingBurstLimit: 20
+      # /stream and /viewership resolve a playback locator from an id. Until the Cognito
+      # authorizer lands (capyweb-w26) they are unauthenticated capability endpoints, so the
+      # only thing standing between a guessed id and a paid stream is how fast ids can be
+      # tried. Throttle them hard and log them. Tracked as capyweb-s6d.
+      RouteSettings:
+        "GET /stream/{id}":
+          ThrottlingRateLimit: 2
+          ThrottlingBurstLimit: 5
+        "GET /viewership/{id}":
+          ThrottlingRateLimit: 2
+          ThrottlingBurstLimit: 5
       CorsConfiguration:
         AllowOrigins: !Ref AllowedOrigins
         AllowMethods: [GET, POST, PUT, DELETE, OPTIONS]
