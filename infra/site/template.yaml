@@ -54,7 +54,17 @@ Resources:
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6            # Managed-CachingOptimized
           ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03  # Managed-SecurityHeadersPolicy
         CustomErrorResponses:
-          - {ErrorCode: 403, ResponseCode: 404, ResponsePagePath: /index.html, ErrorCachingMinTTL: 10}
+          # SPA fallback: a deep link like /watch is not an object in the bucket, so S3+OAC
+          # answers 403 (ListBucket is denied, so it cannot say 404). Serve index.html with
+          # 200 and let the client router resolve the path - answering 404 here breaks every
+          # deep link and every shared URL.
+          - {ErrorCode: 403, ResponseCode: 200, ResponsePagePath: /index.html, ErrorCachingMinTTL: 10}
+          - {ErrorCode: 404, ResponseCode: 200, ResponsePagePath: /index.html, ErrorCachingMinTTL: 10}
+          # Tradeoff: a genuinely missing asset (e.g. /assets/stale.js after a deploy) also
+          # returns index.html with 200, which surfaces in the browser as
+          # "Unexpected token '<'" rather than a 404. That is the usual SPA bargain. If it
+          # becomes a nuisance, add a second cache behaviour for /assets/* with no custom
+          # error response - these responses are distribution-wide, not per-path.
 Outputs:
   Url: {Value: !Sub "https://${DomainName}/"}
   Bucket: {Value: !Ref SiteBucket}
