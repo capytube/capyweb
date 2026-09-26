@@ -16,13 +16,33 @@ export const TABLE = process.env.TABLE_MAIN ?? "";
 /** Attributes that describe where an item lives, not what it is. Never sent to a client. */
 const INTERNAL = new Set(["PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK", "expiresAt"]);
 
+/**
+ * Playback locators. These are how you actually WATCH a stream, so on a private (paid) stream
+ * they are the paywall: anyone holding the Livepeer playback id or the S3 video URL can watch
+ * without paying. The public catalog serves metadata only - a client obtains playback through
+ * GET /stream/{id}, which resolves it server-side and can be gated.
+ */
+const PLAYBACK = new Set(["streaming_address", "s3_video_address"]);
+
+/**
+ * Defence in depth for fields nobody has added yet: anything whose NAME ends in a credential
+ * word never leaves this process, whatever entity carries it. Anchored at the end on purpose -
+ * matching anywhere would also strip honest fields like `token_count`.
+ * Applies to top-level attributes, which is where these fields live; nested maps such as an
+ * NFT's `properties[].key` are domain data and are left alone.
+ */
+const SECRET_NAME = /(^|_)((api|private|access|secret)_?key|secret|token|password|passwd|credentials?|signature)$/i;
+
+const isHidden = (name: string): boolean =>
+  INTERNAL.has(name) || PLAYBACK.has(name) || SECRET_NAME.test(name);
+
 export type Item = Record<string, unknown>;
 
 /** Strip key plumbing so responses expose the domain shape, not the table design. */
 export function clean<T extends Item>(item: T | undefined): Item | undefined {
   if (!item) return undefined;
   const out: Item = {};
-  for (const [k, v] of Object.entries(item)) if (!INTERNAL.has(k)) out[k] = v;
+  for (const [k, v] of Object.entries(item)) if (!isHidden(k)) out[k] = v;
   return out;
 }
 

@@ -96,3 +96,51 @@ test("base-table cursors carry only PK and SK", () => {
   const key = { PK: "NFT#capy-1234", SK: "OFFER#00000000000000000007#offer-2" };
   assert.deepEqual(decodeCursor(encodeCursor(key, ctx)!, ctx), key);
 });
+
+test("playback locators never reach an unauthenticated client", () => {
+  // On a private, paid stream these ARE the paywall: whoever holds the Livepeer playback id
+  // or the S3 video URL can watch without paying. Playback is obtained via GET /stream/{id},
+  // which resolves it server-side and can be gated.
+  const privateStream = {
+    PK: "STREAM#wall-cam",
+    SK: "#META",
+    id: "wall-cam",
+    title: "Climbing wall cam",
+    access_type: "private",
+    price_per_10_sec: 1,
+    streaming_address: "livepeer-playback-id-abc123",
+    s3_video_address: "https://capyapp-media.s3.ap-southeast-1.amazonaws.com/private/wall.mp4",
+  };
+  const out = clean(privateStream)!;
+  assert.ok(!("streaming_address" in out), "Livepeer playback id must not be exposed");
+  assert.ok(!("s3_video_address" in out), "S3 video URL must not be exposed");
+  assert.deepEqual(out, {
+    id: "wall-cam",
+    title: "Climbing wall cam",
+    access_type: "private",
+    price_per_10_sec: 1,
+  });
+});
+
+test("public streams are stripped too - the catalog never serves playback", () => {
+  const out = clean({ id: "main-cam", access_type: "public", streaming_address: "pb-xyz" })!;
+  assert.ok(!("streaming_address" in out));
+});
+
+test("credential-shaped field names are stripped whatever entity carries them", () => {
+  const out = clean({
+    id: "x",
+    api_key: "sk-live-1",
+    apiKey: "sk-live-2",
+    livepeer_token: "t",
+    user_password: "p",
+    aws_secret_access_key: "s",
+    private_key: "pk",
+    signature: "sig",
+    webhook_secret: "ws",
+    name: "kept",
+    token_count: 5,
+  })!;
+  assert.deepEqual(out, { id: "x", name: "kept", token_count: 5 },
+    "only genuine domain fields survive; token_count is a count, not a token");
+});
