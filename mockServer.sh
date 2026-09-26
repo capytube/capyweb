@@ -1,1 +1,1 @@
-npx ampx sandbox --profile al
+npx --no-install ampx sandbox --profile al

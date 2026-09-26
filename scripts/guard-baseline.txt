@@ -1,0 +1,12 @@
+# Known violations that predate the guard, each with the issue that clears it.
+# Format: <file>:<line> <issue> <why>
+# Nothing goes in here without an issue id.
+
+# Frontend still streams video straight from S3, bypassing CloudFront's free 1TB/month
+# egress tier. Cleared by capyweb-2gx (media via CloudFront /media/*), which is on hold
+# until the S3 object-ARN grant lands (capyweb-083). Tracked as capyweb-c24.
+src/utils/mockData.ts:66 capyweb-c24 direct S3 video URL
+src/utils/mockData.ts:75 capyweb-c24 direct S3 video URL
+src/utils/mockData.ts:84 capyweb-c24 direct S3 video URL
+src/components/RobotExperience/RobotExperience.tsx:8 capyweb-c24 direct S3 video URL
+src/components/Play/index.tsx:160 capyweb-c24 direct S3 video URL
