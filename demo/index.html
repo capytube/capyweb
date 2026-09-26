@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CapyTube — watch Magnus</title>
+    <meta
+      name="description"
+      content="A clickable CapyTube demo. Watch Magnus’s reel, vote on his snack, and spend play coins. Nothing here is real money."
+    />
+    <meta property="og:title" content="CapyTube — watch Magnus" />
+    <meta
+      property="og:description"
+      content="A clickable demo. Watch the reel, vote on a snack, and hang out with Magnus. Play coins only."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="assets/magnus.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#d0e591" />
+    <link rel="icon" href="favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;600;700&family=DynaPuff:wght@500;700&family=Hanalei+Fill&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="topbar">
+      <a class="brand" href="#home" data-go="home" aria-label="CapyTube">
+        <img src="assets/capytube.svg" alt="CapyTube" />
+        <span class="beta">Beta</span>
+      </a>
+      <nav class="nav" aria-label="Demo">
+        <a href="#home" data-go="home" data-nav="home">Home</a>
+        <a href="#watch" data-go="watch" data-nav="watch">Watch</a>
+        <a href="#play" data-go="play" data-nav="play">Play</a>
+        <a href="#shop" data-go="shop" data-nav="shop">Shop</a>
+      </nav>
+      <div class="top-tools">
+        <label class="name-field">
+          <span>Name</span>
+          <input id="display-name" maxlength="16" autocomplete="nickname" placeholder="Friend" />
+        </label>
+        <button class="coin-pill" type="button" id="coin-pill" title="Play coins. Not real money.">
+          <img src="assets/capyCoin.svg" alt="" />
+          <span id="coin-count">40</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="view" data-view="home">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Friend demo · play coins only</p>
+            <h1>Watch Magnus. Then pick his snack.</h1>
+            <p class="lede">
+              CapyTube is a room for Magnus, a very tame capybara from the north of Thailand, plus the café and
+              climbing gym built around him. This page lets you click through the idea: a real reel, a snack vote, and
+              a couple of passes. The coins are not money.
+            </p>
+            <div class="hero-actions">
+              <a class="btn" href="#watch" data-go="watch">Play the reel</a>
+              <a class="btn btn-ghost" href="#play" data-go="play">Vote on a snack</a>
+            </div>
+          </div>
+          <figure class="hero-shot">
+            <img src="assets/gallery1.jpg" alt="Magnus sitting under the climbing wall" />
+            <figcaption>
+              <img src="assets/starringMagnus.jpg" alt="" />
+              <span>
+                <strong>Magnus</strong>
+                Under the wall, taking it easy
+              </span>
+            </figcaption>
+          </figure>
+        </div>
+
+        <section class="band" aria-labelledby="how-title">
+          <h2 id="how-title">How a visit works</h2>
+          <div class="steps">
+            <article>
+              <p class="step-no">1</p>
+              <h3>Watch</h3>
+              <p>The public room plays a saved reel of the capybaras, so the demo works when the cameras are off.</p>
+            </article>
+            <article>
+              <p class="step-no">2</p>
+              <h3>Spend a coin</h3>
+              <p>Votes pick tomorrow’s snack. Bids are for a turn with the little camera car. Five coins a vote.</p>
+            </article>
+            <article>
+              <p class="step-no">3</p>
+              <h3>Keep a pass</h3>
+              <p>The shop is the membership idea: chalk bonus, a longer gym call. Here it only spends play coins.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="cast" aria-labelledby="cast-title">
+          <h2 id="cast-title">
+            <img src="assets/fruit.svg" alt="" />
+            The gang
+            <img src="assets/flower.svg" alt="" />
+          </h2>
+          <div class="cast-grid">
+            <article class="capy-card tilt-left">
+              <img src="assets/magnus.jpg" alt="Magnus eating grass indoors" />
+              <div>
+                <h3>Magnus</h3>
+                <p class="meta">North of Thailand</p>
+                <p>
+                  The soft one. He wants to be in the middle of things, preferably with carrot pudding, a soak, or a
+                  person nearby. The café and the climbing gym are his.
+                </p>
+              </div>
+            </article>
+            <article class="capy-card tilt-right">
+              <img src="assets/elon.jpg" alt="Elon resting in someone’s lap" />
+              <div>
+                <h3>Elon</h3>
+                <p class="meta">South America</p>
+                <p>Fearless and chatty. He will try the high hold, the fence, and whatever is next.</p>
+              </div>
+            </article>
+            <article class="capy-card tilt-left">
+              <img src="assets/einstein.jpg" alt="Einstein standing on a bed" />
+              <div>
+                <h3>Einstein</h3>
+                <p class="meta">South America</p>
+                <p>Shy, and the one making plans. He startles easily, then goes right back to plotting a stroll.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="film" aria-label="Photos">
+          <a href="#watch" data-go="watch">
+            <img src="assets/gallery2.jpg" alt="A capybara being held" />
+            <span>Lap cam</span>
+          </a>
+          <a href="#watch" data-go="watch">
+            <img src="assets/gallery3.jpg" alt="Three capybaras napping on a bed" />
+            <span>Nap pile</span>
+          </a>
+          <a href="#watch" data-go="watch">
+            <img src="assets/gallery1.jpg" alt="Magnus in front of a colorful climbing wall" />
+            <span>Gym cam</span>
+          </a>
+        </section>
+      </section>
+
+      <section class="view" data-view="watch" hidden>
+        <div class="page-intro">
+          <h1>The stream</h1>
+          <p>A saved reel from the public stream, so this still works when the cameras are off.</p>
+        </div>
+        <div class="watch-layout">
+          <div class="stage-wrap">
+            <div class="stage">
+              <video
+                id="reel"
+                poster="assets/gallery1.jpg"
+                playsinline
+                preload="none"
+                src="https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4"
+              ></video>
+              <button class="stage-play" type="button" id="play-reel">
+                <span>Play the reel</span>
+              </button>
+              <div class="stage-badges">
+                <span class="pill">Replay</span>
+                <span class="pill pill-soft" id="reel-status">Tap to start</span>
+              </div>
+              <div class="float-layer" id="float-layer" aria-hidden="true"></div>
+              <p class="stage-toast" id="stage-toast" hidden></p>
+            </div>
+            <div class="tip-row" aria-label="Send a snack">
+              <p>Send a snack</p>
+              <button type="button" data-tip="Apple" data-cost="1">Apple · 1</button>
+              <button type="button" data-tip="Watermelon" data-cost="2">Watermelon · 2</button>
+              <button type="button" data-tip="Carrot pudding" data-cost="3">Carrot pudding · 3</button>
+            </div>
+          </div>
+          <aside class="chat">
+            <header>
+              <h2>Sample room</h2>
+              <p>Your notes stay on this phone. Nobody else sees them.</p>
+            </header>
+            <div class="chat-log" id="chat-log" aria-live="polite"></div>
+            <form class="chat-form" id="chat-form">
+              <label class="sr-only" for="chat-input">Message</label>
+              <input id="chat-input" maxlength="140" placeholder="Say hi to Magnus" />
+              <button class="btn btn-small" type="submit">Send</button>
+            </form>
+            <div class="emoji-row" aria-label="Reactions">
+              <button type="button" data-react="🧡">🧡</button>
+              <button type="button" data-react="🍉">🍉</button>
+              <button type="button" data-react="😮">😮</button>
+              <button type="button" data-react="😴">😴</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" data-view="play" hidden>
+        <div class="page-intro">
+          <h1>Play with the capys</h1>
+          <p>Choose a capybara, vote on a snack, or bid for the camera car.</p>
+        </div>
+        <div class="picker" id="capy-picker" role="listbox" aria-label="Choose a capybara">
+          <button type="button" data-capy="magnus" role="option">
+            <img src="assets/starringMagnus.jpg" alt="" />
+            Magnus
+          </button>
+          <button type="button" data-capy="elon" role="option">
+            <img src="assets/elon.jpg" alt="" />
+            Elon
+          </button>
+          <button type="button" data-capy="einstein" role="option">
+            <img src="assets/einstein.jpg" alt="" />
+            Einstein
+          </button>
+        </div>
+
+        <div class="play-grid">
+          <article class="panel">
+            <header class="panel-head">
+              <h2>Buy capy a snack</h2>
+              <p id="snack-for">Voting for Magnus</p>
+            </header>
+            <p class="rules">Five coins a vote. The winner is what gets served on the next stream.</p>
+            <div class="options" id="snack-options"></div>
+            <form class="custom-snack" id="custom-snack">
+              <label for="custom-snack-input">Or request something else · 20 coins</label>
+              <div>
+                <input id="custom-snack-input" maxlength="40" placeholder="Banana peel, obviously" />
+                <button class="btn btn-small" type="submit">Request</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="panel">
+            <header class="panel-head">
+              <h2>Capy safari</h2>
+              <p>A turn with the camera car</p>
+            </header>
+            <p class="rules">Beat the current bid. You pay the new amount in play coins, and the room shows your name.</p>
+            <p class="bid-now">
+              Current bid
+              <strong id="bid-amount">20</strong>
+              coins
+              <span id="bid-holder">No one yet</span>
+            </p>
+            <form class="bid-form" id="bid-form">
+              <label class="sr-only" for="bid-input">Your bid</label>
+              <input id="bid-input" type="number" min="25" step="5" value="25" />
+              <button class="btn" type="submit">Place bid</button>
+            </form>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" data-view="shop" hidden>
+        <div class="page-intro">
+          <h1>Passes</h1>
+          <p>Membership cards from the shop. A claim only spends play coins.</p>
+        </div>
+        <div class="shop-grid" id="shop-grid"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>CapyTube friend demo. Photos and the reel are from the project. Coins reset in this browser only.</p>
+      <button type="button" id="reset-demo">Reset this demo</button>
+    </footer>
+
+    <nav class="tabbar" aria-label="Demo">
+      <a href="#home" data-go="home" data-nav="home">Home</a>
+      <a href="#watch" data-go="watch" data-nav="watch">Watch</a>
+      <a href="#play" data-go="play" data-nav="play">Play</a>
+      <a href="#shop" data-go="shop" data-nav="shop">Shop</a>
+    </nav>
+
+    <dialog id="note-dialog">
+      <form method="dialog">
+        <h2 id="note-title">Play coins</h2>
+        <p id="note-body">These coins only exist in this demo. They are not CapyCoin and they are not money.</p>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" value="cancel" type="submit">Close</button>
+          <button class="btn" id="note-confirm" value="confirm" type="submit">Add 25 coins</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+    <script src="app.js" defer></script>
+  </body>
+</html>

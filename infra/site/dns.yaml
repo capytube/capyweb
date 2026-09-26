@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: capyweb site DNS - alias records in the capytube.xyz zone. Deployed in autonomous-lab with --profile capytube-dns.
+Parameters:
+  DomainName: {Type: String, Default: dev.capytube.xyz}
+  CdnDomain: {Type: String}
+Resources:
+  Records:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: capytube.xyz.
+      RecordSets:
+        - {Name: !Ref DomainName, Type: A, AliasTarget: {DNSName: !Ref CdnDomain, HostedZoneId: Z2FDTNDATAQYW2}}
+        - {Name: !Ref DomainName, Type: AAAA, AliasTarget: {DNSName: !Ref CdnDomain, HostedZoneId: Z2FDTNDATAQYW2}}
