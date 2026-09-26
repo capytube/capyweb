@@ -53,3 +53,6 @@ amplify_outputs.*.json
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+
+# SAM build output
+.aws-sam/

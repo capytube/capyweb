@@ -20,8 +20,11 @@ const json = (statusCode: number, body: unknown) => ({
 
 type Evt = { rawPath?: string; pathParameters?: { id?: string } };
 
+// Works behind either front end: API Gateway supplies pathParameters from the route
+// template, a Lambda Function URL does not, so fall back to the last path segment.
 export const handler = async (event: Evt) => {
-  const id = event.pathParameters?.id ?? "";
+  const path = event.rawPath ?? "";
+  const id = event.pathParameters?.id ?? path.split("/").filter(Boolean).pop() ?? "";
   if (!/^[a-zA-Z0-9_-]{4,64}$/.test(id)) return json(400, { error: "bad id" });
   const key = await livepeerKey();
   const isViewership = (event.rawPath ?? "").includes("/viewership/");
