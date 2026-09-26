@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: capyweb CloudFront egress alarm. MUST be deployed in us-east-1 - CloudFront
+  publishes its metrics only to that region, whatever region the distribution serves from.
+
+Parameters:
+  Stage: {Type: String, Default: dev}
+  DistributionId: {Type: String}
+  DailyEgressBytesThreshold:
+    Type: Number
+    # CloudFront's always-free tier covers 1 TB of egress a month. The plan's warning line is
+    # 800 GB/month (docs/PLAN.md section 3), which is ~26.7 GB/day. A CloudWatch alarm period
+    # caps at one day, so monthly egress is watched as a daily proxy rather than a true
+    # month-to-date total: cheap, and it fires days before the tier runs out.
+    Default: 26000000000
+    Description: Bytes per day. 26 GB/day is roughly 800 GB/month, the 80% mark of the free tier.
+
+Resources:
+  EgressAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub capyapp-capyweb-${Stage}-cloudfront-egress
+      AlarmDescription: !Sub
+        - "Daily CloudFront egress is over ${T} bytes, about 800 GB/month - the 80% mark of the
+          always-free 1 TB tier. Past 1 TB, egress costs roughly $0.12/GB, which would clear the
+          entire $10/month budget in a day."
+        - T: !Ref DailyEgressBytesThreshold
+      Namespace: AWS/CloudFront
+      MetricName: BytesDownloaded
+      Dimensions:
+        - {Name: DistributionId, Value: !Ref DistributionId}
+        - {Name: Region, Value: Global}
+      Statistic: Sum
+      Period: 86400
+      EvaluationPeriods: 1
+      Threshold: !Ref DailyEgressBytesThreshold
+      ComparisonOperator: GreaterThanThreshold
+      # No egress reported is genuinely fine - it means nobody visited.
+      TreatMissingData: notBreaching
+      # No AlarmActions: the deploy identity has no sns:* grant and CloudWatch can only
+      # notify through SNS. See capyweb-19a.
+
+Outputs:
+  AlarmName: {Value: !Ref EgressAlarm}

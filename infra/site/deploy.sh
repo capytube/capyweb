@@ -48,3 +48,11 @@ aws cloudformation deploy --profile capytube-dns --stack-name capyapp-capyweb-dn
 aws s3 sync "$SRC/" "s3://$BUCKET/" --delete --exclude ".DS_Store"
 aws cloudfront create-invalidation --distribution-id "$DIST" --paths '/*' --query Invalidation.Id --output text
 echo "live: https://$DOMAIN/"
+
+# 4. CloudFront egress alarm. us-east-1 is not a choice: CloudFront publishes its metrics only
+# there, whatever region the distribution serves from.
+aws cloudformation deploy --stack-name capyapp-capyweb-alarms-$STAGE --region us-east-1 \
+  --template-file infra/site/alarms-use1.yaml --no-fail-on-empty-changeset \
+  --tags Project=capyweb Stage=$STAGE capy-scope=capyapp \
+  --parameter-overrides Stage=$STAGE DistributionId="$DIST"
+echo "egress alarm: capyapp-capyweb-$STAGE-cloudfront-egress (us-east-1)"

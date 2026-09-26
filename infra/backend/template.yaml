@@ -147,6 +147,97 @@ Resources:
       Tags:
         - {Key: Project, Value: capyweb}
 
+  # Synthetic check (capyweb-1td). Every 5 minutes: ~8,640 invocations/month, well inside the
+  # Lambda free tier. A CloudWatch Synthetics canary would cost ~$10/month - the whole budget -
+  # and the deploy identity has no synthetics grant anyway.
+  HealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Metadata: {BuildMethod: esbuild, BuildProperties: {EntryPoints: [healthcheck.ts], Target: es2022, Minify: true, Format: esm, OutExtension: [".js=.mjs"], External: ["@aws-sdk/*"]}}
+    Properties:
+      FunctionName: !Sub capyapp-capyweb-${Stage}-healthcheck
+      CodeUri: ../../backend/src/
+      Handler: healthcheck.handler
+      ReservedConcurrentExecutions: 2
+      Timeout: 30
+      Environment:
+        Variables:
+          TARGETS: !Sub
+            - "api=${ApiBase}/health|\"ok\":true,site=https://${Stage}.capytube.xyz/"
+            - ApiBase: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [cloudwatch:PutMetricData]
+              Resource: "*"
+              Condition: {StringEquals: {"cloudwatch:namespace": "capyweb/Synthetic"}}
+      Events:
+        # Classic Schedule (an EventBridge RULE), not ScheduleV2. ScheduleV2 uses EventBridge
+        # Scheduler, which needs its own IAM execution role - and the deploy identity may only
+        # create roles carrying the capyapp-lambda-boundary, which SAM does not attach to that
+        # generated role. A rule invokes Lambda through a resource policy and needs no role.
+        Schedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+
+  HealthCheckLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/capyapp-capyweb-${Stage}-healthcheck
+      RetentionInDays: 14
+      Tags:
+        - {Key: Project, Value: capyweb}
+
+  # NOTE: these alarms have no AlarmActions. The deploy identity has no sns:* grant, and a
+  # CloudWatch alarm can only notify through SNS, so they change state and show in the console
+  # but nobody is paged. Tracked as capyweb-19a.
+  ApiDownAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub capyapp-capyweb-${Stage}-api-down
+      AlarmDescription: The synthetic check could not get a healthy /health for 15 minutes.
+      Namespace: capyweb/Synthetic
+      MetricName: Healthy
+      Dimensions: [{Name: Target, Value: api}]
+      Statistic: Minimum
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+
+  SiteDownAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub capyapp-capyweb-${Stage}-site-down
+      AlarmDescription: The synthetic check could not load the site for 15 minutes.
+      Namespace: capyweb/Synthetic
+      MetricName: Healthy
+      Dimensions: [{Name: Target, Value: site}]
+      Statistic: Minimum
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+
+  # The table has a hard OnDemandThroughput ceiling, so a burst throttles rather than bills.
+  # That is the intended behaviour, but it should never be silent.
+  TableThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub capyapp-capyweb-${Stage}-table-throttled
+      AlarmDescription: DynamoDB is throttling - the on-demand ceiling is being hit.
+      Namespace: AWS/DynamoDB
+      MetricName: ThrottledRequests
+      Dimensions: [{Name: TableName, Value: !Ref MainTable}]
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
   # Single table. On-demand with a hard ceiling: past it, requests throttle instead of billing.
   # PK/SK plus two overloaded GSIs cover the 11 former Amplify models and the robot/slot types.
   MainTable:
