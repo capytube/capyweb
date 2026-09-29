@@ -125,11 +125,10 @@ export async function check({ open, browser, BASE, FAKE_WEBMCP }) {
   assert.equal(voteInteractions.length, 1);
   assert.deepEqual(sortedKeys(voteInteractions[0]), [
     'capybara_id',
-    'closing_time',
     'custom_request_cost',
     'id',
     'options',
-    'status',
+    'session_date',
     'title',
     'type',
     'vote_cost',
@@ -140,11 +139,10 @@ export async function check({ open, browser, BASE, FAKE_WEBMCP }) {
   assert.equal(bidInteractions.length, 1);
   assert.deepEqual(sortedKeys(bidInteractions[0]), [
     'capybara_id',
-    'closing_time',
     'current_bid',
     'id',
     'min_next_bid',
-    'status',
+    'session_date',
     'title',
     'type',
   ]);

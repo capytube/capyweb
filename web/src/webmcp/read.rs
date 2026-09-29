@@ -83,8 +83,7 @@ fn interaction_row(interaction: &Interaction) -> Value {
         json!(interaction_type_name(interaction.interaction_type)),
     );
     row.insert("title".into(), json!(interaction.title));
-    row.insert("status".into(), json!("open"));
-    add_opt(&mut row, "closing_time", interaction.session_date.clone());
+    add_opt(&mut row, "session_date", interaction.session_date.clone());
     match interaction.interaction_type {
         InteractionType::Vote => {
             let options: Vec<_> = interaction
@@ -112,10 +111,10 @@ fn interaction_row(interaction: &Interaction) -> Value {
         }
         InteractionType::Bid => {
             add_opt(&mut row, "current_bid", interaction.current_bid);
-            add_opt(
-                &mut row,
-                "min_next_bid",
-                interaction.current_bid.map(|bid| bid.saturating_add(1)),
+            // What the Play page asks for: one more than the current bid, or 1 with none.
+            row.insert(
+                "min_next_bid".into(),
+                json!(interaction.current_bid.unwrap_or(0).saturating_add(1)),
             );
         }
         InteractionType::Unknown => {}
