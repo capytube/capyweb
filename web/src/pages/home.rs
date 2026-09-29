@@ -50,7 +50,7 @@ pub fn Home() -> impl IntoView {
             // Three card-sized places while the list loads, so nothing below jumps when it comes.
             <Suspense fallback=|| view! {
                 <p class="sr-only" role="status">"Loading cameras…"</p>
-                <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
+                <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
                     <li class="card cam-slot"></li><li class="card cam-slot"></li><li class="card cam-slot"></li>
                 </ul>
             }>
@@ -60,7 +60,7 @@ pub fn Home() -> impl IntoView {
                         <p role="status">"No cameras are available right now."</p>
                     }.into_any(),
                     Ok(page) => view! {
-                        <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="stream-list">
+                        <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="stream-list">
                             {page.items.into_iter().map(|s| {
                                 let line = if s.is_recording() {
                                     "Recorded"
@@ -72,7 +72,7 @@ pub fn Home() -> impl IntoView {
                                 view! {
                                     <li class="card">
                                         <A href=watch_href(&s) attr:class="block no-underline">
-                                            <div class="flex items-center justify-between gap-2">
+                                            <div class="flex flex-wrap items-center justify-between gap-2">
                                                 <span class="font-dynapuff text-lg">{s.title.clone()}</span>
                                                 {access_badge(&s)}
                                             </div>
