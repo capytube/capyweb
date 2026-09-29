@@ -1,0 +1,64 @@
+.play-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-block: 0.7rem 1.2rem;
+}
+
+.play-picker-btn {
+  border: 2px solid var(--choco-brown);
+  border-radius: 999px;
+  background: white;
+  color: var(--choco-brown);
+  box-shadow: var(--shadow);
+  font-family: var(--font-ui);
+  padding: 0.45rem 1rem;
+}
+
+.play-picker-btn.active {
+  background: var(--persimmon);
+}
+
+.play-stack {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.play-card h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.play-card h3 {
+  margin: 0.8rem 0 0.3rem;
+  font-family: var(--font-ui);
+  font-size: 1.1rem;
+  color: var(--choco-brown);
+}
+
+.play-card p {
+  margin: 0.35rem 0;
+}
+
+.play-cost {
+  font-family: var(--font-ui);
+  color: var(--choco-brown);
+}
+
+.play-options,
+.play-rules {
+  list-style: disc;
+  padding-left: 1.2rem;
+  margin: 0.6rem 0 0;
+}
+
+.play-options li + li,
+.play-rules li + li {
+  margin-top: 0.35rem;
+}
+
+.profile-pitch h2 {
+  margin-bottom: 0.5rem;
+}
+
+

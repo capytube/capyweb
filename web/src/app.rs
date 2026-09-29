@@ -12,7 +12,8 @@ use crate::pages::coming::ComingSoon;
 use crate::pages::home::Home;
 use crate::pages::not_found::NotFound;
 use crate::pages::{
-    about::About, deletion::Deletion, privacy::Privacy, robot::Robot, terms::Terms,
+    about::About, deletion::Deletion, play::Play, privacy::Privacy, profile::ProfileSignedOut,
+    robot::Robot, terms::Terms,
 };
 use crate::routes::Page;
 use crate::state::{use_toasts, Session, Toasts};
@@ -36,14 +37,10 @@ pub fn App() -> impl IntoView {
                         <ComingSoon title="Watch" blurb="Pick a capybara and a camera. This page is being rebuilt."/>
                     }/>
                     <Route path=path!("/stream/:capyId") view=crate::pages::watch_room::WatchRoom/>
-                    <Route path=path!("/play") view=|| view! {
-                        <ComingSoon title="Play" blurb="Snack votes and bids, paid in play coins. This page is being rebuilt."/>
-                    }/>
+                    <Route path=path!("/play") view=Play/>
                     <Route path=path!("/shop") view=crate::pages::shop::Shop/>
                     <Route path=path!("/shop/:id") view=crate::pages::shop::PassDetails/>
-                    <Route path=path!("/profile") view=|| view! {
-                        <ComingSoon title="Your account" blurb="Sign-in is on its way. Until then you can watch without an account."/>
-                    }/>
+                    <Route path=path!("/profile") view=ProfileSignedOut/>
                     <Route path=path!("/robot") view=Robot/>
                     <Route path=path!("/about-us") view=About/>
                     <Route path=path!("/privacy-policy") view=Privacy/>

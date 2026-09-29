@@ -8,6 +8,7 @@ use leptos::prelude::*;
 pub struct Session {
     /// A mirror of `auth::use_auth().signed_in()`, written only by `auth.rs`.
     pub signed_in: RwSignal<bool>,
+    pub writes_enabled: RwSignal<bool>,
     /// Play-coin balance from the server ledger. `None` until known.
     pub coins: RwSignal<Option<u64>>,
 }
@@ -16,6 +17,7 @@ impl Default for Session {
     fn default() -> Self {
         Self {
             signed_in: RwSignal::new(false),
+            writes_enabled: RwSignal::new(false),
             coins: RwSignal::new(None),
         }
     }

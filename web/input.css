@@ -5,6 +5,7 @@
 @import "tailwindcss/components";
 @import "./style/chrome.css";
 @import "./style/home.css";
+@import "./style/play-profile.css";
 @import "./style/shop.css";
 @import "./style/pages.css";
 @import "./style/player.css";
