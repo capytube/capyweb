@@ -80,3 +80,9 @@ Read this before each work session on capyweb. Add a line whenever something fai
 - A fresh clone has NO active hooks: `core.hooksPath` is per-clone config, not in git. Run `git config core.hooksPath .beads/hooks` (the tracked hooks already contain both the beads and guard blocks), then `scripts/guard.sh`.
 - The beads DB never left the lent MacBook Pro: origin has no `refs/dolt/data` and no `issues.jsonl` was ever committed. The repo is public, so do not push Dolt data to it; use a private remote.
 - `backend/src/node_modules` is needed for the pre-push backend tests and the behavioural playback-locator guard; both skip silently without it (`npm ci --ignore-scripts` there).
+
+## Ledger and write API (2026-09-29, lane 4, capyweb-3ge / capyweb-7hj)
+- Point the AWS SDK at DynamoDB Local with `AWS_ENDPOINT_URL_DYNAMODB` (SDK v3 reads it), set in the test process BEFORE `lib/ddb.ts` is imported: it builds its client at import time. Pin `AWS_ACCESS_KEY_ID=local`, `AWS_CONFIG_FILE=/dev/null` and `AWS_SHARED_CREDENTIALS_FILE=/dev/null` too, or the SDK's credential chain reads `~/.aws`.
+- DynamoDB Local serialises transactions: 20 concurrent debits on one balance gave 10 successes and 10 `ConditionalCheckFailed`, never a `TransactionConflict`. Real DynamoDB does return conflicts; that retry path is only unit-tested.
+- `node --experimental-strip-types` refuses TypeScript parameter properties (`constructor(readonly x)`); declare the field instead.
+- Colima's socket is not the default docker socket: `export DOCKER_HOST=unix://$HOME/.colima/default/docker.sock`.

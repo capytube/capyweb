@@ -29,12 +29,41 @@ sam deploy --template-file .aws-sam/build/template.yaml \
   --no-confirm-changeset --no-fail-on-empty-changeset
 ```
 
+The backend template now takes `CognitoIssuer` and `CognitoAudience` (the authorizer for the
+signed-in routes). Lane 3 (`feat/wasm-auth`) replaces that stanza with the real pool at merge; until
+then a deploy must pass both in `--parameter-overrides`.
+
 Requires `esbuild` on PATH (`npm i -g --allow-scripts=esbuild esbuild@0.21`) and
 `aws-sam-cli` (`brew install aws-sam-cli`).
 
 Do **not** pass `--role-arn`: this identity deploys as itself. Artifacts can go under the shared
 SAM bucket's `capyapp-*` prefix, as above, or into any bucket you create named `capyapp-*`
 (`aws s3 mb s3://capyapp-...` works).
+
+## Ledger integration tests (DynamoDB Local)
+
+The unit suite (`cd backend/src && npm test`) needs no network. The ledger and write-API suite,
+`backend/src/ledger.integration.test.ts`, runs only when `DDB_LOCAL_ENDPOINT` is set, against
+DynamoDB Local in Docker, bound to loopback. It sets dummy credentials (`local`/`local`) in its own
+process and refuses any endpoint that is not loopback, so it cannot reach AWS or read `~/.aws`.
+
+```sh
+colima start --cpu 2 --memory 2
+export DOCKER_HOST=unix://$HOME/.colima/default/docker.sock
+docker run -d --name capyweb-ddb-local -p 127.0.0.1:8010:8000 \
+  amazon/dynamodb-local -jar DynamoDBLocal.jar -inMemory -sharedDb
+
+cd backend/src
+env -u AWS_PROFILE AWS_CONFIG_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/null \
+  DDB_LOCAL_ENDPOINT=http://127.0.0.1:8010 \
+  node --test --experimental-strip-types --no-warnings ledger.integration.test.ts
+
+docker rm -f capyweb-ddb-local && colima stop
+```
+
+It creates a fresh table (the template's key schema) per run and deletes it afterwards. DynamoDB
+Local serialises transactions, so it never returns `TransactionConflict`; the retry path for that is
+covered by unit tests (`classify`) only.
 
 ## Site
 

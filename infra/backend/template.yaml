@@ -14,6 +14,13 @@ Parameters:
   AllowedOrigins:
     Type: CommaDelimitedList
     Default: "https://capytube.xyz,https://www.capytube.xyz,http://localhost:5173"
+  # lane 3 replaces this at merge (the Cognito pool, feat/wasm-auth, supplies both values).
+  CognitoIssuer:
+    Type: String
+    Description: JWT issuer, https://cognito-idp.<region>.amazonaws.com/<user pool id>
+  CognitoAudience:
+    Type: String
+    Description: The Cognito app client id the tokens are issued to
 
 Globals:
   Function:
@@ -49,13 +56,22 @@ Resources:
       CorsConfiguration:
         AllowOrigins: !Ref AllowedOrigins
         AllowMethods: [GET, POST, PUT, DELETE, OPTIONS]
-        AllowHeaders: [authorization, content-type]
+        AllowHeaders: [authorization, content-type, idempotency-key]
         MaxAge: 600
       Tags:
         Project: capyweb
         Stage: !Ref Stage
-      # Write routes attach a native Cognito JWT authorizer here - zero Lambda invocations
-      # for auth. Blocked on capyweb-w26: the deploy identity has NO cognito-idp grants.
+      # Native Cognito JWT authorizer: zero Lambda invocations for auth. NOT the default
+      # authorizer - the catalog routes stay public and cacheable. Each write route opts in.
+      # lane 3 replaces this at merge
+      Auth:
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Ref CognitoIssuer
+              audience:
+                - !Ref CognitoAudience
 
   HealthFunction:
     Type: AWS::Serverless::Function
@@ -108,6 +124,42 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/capyapp-capyweb-${Stage}-catalog
+      RetentionInDays: 14
+      Tags:
+        - {Key: Project, Value: capyweb}
+
+  # Authenticated API (capyweb-7hj) and the play-coin ledger (capyweb-3ge). One warm function for
+  # every signed-in route. The caller is the JWT's `sub`, verified by CognitoJwt before the Lambda
+  # runs; balances are written only here. Chat and reactions are the hot path: one write each.
+  # DynamoDBCrudPolicy is scoped to this one table and its indexes (it includes ConditionCheckItem,
+  # which TransactWriteItems needs).
+  WritesFunction:
+    Type: AWS::Serverless::Function
+    Metadata: {BuildMethod: esbuild, BuildProperties: {EntryPoints: [writes.ts], Target: es2022, Minify: true, Format: esm, OutExtension: [".js=.mjs"], External: ["@aws-sdk/*"]}}
+    Properties:
+      FunctionName: !Sub capyapp-capyweb-${Stage}-writes
+      CodeUri: ../../backend/src/
+      Handler: writes.handler
+      # 10 rps x ~100 ms per request needs ~1 concurrent execution; 5 leaves room for the
+      # 20-request burst DefaultRouteSettings allows without letting a flood fan out.
+      ReservedConcurrentExecutions: 5
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+      Events:
+        GetMe:            {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /me, Method: GET, Auth: {Authorizer: CognitoJwt}}}
+        PutMe:            {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /me, Method: PUT, Auth: {Authorizer: CognitoJwt}}}
+        ListTransactions: {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /me/transactions, Method: GET, Auth: {Authorizer: CognitoJwt}}}
+        Vote:             {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/interactions/{id}/votes", Method: POST, Auth: {Authorizer: CognitoJwt}}}
+        Bid:              {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/interactions/{id}/bids", Method: POST, Auth: {Authorizer: CognitoJwt}}}
+        ListChat:         {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}/chat", Method: GET, Auth: {Authorizer: CognitoJwt}}}
+        PostChat:         {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}/chat", Method: POST, Auth: {Authorizer: CognitoJwt}}}
+        React:            {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}/reactions", Method: POST, Auth: {Authorizer: CognitoJwt}}}
+
+  WritesLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/capyapp-capyweb-${Stage}-writes
       RetentionInDays: 14
       Tags:
         - {Key: Project, Value: capyweb}
@@ -214,6 +266,8 @@ Resources:
       BillingMode: PAY_PER_REQUEST
       OnDemandThroughput: {MaxReadRequestUnits: 50, MaxWriteRequestUnits: 20}
       PointInTimeRecoverySpecification: {PointInTimeRecoveryEnabled: true}
+      # Chat (30 days) and idempotency markers (24 h) delete themselves; TTL deletes are free.
+      TimeToLiveSpecification: {AttributeName: expiresAt, Enabled: true}
       AttributeDefinitions:
         - {AttributeName: PK, AttributeType: S}
         - {AttributeName: SK, AttributeType: S}
@@ -243,7 +297,7 @@ Resources:
 
 Outputs:
   ApiUrl:
-    Description: HTTP API base URL. Catalog routes /capybaras, /streams, /nfts (+ /{id} and sub-resources).
+    Description: HTTP API base URL. Public catalog /capybaras, /streams, /nfts; signed-in /me, /interactions/{id}/votes|bids, /streams/{id}/chat|reactions.
     Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
   MainTableName:
     Value: !Ref MainTable

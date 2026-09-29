@@ -54,6 +54,8 @@ system; it should cost one write unit and then delete itself.
 | UserVote | `IXN#{interaction_id}` | `VOTE#{user_id}#{id}` | `USER#{user_id}` / `VOTE#{ts}#{id}` | `MODQ#vote` / `{ts}#{id}` ‡ |
 | UserBid | `IXN#{interaction_id}` | `BID#{amt}#{id}` | `USER#{user_id}` / `BID#{ts}#{id}` | — |
 | TokenTransaction | `USER#{user_id}` | `TXN#{ts}#{id}` | `TXN` / `{ts}#{id}` | `TXN#{id}` / `#META` |
+| Idempotency marker | `USER#{user_id}` | `IDEM#{key}` | — | — |
+| ReactionCounts | `STREAM#{stream_id}` | `REACTIONS` | — | — |
 
 ‡ **sparse**: `GSI2PK` is written **only** when `is_custom_request` is true and `approved` is null.
 Approving or rejecting removes the attribute, and the item leaves the index. `GSI2` *is* the
@@ -63,6 +65,23 @@ moderation queue (issue `capyweb-x7w`) — no filter, no scan, and it costs noth
 load-bearing choice: appending a ledger entry and updating the balance is a single
 `TransactWriteItems` **within one partition**. That is what makes the ledger safe (issue
 `capyweb-3ge`).
+
+Added with the ledger (lane 4, `capyweb-3ge`/`capyweb-7hj`), no existing key changed:
+
+- **User `#META` carries `balance` and is written only by `backend/src/lib/ledger.ts`.** It must stay
+  out of both indexes: every coin change rewrites it, and each index would add a write unit per change.
+  `GSI1`/`GSI2` on the user (wallet, email) stay unset until a feature needs them.
+- **Idempotency marker** `IDEM#{key}`: the client's `Idempotency-Key` header, in the caller's own
+  partition, put with `attribute_not_exists` in the same transaction as the balance update. It holds a
+  fingerprint of the request and the response, so a retry replays the first answer. TTL 24 h.
+- **Ids are deterministic**: a ledger entry's, vote's or bid's `id` is
+  `sha256(user, key, role)` (22 base64url characters), so a replayed request can never mint a second
+  entry under a new id.
+- **UserBid** gains `status`: `high` for the standing bid, `outbid` once beaten. Retiring the old
+  high bid is conditional on `status = high`, which is what makes a refund payable once.
+- **ReactionCounts** is one small item per stream with a number per reaction. No index, so a reaction is
+  one write unit. (The seed's `ratingCounts` map on the stream's `#META` is not used by the API.)
+- The table now has **TTL on `expiresAt`** enabled in the template; chat (30 days) and markers use it.
 
 ### NFT
 
@@ -159,7 +178,90 @@ The deployed dev table is empty. If the answer is "start fresh", this design cos
 if it is "keep", the one-off is a read-only `Scan` per old table transformed into the keys above,
 which needs a temporary grant since `capyapp-macbook-pro-14` cannot read `capyweb-*` tables.
 
-## 6. Next
+## 6. Write API
+
+Implemented in `backend/src/writes.ts` (function `capyapp-capyweb-<stage>-writes`). Every route sits
+behind the HTTP API's Cognito JWT authorizer (`CognitoJwt`). The caller is **only** the token's
+`sub` claim; no route takes a user id, and every body is checked against an allow-list of fields, so a
+`user_id`, `balance`, `cost` or `price` in a body is a 400. Responses are `no-store`. Errors are
+`{"error": "...", "code": "..."}`; `code` is stable for clients to switch on. Coin numbers (starting
+balance, chat and reaction costs, caps) are named constants in `backend/src/lib/economy.ts`, all
+"free and no grants" until decided.
+
+Anything that spends coins takes an `Idempotency-Key` header (8–64 of `A-Za-z0-9_-`, a UUID per user
+action). Same key and same request: the first answer again, `200` with `"replayed": true`. Same key and
+a different request: `409 idempotency_mismatch`.
+
+| Route | Does | Success | Refusals |
+|---|---|---|---|
+| `GET /me` | the caller's account; creates it on first sight | 200 | 401 |
+| `PUT /me` | set `display_name` (2–32 letters/digits, single `. _ - '` or space between; staff-like names reserved) | 200 | 400 |
+| `GET /me/transactions?limit&cursor` | the caller's ledger, newest first | 200 | 400 bad cursor |
+| `POST /interactions/{id}/votes` | vote; cost = `number_of_votes × vote_cost` (+ `custom_request_cost`) from the interaction item | 201 | 404, 409 `interaction_closed` `wrong_type` `not_priced` `no_custom` `insufficient_coins` |
+| `POST /interactions/{id}/bids` | bid `amount` ≥ `current_bid + 1`; the outbid bidder is refunded | 201 | 404, 409 `interaction_closed` `bid_too_low` `insufficient_coins` |
+| `GET /streams/{id}/chat?limit&cursor` | chat, newest first; the first page also carries `reactions` | 200 | 400 |
+| `POST /streams/{id}/chat` | post one line (≤ 280 characters, ≤ 800 bytes) | 201 | 404, 409 `display_name_required` |
+| `POST /streams/{id}/reactions` | one of `capylove capylike capywow capyangry capyfire` | 200 | 400, 404 |
+
+An interaction is open unless `status` is set to anything but `open`, a `result` is declared, or
+`closes_at` (ISO time) has passed. The same rule is re-checked inside the transaction, together with
+the price, so closing or re-pricing an interaction mid-request refuses it instead of charging.
+
+Examples (`Authorization: Bearer <access token>` on every request):
+
+```http
+GET /me
+200 {"id":"0b6e…","display_name":null,"balance":0,"createdAt":"2026-09-29T08:00:00.000Z"}
+
+PUT /me                         {"display_name":"Capy Fan"}
+200 {"id":"0b6e…","display_name":"Capy Fan","balance":0,"createdAt":"…"}
+
+GET /me/transactions?limit=2
+200 {"items":[{"id":"q3…","type":"vote","amount":-2,"related_type":"vote","related_id":"Xy…",
+     "createdAt":"…"}],"count":1,"cursor":"WyJ…"}
+
+POST /interactions/snack-vote-1/votes   Idempotency-Key: 5d1c…   {"option_id":"carrots","number_of_votes":2}
+201 {"vote":{"id":"Xy…","interaction_id":"snack-vote-1","option_id":"carrots","number_of_votes":2,
+     "cost":2,"is_custom_request":false,"status":"counted"},"charged":2,"transaction_id":"q3…"}
+    {"custom_request":"Mango please"} instead of option_id: status "pending_review", joins GSI2 MODQ#vote
+409 {"error":"not enough coins","code":"insufficient_coins"}
+
+POST /interactions/wall-bid-1/bids      Idempotency-Key: 9a7e…   {"amount":21}
+201 {"bid":{"id":"Lk…","interaction_id":"wall-bid-1","amount":21,"status":"high"},"charged":21,
+     "previous_bid_refunded":false,"transaction_id":"…"}
+409 {"error":"a bid must be at least 22","code":"bid_too_low"}
+
+POST /streams/main-cam/chat              {"text":"hello capy"}
+201 {"message":{"id":"…","stream_id":"main-cam","display_name":"Capy Fan","text":"hello capy",
+     "createdAt":"…","mine":true}}
+
+GET /streams/main-cam/chat?limit=50
+200 {"items":[{"id":"…","display_name":"Capy Fan","text":"hello capy","mine":true,…}],"count":1,
+     "reactions":{"capylove":3,"capylike":0,"capywow":1,"capyangry":0,"capyfire":0}}
+
+POST /streams/main-cam/reactions         {"reaction":"capylove"}
+200 {"reaction":"capylove","reactions":{"capylove":4,"capylike":0,"capywow":1,"capyangry":0,"capyfire":0}}
+```
+
+Chat lines never carry the author's `user_id` (their Cognito `sub`); `mine` tells the viewer which
+lines are theirs.
+
+### The ledger transaction
+
+One `TransactWriteItems` per coin-moving request, all or nothing:
+
+| # | Item | Operation and condition |
+|---|---|---|
+| 1 | `USER#{caller}` / `IDEM#{key}` | Put, `attribute_not_exists(PK)` |
+| 2 | `USER#{user}` / `#META` (per posting) | debit: `SET balance = balance - :amt` if `attribute_exists(PK) AND balance >= :amt`; credit: `+`, if `attribute_exists(PK)` |
+| 3 | `USER#{user}` / `TXN#{ts}#{id}` (per posting) | Put, `attribute_not_exists(PK)`; never updated or deleted |
+| 4+ | the records paid for: vote Put + interaction ConditionCheck (open, price unchanged); bid Put + interaction Update (open, `current_bid` unchanged) + old high bid `high → outbid` | as listed |
+
+Invariants: a balance never goes below zero; a user's entries always add up to their balance; one key
+charges once. A `TransactionConflict` or a changed record re-reads the state and retries (4 attempts,
+then `409 conflict`).
+
+## 7. Next
 
 `capyweb-1iz` delivers this document. Implementation follows in `capyweb-qu7` (public reads) and
 `capyweb-7hj` (authenticated writes). A thin `backend/src/lib/keys.ts` should own every key string
