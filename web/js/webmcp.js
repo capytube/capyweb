@@ -1,9 +1,10 @@
-// Thin shim over WebMCP so the Rust side sees one stable function.
+// Thin shim over WebMCP so the Rust side sees one stable function (docs/WEBMCP_NOTES.md).
 //
-// The API is a moving draft. 2025 drafts and Chrome's early preview hung it off
-// navigator.modelContext; the CG draft of 28 Sep 2026 moved it to document.modelContext,
-// with registerTool(tool, { signal }) returning a Promise and unregistration by aborting the
-// signal. Support both, and do nothing at all where neither exists.
+// The CG report (a living draft, 29 Sep 2026) puts it on document.modelContext:
+// registerTool(tool, { signal }) returns a Promise that resolves to undefined, and aborting that
+// signal unregisters the tool. It does not cancel a call already running: that call has its own
+// signal, passed to execute. navigator.modelContext is the older name (deprecated in Chromium
+// 150), kept only as a fallback. Where neither exists, nothing is registered.
 
 function modelContext() {
   if (typeof document !== "undefined" && document.modelContext) return document.modelContext;
@@ -31,13 +32,7 @@ export async function registerTool(name, title, description, inputSchemaJson, an
     execute: (input, options) => execute(input ?? {}, options ?? {}),
   };
   try {
-    const r = mc.registerTool(tool, { signal: controller.signal });
-    if (r && typeof r.then === "function") {
-      await r;
-    } else if (r && typeof r.unregister === "function") {
-      // Older drafts returned { unregister() } instead of honouring the signal.
-      controller.signal.addEventListener("abort", () => r.unregister());
-    }
+    await mc.registerTool(tool, { signal: controller.signal });
   } catch (e) {
     console.warn("webmcp: registerTool failed", name, e);
     return null;

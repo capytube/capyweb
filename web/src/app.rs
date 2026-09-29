@@ -56,22 +56,17 @@ pub fn App() -> impl IntoView {
 #[cfg(feature = "webmcp")]
 #[component]
 fn Tools() -> impl IntoView {
-    use crate::routes::Page;
+    use crate::auth::use_auth;
     use crate::state::use_toasts;
-    use crate::webmcp;
     use leptos_router::hooks::use_navigate;
     use leptos_router::NavigateOptions;
 
     let navigate = use_navigate();
     let toasts = use_toasts();
-    leptos::task::spawn_local(async move {
-        let count = webmcp::register_catalog_tools(move |page: Page| {
-            navigate(page.path(), NavigateOptions::default());
-            toasts.show(format!("An assistant opened {}", page.label()));
-        })
-        .await;
-        leptos::logging::log!("webmcp: {count} tool(s) registered");
-    });
+    crate::webmcp::install(crate::webmcp::Ctx::new(use_auth(), move |path, label| {
+        navigate(path, NavigateOptions::default());
+        toasts.show(format!("An assistant opened {label}"));
+    }));
 }
 
 #[cfg(not(feature = "webmcp"))]
