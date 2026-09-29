@@ -1,0 +1,17 @@
+# CapyTube. Policy by capyweb-manager, 2026-09-29; the reasons are in docs/CRAWLERS_NOTES.md.
+# Search and answer engines are welcome: they bring the site its audience. Crawlers that only
+# gather training data are not. The API, paid video, recordings and sign-in are for people using
+# the site, not for any crawler.
+
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: CCBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: *
+Disallow: /api/
+Disallow: /paid/
+Disallow: /media/
+Disallow: /auth/

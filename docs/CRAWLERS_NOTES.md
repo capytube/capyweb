@@ -98,17 +98,16 @@ gives. Every shared link today previews with the shell's site-wide tags.
 
   So the rewrite to the shell, which answers 200, must stay, and the viewer-response function turns it
   into a 404.
-- **Correction to the first pass.** The helper proposed a marker header set by the viewer-request
-  function and read by the viewer-response one. AWS does not say such a header survives. Its
-  event-structure page says the `request` in the event "represents the actual request that CloudFront
-  received from the viewer".
-  - That suggests the viewer-response function sees the **original** path, not the rewritten
-    `/index.html`.
-  - If it does, the function can check the original path against the route list itself, with no header.
-  - The design should work either way: 404 when the marker is present, **or** when the path is not
-    `/index.html` and fails the route list.
-  - **Test it on the dev distribution before relying on it.** That is a dev site-stack change, so it
-    needs capyweb-manager's go.
+- **What the viewer-response function sees: measured on dev.** The helper proposed a marker header set
+  by the viewer-request function and read by the viewer-response one. AWS does not say such a header
+  survives: its event-structure page says the `request` in the event "represents the actual request that
+  CloudFront received from the viewer". So the functions check both:
+  - the marker, when present;
+  - otherwise the original path against the route list.
+
+  They report which one fired in an `x-capyweb-404` header. On dev (2026-09-29, capyweb-manager's go)
+  every 404 said `marker`. So the viewer-response function sees the request **as the viewer-request
+  function changed it**, headers included. The path check stays as a fallback.
 - **The route list** holds the ten static pages exactly, plus the prefixes `/stream/`, `/shop/` and
   `/auth/callback`. It must be kept in step with `web/src/app.rs`. A guard test can compare them.
 - **Unknown ids** (`/stream/nobody`) pass the prefix check. The client's `noindex` from (a) covers them.
@@ -128,12 +127,48 @@ gives. Every shared link today previews with the shell's site-wide tags.
 **(d) `robots.txt` and `sitemap.xml`.** Two static files at the root. Having extensions, they pass
 through `SpaFunction` untouched.
 - The sitemap helps crawlers find the real routes, since the shell has no links.
-- Whether to opt out of AI training crawlers (GPTBot, ClaudeBot, CCBot, Google-Extended,
-  Applebot-Extended) is a decision for capyweb-manager, not a technical one.
+- Its `Sitemap:` line and its entries need absolute URLs on the production domain, so they come with
+  W12's deploy.
 
 **(e) Tags in the shell.**
 - `og:image`, `og:url` and a canonical for the site root give every shared link a capybara picture.
 - Per-page descriptions set from the client help Google only.
+
+## The robots.txt policy (capyweb-manager, 2026-09-29)
+
+This is the manager's decision, in one file (`web/robots.txt`), and easy to change if the master or nic
+wants otherwise.
+- **Allowed:** search and answer engines (Googlebot, Bingbot, OAI-SearchBot, ChatGPT-User,
+  Claude-SearchBot, Claude-User, PerplexityBot, and every other crawler by default). They bring the site
+  its audience.
+- **Opted out:** crawlers that only gather training data: GPTBot, ClaudeBot, CCBot, Google-Extended and
+  Applebot-Extended.
+- **Disallowed for every crawler:** `/api/`, `/paid/`, `/media/` and `/auth/`. They are for people using
+  the site: the API, paid video, recordings and sign-in.
+- **Dev is not for crawlers at all.** `infra/site/upload-content.sh` writes `Disallow: /` over whatever
+  `robots.txt` the build carries.
+
+## Built on 2026-09-29, and what is left
+
+**Built** (tested by `web/tests/pages/crawl.mjs`; on dev since 2026-09-29):
+1. **Client `noindex`** (`noindex_while_shown` in `web/src/lib.rs`) on three views: "Page not found", a
+   pass that does not exist, and a capybara with no camera. It is removed when the view goes, and it is
+   never in the shell.
+2. **`robots.txt`** with the policy above.
+3. **The edge 404.**
+   - `SpaFunction` marks paths that are not routes of the app.
+   - `NotFoundFunction` (viewer response) answers 404 for them and keeps the shell's body.
+   - Trailing slashes count as the route, as in the client router.
+   - A Rust test keeps both route lists equal to the app's routes (`edge_routes_match_the_app`).
+   - Measured on dev:
+     - `/garbage`, `/no/such/page` and `/stream/a/b` answer 404;
+     - the pages, `/watch/`, `/stream/magnus`, `/shop/pass-1` and `/auth/callback` answer 200;
+     - files and the API are unchanged.
+
+**Left for W12 and the cutover:**
+- `sitemap.xml` and the `Sitemap:` line;
+- `og:image`, `og:url` and a canonical in the shell (all need the production domain);
+- the production stack update.
 
 ## Recommendation for the cutover (W16, with the W12 site work)
 

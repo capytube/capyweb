@@ -53,4 +53,8 @@ comm -23 <(aws s3 ls "s3://$BUCKET/" --recursive | awk '{print $4}' | sort) \
     aws s3 cp "$SRC/$key" "s3://$BUCKET/$key" --content-type "$(type_of "$key")" \
       --cache-control "$(cache_of "$key")" >/dev/null
   done
+# Dev is not for search engines, whatever robots.txt the build carries (docs/CRAWLERS_NOTES.md).
+printf '# dev: not for crawlers\nUser-agent: *\nDisallow: /\n' |
+  aws s3 cp - "s3://$BUCKET/robots.txt" --content-type "text/plain; charset=utf-8" \
+    --cache-control "public,max-age=300" >/dev/null
 aws cloudfront create-invalidation --distribution-id "$DIST" --paths '/*' --query Invalidation.Id --output text

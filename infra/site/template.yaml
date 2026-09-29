@@ -79,6 +79,9 @@ Resources:
   # serve the shell and let the client router resolve it. Unlike the error responses it replaces,
   # this touches only the site's own paths, so the API's 403/404 answers and CloudFront's refusals
   # on /paid/* reach the browser as they are, and a missing asset is a real error, not HTML.
+  # A path that is not one of the app's routes still gets the shell (the client shows "Page not
+  # found"), marked for NotFoundFunction. ROUTES is web/src/app.rs; a Rust test
+  # (routes.rs, edge_routes_match_the_app) keeps both copies in step with it.
   SpaFunction:
     Type: AWS::CloudFront::Function
     Condition: HasApi
@@ -87,10 +90,49 @@ Resources:
       AutoPublish: true
       FunctionConfig: {Comment: SPA fallback for extensionless paths, Runtime: cloudfront-js-2.0}
       FunctionCode: |
+        var ROUTES = ['/', '/watch', '/play', '/shop', '/robot', '/profile', '/about-us', '/privacy-policy', '/terms-of-service', '/deletion', '/auth/callback'];
+        function known(u) {
+          if (u.length > 1 && u.charAt(u.length - 1) === '/') u = u.slice(0, -1); // the client router takes /watch/ as /watch
+          return ROUTES.indexOf(u) >= 0 || /^\/(stream|shop)\/[^\/]+$/.test(u);
+        }
         function handler(event) {
           var r = event.request;
-          if (r.uri.lastIndexOf('.') <= r.uri.lastIndexOf('/')) r.uri = '/index.html';
+          if (r.uri.lastIndexOf('.') <= r.uri.lastIndexOf('/')) {
+            if (!known(r.uri)) r.headers['x-capyweb-route'] = {value: 'unknown'};
+            r.uri = '/index.html';
+          }
           return r;
+        }
+  # A real 404 for a path that is not a page of the app, so search engines drop it instead of
+  # reading a soft 404 (docs/CRAWLERS_NOTES.md). The shell's body stays, so a person still sees
+  # "Page not found". It runs only on 200s (CloudFront skips viewer-response functions on 4xx/5xx
+  # from the origin). AWS does not say whether event.request here is the viewer's original request
+  # or the one SpaFunction rewrote, so both the marker and the path are checked, and the
+  # x-capyweb-404 header says which one fired.
+  NotFoundFunction:
+    Type: AWS::CloudFront::Function
+    Condition: HasApi
+    Properties:
+      Name: !Sub capyapp-capyweb-${Stage}-not-found
+      AutoPublish: true
+      FunctionConfig: {Comment: 404 for paths that are not routes of the app, Runtime: cloudfront-js-2.0}
+      FunctionCode: |
+        var ROUTES = ['/', '/watch', '/play', '/shop', '/robot', '/profile', '/about-us', '/privacy-policy', '/terms-of-service', '/deletion', '/auth/callback'];
+        function known(u) {
+          if (u.length > 1 && u.charAt(u.length - 1) === '/') u = u.slice(0, -1); // the client router takes /watch/ as /watch
+          return ROUTES.indexOf(u) >= 0 || /^\/(stream|shop)\/[^\/]+$/.test(u);
+        }
+        function handler(event) {
+          var q = event.request, s = event.response, why = '';
+          if (s.statusCode !== 200) return s;
+          if (q.headers['x-capyweb-route']) why = 'marker';
+          else if (q.uri !== '/index.html' && q.uri.lastIndexOf('.') <= q.uri.lastIndexOf('/') && !known(q.uri)) why = 'path';
+          if (why) {
+            s.statusCode = 404;
+            s.statusDescription = 'Not Found';
+            s.headers['x-capyweb-404'] = {value: why};
+          }
+          return s;
         }
   # /api/x -> the HTTP API's /x. Same-origin, so the playback route's Set-Cookie lands on the
   # site's domain, where CloudFront checks it (docs/VIDEO_DESIGN.md section 4).
@@ -143,7 +185,8 @@ Resources:
           ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03  # Managed-SecurityHeadersPolicy
           FunctionAssociations: !If
             - HasApi
-            - [{EventType: viewer-request, FunctionARN: !GetAtt SpaFunction.FunctionMetadata.FunctionARN}]
+            - - {EventType: viewer-request, FunctionARN: !GetAtt SpaFunction.FunctionMetadata.FunctionARN}
+              - {EventType: viewer-response, FunctionARN: !GetAtt NotFoundFunction.FunctionMetadata.FunctionARN}
             - !Ref AWS::NoValue
         CacheBehaviors:
           # Recordings, the reel and (later) public live windows. Objects carry their own
@@ -201,8 +244,8 @@ Resources:
           # override - so this cannot be fixed with an /assets/* cache behaviour. It also
           # applies to /media/*: a missing recording is index.html with 200, which the player
           # treats as a failed source. SpaFunction (with ApiDomain set) removes all of this.
-          # Also note: every unknown path now returns 200 with the same shell, i.e. soft-404s.
-          # Harmless on dev; revisit for crawlers at the production cutover (capyweb-1w5).
+          # Also note: every unknown path returns 200 with the same shell, i.e. soft-404s. With
+          # ApiDomain set, NotFoundFunction answers 404 for them instead (capyweb-1w5).
 Outputs:
   Url: {Value: !Sub "https://${DomainName}/"}
   Bucket: {Value: !Ref SiteBucket}

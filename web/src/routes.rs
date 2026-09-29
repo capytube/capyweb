@@ -147,6 +147,41 @@ mod tests {
         );
     }
 
+    /// infra/site/template.yaml answers 404 at the edge for any other path, so its route list must
+    /// be the app's: every page, the sign-in callback, and the two id routes (capyweb-1w5).
+    #[test]
+    fn edge_routes_match_the_app() {
+        let template = include_str!("../../infra/site/template.yaml");
+        let mut want: Vec<String> = Page::ALL.iter().map(|p| p.path().to_string()).collect();
+        want.push("/auth/callback".into());
+        let lists: Vec<Vec<String>> = template
+            .lines()
+            .filter_map(|l| l.trim().strip_prefix("var ROUTES = ["))
+            .map(|rest| {
+                rest.trim_end_matches("];")
+                    .split(", ")
+                    .map(|s| s.trim_matches('\'').to_string())
+                    .collect()
+            })
+            .collect();
+        assert_eq!(lists.len(), 2, "SpaFunction and NotFoundFunction");
+        for list in lists {
+            assert_eq!(list, want);
+        }
+        let ids = r"/^\/(stream|shop)\/[^\/]+$/";
+        assert_eq!(
+            template.matches(ids).count(),
+            2,
+            "both allow /stream/<id> and /shop/<id>"
+        );
+        // A new route in the app must be added to the edge list too.
+        let app = include_str!("app.rs");
+        assert_eq!(app.matches("<Route path=").count(), want.len() + 2);
+        for dynamic in [r#"path!("/stream/:capyId")"#, r#"path!("/shop/:id")"#] {
+            assert!(app.contains(dynamic), "{dynamic}");
+        }
+    }
+
     #[test]
     fn unknown_page_name_is_none() {
         assert_eq!(Page::from_name("admin"), None);

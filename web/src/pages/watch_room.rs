@@ -635,6 +635,7 @@ pub fn WatchRoom() -> impl IntoView {
                         .filter(|s| s.capybara_ids.iter().any(|id| id == &capy))
                         .collect();
                     if cams.is_empty() {
+                        crate::noindex_while_shown(); // nothing to show: not a page to index
                         return view! { <p class="notice">"No camera watches this capybara yet."</p> }.into_any();
                     }
                     let selected = pick_camera(&cams, &cam).unwrap_or(0);

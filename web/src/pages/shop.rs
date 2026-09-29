@@ -146,6 +146,7 @@ pub fn Shop() -> impl IntoView {
 
 #[component]
 fn MissingPass() -> impl IntoView {
+    crate::noindex_while_shown();
     view! { <PageHead title="Pass not found" lede="This pass is not in the collection."/> }
 }
 
