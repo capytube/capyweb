@@ -1,12 +1,13 @@
 # CapyTube admin runbooks
 
-Four procedures an admin runs by hand until the admin console exists (beads `2pj`, `x7w`, `zlb`, `jji`,
+Five procedures an admin runs by hand until the admin console exists (beads `2pj`, `x7w`, `zlb`, `jji`,
 after the cutover):
 
 1. [Delete a user and their data](#1-delete-a-user-and-their-data) (the process the Deletion page describes)
 2. [Remove a chat message](#2-remove-a-chat-message)
 3. [Disable a user](#3-disable-a-user)
 4. [Sign-up cap refusals](#4-sign-up-cap-refusals)
+5. [Alarms: where they land, reading the queue, pausing the relay](#5-alarms-where-they-land-reading-the-queue-pausing-the-relay)
 
 Every key and item below is taken from the code, and each step names the file it comes from. If the code
 changes, check these commands against it before you run them. Written 2026-09-29 for W12
@@ -407,3 +408,74 @@ to be safe: tell the manager.
 - Real people refused: tell the manager. **Raising the cap is a change to a template parameter of the
   backend stack**, deployed through the manager like any other change. It is not done by editing the
   counter item. Mind the 50-a-day email limit when choosing the new number.
+
+---
+
+## 5. Alarms: where they land, reading the queue, pausing the relay
+
+Built in `capyweb-b6e.12.6`, the design of herdr-master and capyweb-manager on 2026-09-30. There is no
+email, so nobody has a confirmation link to click.
+
+**Where they land: the capyweb room.**
+- The five capyweb topics deliver to one SQS queue, `capyapp-capyweb-alarm-relay` in ap-southeast-1
+  (`infra/ops/alarm-relay.yaml`):
+  - `capyapp-capyweb-<stage>-alarms` and `capyapp-capyweb-<stage>-egress-alarm` for dev and prod;
+  - `capyapp-capyweb-alerts` (the budget).
+- Every 5 minutes, the herdr-manager job `capyweb-alarm-relay` on Mac mini 3 runs
+  `tools/capyweb-alarm-relay/read.sh`, a copy of `infra/ops/alarm-relay-job.sh`.
+- The job assumes the role `capyapp-capyweb-alarm-reader` and runs `infra/ops/alarm_relay.py` from a
+  pinned, reviewed commit.
+- The reader posts **one line per alarm** that went to ALARM, or came back to OK from ALARM. It sends
+  all of a run's lines in **one** `herdr-ask --project capyweb --post`:
+
+```
+[capyweb prod] site-down: ALARM at 01:23 +07 — Threshold Crossed: 1 out of the last 1 datapoints [0.0 (…
+[capyweb prod] site-down: OK at 01:41 +07 — Threshold Crossed: …
+[capyweb] notice on alerts
+```
+
+- **What is skipped:** transitions into or out of INSUFFICIENT_DATA are dropped.
+- **Other messages:** anything that is not an alarm, such as a budget notice, becomes
+  `[capyweb] notice on <topic>` with no body. **Look at the budget in the console** when that appears.
+- **Sanitising:** the room is read by people outside the team, so each line carries no account id, ARN,
+  hostname, e-mail address, IP address or URL (`sanitise()` and its tests in
+  `infra/ops/test_alarm_relay.py`).
+- **Deletion:** messages are deleted only after the post succeeded. A failed run leaves them for the next
+  one.
+- **Retention:** the queue keeps a message for **4 days**. A job that is down longer loses the oldest
+  alarms, but the alarm itself still shows its state (below).
+
+**What each alarm means** is in `infra/README.md` ("The backend alarms"). The alarm's own state is the
+truth. The room only reports changes:
+
+```sh
+for R in ap-southeast-1 us-east-1; do
+  aws cloudwatch describe-alarms --region $R --alarm-name-prefix capyapp-capyweb-$STAGE \
+    --query 'MetricAlarms[].[AlarmName,StateValue,StateUpdatedTimestamp]' --output text
+done
+```
+
+Before the switch (G3), `capyapp-capyweb-prod-site-down` is in ALARM on purpose: its probe cannot
+resolve the apex yet.
+
+**Read the queue by hand**, on Mac mini 3, with nothing posted and nothing deleted:
+
+```sh
+~/stacks/herdr-manager/tools/capyweb-alarm-relay/read.sh --dry-run
+```
+
+It prints the lines a run would post, then one summary line. The messages it read stay hidden for
+2 minutes (the queue's visibility timeout), then the next run sees them again. To count what is waiting
+without reading it, as an admin: `aws sqs get-queue-attributes --queue-url <the queue's URL>
+--attribute-names ApproximateNumberOfMessages`. Do not paste the queue's URL into a room: it carries the
+account id.
+
+**Pause the relay.** Ask capyweb-manager: the job is an entry named `capyweb-alarm-relay` in herdr-manager
+`tools/always-on/jobs.json`, and taking that entry out stops it. Messages wait in the queue for up to
+4 days. When the job comes back, its first run posts everything still waiting, in one post, in time order.
+The job's log is one summary line per run. `FAILED` means nothing was deleted that had not been posted.
+
+**Stop a noisy alarm** without losing the others: fix what it measures, or change the alarm in its
+template through the usual change set. Do not unsubscribe the queue from a topic. The relay is how every
+alarm reaches the team.
+

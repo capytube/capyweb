@@ -461,9 +461,9 @@ Resources:
       Tags:
         - {Key: Project, Value: capyweb}
 
-  # The alarms below notify this topic (capyweb-19a). Alarms can only publish to a topic in their
-  # own region, so it is not the us-east-1 capyapp-capyweb-alerts topic of infra/ops/template.yaml.
-  # Who is subscribed is decided outside the template: an address never goes into the repo.
+  # The alarms below notify this topic (capyweb-19a), on ALARM and on OK. Its only subscriber is the
+  # alarm relay's queue (infra/ops/alarm-relay.yaml), which posts to the capyweb room: no email
+  # (herdr-master, 2026-09-30). It is not the capyapp-capyweb-alerts topic of infra/ops/template.yaml.
   AlarmTopic:
     Type: AWS::SNS::Topic
     Properties:
@@ -489,6 +489,7 @@ Resources:
       ComparisonOperator: LessThanThreshold
       TreatMissingData: breaching
       AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
 
   SiteDownAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -505,6 +506,7 @@ Resources:
       ComparisonOperator: LessThanThreshold
       TreatMissingData: breaching
       AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
 
   # AWS/Lambda Errors and Throttles are free and need no custom metric. The cap function throws
   # exactly when it refuses, whether a cap was reached or it failed (it fails closed); a call
@@ -535,6 +537,7 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
       AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
 
   # The table has a hard OnDemandThroughput ceiling, so a burst throttles rather than bills.
   # That is the intended behaviour, but it should never be silent.
@@ -553,6 +556,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
       AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
 
   # Single table. On-demand with a hard ceiling: past it, requests throttle instead of billing.
   # PK/SK plus two overloaded GSIs cover the 11 former Amplify models and the robot/slot types.

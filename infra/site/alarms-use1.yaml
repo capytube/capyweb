@@ -37,10 +37,11 @@ Resources:
       # No egress reported is genuinely fine - it means nobody visited.
       TreatMissingData: notBreaching
       AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
 
   # An alarm can only notify a topic in its own region, and CloudFront's metrics are only here
-  # (capyweb-19a). Who is subscribed is decided outside the template: an address never goes into
-  # the repo.
+  # (capyweb-19a). Its only subscriber is the alarm relay's queue in ap-southeast-1
+  # (infra/ops/alarm-relay.yaml), which posts to the capyweb room: no email (herdr-master, 2026-09-30).
   AlarmTopic:
     Type: AWS::SNS::Topic
     Properties:

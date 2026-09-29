@@ -400,6 +400,15 @@ PY
   fi
 done
 
+# 9. The alarm relay's lines go to a room people outside the team read: its sanitiser and its
+#    "delete only after the post" rule have tests (infra/ops/test_alarm_relay.py).
+head "Alarm relay"
+if out=$(python3 -B -m unittest -q infra/ops/test_alarm_relay.py 2>&1); then
+  pass "infra/ops/alarm_relay.py: $(printf '%s' "$out" | grep -o 'Ran [0-9]* tests')"
+else
+  fail "infra/ops/alarm_relay.py tests" "$(printf '%s' "$out" | tail -3 | tr '\n' ' ')"
+fi
+
 if [ "$FAILED" -eq 0 ]; then
   [ "$QUIET" -eq 1 ] || printf '\n\033[32mall guards passed\033[0m\n'
   exit 0

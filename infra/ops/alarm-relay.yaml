@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: capyweb alarm relay (herdr-master, 2026-09-30 01:50; capyweb-manager's design). The five capyweb
+  topics deliver to one SQS queue; a job on Mac mini 3 assumes the reader role, reads the queue and posts one
+  line per alarm to the capyweb room (infra/ops/alarm_relay.py, infra/ops/alarm-relay-job.sh). Nothing
+  inbound, and no bot token in AWS. One stack, capyapp-capyweb-alarm-relay, in ap-southeast-1, deployed by
+  capyweb-manager with the admin profile (the deploy user has no IAM or SQS rights).
+
+Parameters:
+  ReaderPrincipalArn:
+    Type: String
+    AllowedPattern: '^arn:aws:iam::[0-9]{12}:(user|role)/[\w+=,.@/-]+$'
+    # The IAM identity behind the admin profile on Mac mini 3. Filled in by capyweb-manager at deploy
+    # time; not written in the repo.
+    Description: The only principal that may assume the reader role.
+
+Resources:
+  # Kept if the stack goes: messages that have not been posted yet are not lost with it.
+  Queue:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      QueueName: capyapp-capyweb-alarm-relay
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 345600   # 4 days: a job that is down for a weekend loses nothing
+      VisibilityTimeout: 120           # the job's timeout; the reader asks for the same when it receives
+      Tags: [{Key: Project, Value: capyweb}, {Key: capy-scope, Value: capyapp}]
+
+  # SNS may send only for the five capyweb topics.
+  QueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [!Ref Queue]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: CapywebTopicsOnly
+            Effect: Allow
+            Principal: {Service: sns.amazonaws.com}
+            Action: sqs:SendMessage
+            Resource: !GetAtt Queue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  - !Sub arn:aws:sns:ap-southeast-1:${AWS::AccountId}:capyapp-capyweb-alerts
+                  - !Sub arn:aws:sns:ap-southeast-1:${AWS::AccountId}:capyapp-capyweb-dev-alarms
+                  - !Sub arn:aws:sns:ap-southeast-1:${AWS::AccountId}:capyapp-capyweb-prod-alarms
+                  - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:capyapp-capyweb-dev-egress-alarm
+                  - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:capyapp-capyweb-prod-egress-alarm
+
+  # Not raw: the reader needs the envelope's TopicArn for the stage. The two egress topics are in
+  # us-east-1 (CloudFront's metrics are only there); Region names the topic's region.
+  AlertsSubscription:
+    Type: AWS::SNS::Subscription
+    DependsOn: QueuePolicy
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      TopicArn: !Sub arn:aws:sns:ap-southeast-1:${AWS::AccountId}:capyapp-capyweb-alerts
+  DevAlarmsSubscription:
+    Type: AWS::SNS::Subscription
+    DependsOn: QueuePolicy
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      TopicArn: !Sub arn:aws:sns:ap-southeast-1:${AWS::AccountId}:capyapp-capyweb-dev-alarms
+  ProdAlarmsSubscription:
+    Type: AWS::SNS::Subscription
+    DependsOn: QueuePolicy
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      TopicArn: !Sub arn:aws:sns:ap-southeast-1:${AWS::AccountId}:capyapp-capyweb-prod-alarms
+  DevEgressSubscription:
+    Type: AWS::SNS::Subscription
+    DependsOn: QueuePolicy
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      Region: us-east-1
+      TopicArn: !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:capyapp-capyweb-dev-egress-alarm
+  ProdEgressSubscription:
+    Type: AWS::SNS::Subscription
+    DependsOn: QueuePolicy
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      Region: us-east-1
+      TopicArn: !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:capyapp-capyweb-prod-egress-alarm
+
+  # The job assumes this with the admin profile and gives the reader only the session: no access key.
+  ReaderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: capyapp-capyweb-alarm-reader
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {AWS: !Ref ReaderPrincipalArn}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: read-the-relay-queue
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes]
+                Resource: !GetAtt Queue.Arn
+      Tags: [{Key: Project, Value: capyweb}, {Key: capy-scope, Value: capyapp}]
+
+Outputs:
+  QueueName: {Value: !GetAtt Queue.QueueName}
+  ReaderRoleName: {Value: !Ref ReaderRole}

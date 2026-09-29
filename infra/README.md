@@ -56,19 +56,31 @@ SAM bucket's `capyapp-*` prefix, as above, or into any bucket you create named `
 
 ## Alerts and the budget (capyweb-19a, capyweb-m52)
 
-Every alert goes to an SNS topic with **no subscriber in the template**: who receives them is decided
-outside the repo (an address never goes into a commit). Alarms can only notify a topic in their own
-region, so there is one topic per place:
+Every alert goes to an SNS topic. Alarms can only notify a topic in their own region, so there is one
+topic per place, and **all five go to the capyweb room** through the alarm relay (herdr-master,
+2026-09-30: no email, so nobody has a confirmation link to click):
 
-| Topic | Region | Stack | What notifies it | State (2026-09-29) |
-|---|---|---|---|---|
-| `capyapp-capyweb-<stage>-alarms` | ap-southeast-1 | backend | api-down, site-down, table-throttled, signups-refused | dev: deployed 2026-09-29, no subscriber (signups-refused not yet deployed) |
-| `capyapp-capyweb-<stage>-egress-alarm` | us-east-1 | `capyapp-capyweb-alarms-<stage>` (`site/alarms-use1.yaml`) | CloudFront egress over ~800 GB/month | dev: deployed 2026-09-29, no subscriber |
-| `capyapp-capyweb-alerts` | ap-southeast-1 | `capyapp-capyweb-ops` (`ops/template.yaml`, one per account) | the tag-scoped monthly budget `capyapp-capyweb-monthly` (A2); A4 is skipped in v1 | deployed 2026-09-29; the budget also emails its one recipient |
+| Topic | Region | Stack | What notifies it |
+|---|---|---|---|
+| `capyapp-capyweb-<stage>-alarms` | ap-southeast-1 | backend | api-down, site-down, table-throttled, signups-refused |
+| `capyapp-capyweb-<stage>-egress-alarm` | us-east-1 | `capyapp-capyweb-alarms-<stage>` (`site/alarms-use1.yaml`) | CloudFront egress over ~800 GB/month |
+| `capyapp-capyweb-alerts` | ap-southeast-1 | `capyapp-capyweb-ops` (`ops/template.yaml`, one per account) | the tag-scoped monthly budget `capyapp-capyweb-monthly` (A2); A4 is skipped in v1 |
+
+**The relay** (`ops/alarm-relay.yaml`, stack `capyapp-capyweb-alarm-relay`, deployed by capyweb-manager with
+the admin profile):
+- The five topics deliver to one SQS queue.
+- Every 5 minutes, a job on Mac mini 3 (`ops/alarm-relay-job.sh`) assumes the reader role and runs
+  `ops/alarm_relay.py` from a pinned commit.
+- The reader posts one line per alarm that went to ALARM, or came back to OK from ALARM. It sends all of
+  a run's lines in one `herdr-ask --project capyweb --post`, then deletes the messages.
+- Lines are sanitised: no account id, ARN, hostname, e-mail, IP or URL. Anything that is not an alarm is
+  a one-line notice with no body.
+- Every alarm has `AlarmActions` and `OKActions`.
+- `docs/RUNBOOKS.md` section 5 covers reading the queue by hand and pausing the job.
 
 The budget also emails one person directly: the address the account-wide budget `capyweb-monthly-20`
-already uses (capyweb-manager, 2026-09-29). `capyweb-monthly-20` itself stays, since it is the only
-account-wide budget. The SNS alarm topics have no subscribers on dev; production alarms get theirs at W12.
+already uses (capyweb-manager, 2026-09-29). Budgets need no confirmation, so that stays.
+`capyweb-monthly-20` itself stays too, since it is the only account-wide budget.
 
 The backend alarms:
 
@@ -181,8 +193,8 @@ the SPA fallback (which also sends `www.` names to the apex) and the edge 404. I
 
 The recordings: `infra/media/make-recordings.sh <capytube-stream.mp4> <dir>` (about 11 min on this
 Mac), then `infra/media/upload-media.sh <stage> <dir>`; the pass pictures:
-`infra/media/upload-pass-images.sh <stage>`. Production alarm emails:
-`CAPYWEB_PROD_GO=1 infra/ops/subscribe-alarms.sh` (the recipient must confirm each).
+`infra/media/upload-pass-images.sh <stage>`. Alarms reach the capyweb room through the relay (above);
+there are no alarm emails.
 
 ## Current dev endpoints
 

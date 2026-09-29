@@ -64,8 +64,8 @@ Read with: `docs/WASM_PLAN.md` (the W12 row, sections 4 and 5), `docs/PLAN.md` (
   Per-stage values are in `infra/site/stages.json` (prod: `capytube.xyz`, `www.capytube.xyz`,
   `PriceClass_200`; its key group and headers-policy ids are filled in at G2). The site template takes
   `ResponseHeadersPolicyId`, `WwwDomain` (a 301 to the apex) and `PriceClass`. The media scripts take the
-  stage, and production needs `CAPYWEB_PROD_GO=1`. `infra/ops/subscribe-alarms.sh` subscribes
-  production's alarm recipient.
+  stage, and production needs `CAPYWEB_PROD_GO=1`. (An email subscription script was built here and
+  retired on 2026-09-30: alarms go to the capyweb room instead, see P10.)
 - **Backend** (0728b28): the health check per stage, and the sign-up cap (`backend/src/signupcap.ts`).
   **Deployed to dev and checked** (23:3x).
 - **Web** (b954782): the app passes the CSP (0 violations across the page tests), the boot script is a
@@ -80,7 +80,8 @@ Read with: `docs/WASM_PLAN.md` (the W12 row, sections 4 and 5), `docs/PLAN.md` (
 - P7: `upload-media.sh prod` and `upload-pass-images.sh prod`.
 - P8: `build-release.sh prod <dist>`, then `deploy.sh prod content <dist> --web`.
 - P9: `deploy.sh prod alarms <name>`.
-- P10: `subscribe-alarms.sh`.
+- P10: the alarm relay to the capyweb room (`infra/ops/alarm-relay.yaml`, deployed by capyweb-manager;
+  `capyweb-b6e.12.6`). There is no email, so nobody clicks anything.
 - D1 is part of P5.
 - D2 (G3) is `deploy.sh prod dns <name>`.
 
@@ -93,6 +94,38 @@ Every one of them needs `CAPYWEB_PROD_GO=1`.
 - Real phones: the master decides who. The WebKit pass on dev found one WebKit-only bug: a chat poll
   failing CORS from WebKit's cache, fixed by the same-origin API.
 - The chat and deletion runbooks are written.
+
+**G2 as built (2026-09-30, dark; the master's go through capyweb-manager at 00:35):**
+
+| Step | What exists | Id |
+|---|---|---|
+| P1 | Signing key: private half only in SSM `/capyapp/capyweb/prod/playback-signing-key` (generated in memory, never on disk); public key and key group made by the admin | key `KGBQPIJ6ONM0G`, key group `f2658315-4100-41ab-ad29-c4ba5d3497a7` |
+| P2 | `capyapp-capyweb-backend-prod` (54 resources; Cognito window 00:37-00:39, then pinned to the dev and prod pools) | pool `ap-southeast-1_UHQr4ASjX`, client `6n2q1kh61ekjttfl4uguv5if40`, API `zw8fiyexsd` stage `prod` |
+| P4 | Catalog seed, `seedItems(…, { catalogOnly })`: 11 items, no seed users' offers, activity or owned pass | — |
+| P5, D1 | Certificate for the apex and www, both names validated by DNS in the DNS account | `6466ad50-cf5c-4cf7-a31a-779caa9c0f3f` |
+| — | Headers policy `capyapp-capyweb-prod-headers`, made by the admin from `headers-prod.json` | `8ccf1cd4-d623-4458-944a-4ac780f92e96` |
+| D0 | The Amplify `capytube.xyz` association, found and removed by the admin (01:31) | — |
+| P6 | `capyapp-capyweb-site-prod`: the distribution holds the apex and www; no DNS record names it | distribution `E1S7HVWZHIVWAA` (`d3jz2uh04tmtrh.cloudfront.net`), OAC `EV4LTLE0U8KCS` |
+| P7 | Recordings, reel and pass pictures: 1,570 objects, 1,187,639,792 bytes, the same as dev's | — |
+| P8 | The production release: 38 files, no WebMCP, no inline script | — |
+| P9 | `capyapp-capyweb-alarms-prod` (us-east-1): the egress alarm at 26 GB a day | — |
+| P10 | First done as email subscriptions (01:38). The master then chose the capyweb room instead (01:50), so they were dropped: made through the SNS API, they cannot be unsubscribed while pending, and they lapse unclicked. Alarms now go through the relay (`capyweb-b6e.12.6`), with `OKActions` added so a recovery is posted too | — |
+
+**The dark test (P11) passed:** every item of section 5, stage 2, through the resolver rule. That
+includes the paid camera on the production key group, the callbacks at the apex, the www redirect, the
+edge 404s and every header, with 0 CSP violations and 0 page errors. The only other hosts contacted were
+Cognito's own managed-login page loading its files; the site's pages contacted none.
+
+**Cleanup:** the test user was removed by the runbook (section 1 of `docs/RUNBOOKS.md`: disabled, signed
+out everywhere, 15 minutes, then its 13 items and the account). The catalog was re-seeded, so production
+opens with the 11 catalog items only.
+
+**For G3:**
+- `deploy.sh prod dns <name>` (D2);
+- the alarm relay deployed and its synthetic test passed (`capyweb-b6e.12.6`; no clicks for anyone);
+- the `xqg` blockers above.
+
+The site-down alarm stays in ALARM until the apex resolves.
 
 ## 1. What changes, in order
 
@@ -184,9 +217,13 @@ Each item is a commit on `feat/wasm-frontend`, reviewed, then proven on dev (sec
 9. **Scripts with `STAGE=dev` hard-coded.** `infra/media/upload-media.sh`,
    `infra/media/upload-pass-images.sh` and the content upload (`infra/site/deploy.sh`) each take the stage as an
    argument. Production is refused unless `CAPYWEB_PROD_GO=1` is set, as a written reminder of the go.
-10. **Alarm recipients.** A small script subscribes the address `capyweb-monthly-20` already uses to the
-    two production topics. It reads the address the way `infra/ops/deploy.sh` does, without printing it.
-    **SNS email needs the recipient to click a confirmation link**, unlike the budget's direct email.
+10. **Alarm recipients.** As built at G2 (herdr-master, 2026-09-30): no email.
+    - All five capyweb topics deliver to one SQS queue.
+    - A job on Mac mini 3 posts one sanitised line per alarm to the capyweb room
+      (`infra/ops/alarm-relay.yaml`, `alarm_relay.py`, `alarm-relay-job.sh`; `docs/RUNBOOKS.md`
+      section 5).
+    - SNS email would have needed a click on a confirmation link. The budget's direct email needs none,
+      and stays.
 11. **Sign-up cap (`kbq`, if the manager chooses it; section 3).** A Cognito pre-sign-up Lambda that
     refuses new sign-ups past a daily and an hourly cap, with a counter item in the main table and a TTL.
     An alarm on the refusals goes to the stage's alarm topic.
@@ -271,7 +308,7 @@ A simulator check of each row at the go is the manager's call.
 | Real phones | Not done | WASM_PLAN risk mitigation: "test on a real iPhone and Android phone before cutover". The W14 QA ran headless Chromium only; iOS Safari uses the native HLS path. | A person with the phones: the manager decides who. I first run Playwright's WebKit on dev myself, which catches most Safari issues but is not iOS. | One real iPhone and one Android phone, 15 minutes each, on the dark production stack if the tester can map the name; otherwise on dev. |
 | Chat moderation | No tool | Public chat on a public site, and the admin beads (`2pj`, `x7w`, `zlb`, `jji`) wait until after cutover. Today a message can be removed only by an admin in DynamoDB. | The manager: is a runbook enough for launch? | A written runbook for launch: remove a chat item, and disable a user with `AdminDisableUser`. A moderation route follows with the admin beads, spec first. |
 | The Amplify domain association | Unknown | D0 | An admin in autonomous-lab | Check it before G2 |
-| Alarm recipients | Not subscribed | P10, and a click on each confirmation email | The recipient | At G2 |
+| Alarm route | The relay is built (`capyweb-b6e.12.6`) | P10: the relay stack, the Mac mini 3 job and a synthetic alarm posted to the room | capyweb-manager deploys it; no clicks | Before G3 |
 
 Not blockers for play coins, and already on the "Before real money" list in `docs/WASM_PLAN.md`:
 - `c8m`: the paid footage is public elsewhere;
@@ -291,7 +328,7 @@ build.
 | R1 | Content: back to the previous release | `deploy.sh --web` keeps the previous release's hashed files. Upload that release's `index.html` and invalidate. | Minutes (dev's invalidations today finished within a few minutes) |
 | R2 | Stack settings, such as the headers policy | A change set from the previous template | Minutes, plus 5 to 15 minutes for CloudFront to spread the change |
 | R3 | **Take the apex off (back to today)** | Delete `capyapp-capyweb-dns-prod`, or update it with no records | Route 53 applies it in about a minute. Resolvers keep the alias answer for its 60 s TTL, so most visitors see it gone within about 2 minutes |
-| R4 | A React fallback on the apex | Not recommended. The React app needs the Amplify backend, whose data API is open to anyone with its public key (`docs/PLAN.md` 1e). The static `demo/` prototype could be uploaded to the production bucket in minutes (`upload-content.sh prod demo`), but it has no sign-in. | — |
+| R4 | A React fallback on the apex | Not recommended. The React app needs the Amplify backend, whose data API is open to anyone with its public key (`docs/PLAN.md` 1e). The static `demo/` prototype could be uploaded to the production bucket in minutes (`deploy.sh prod content demo`), but it has no sign-in. | — |
 
 The switch itself shows up slowly: the SOA's negative-caching TTL is 900 s. A resolver that asked for
 the apex shortly before the switch keeps "no such record" for up to **15 minutes**.

@@ -193,6 +193,7 @@ cert)
            --tags Key=capy-scope,Value=capyapp Key=Project,Value=capyweb Key=Stage,Value="$STAGE" \
            --query CertificateArn --output text)
     # One validation record per name; ACM fills them in a few seconds after the request.
+    FILLED=0
     for _ in $(seq 20); do
       RECORDS=$(aws acm describe-certificate --region us-east-1 --certificate-arn "$CERT" \
                 --query 'Certificate.DomainValidationOptions[].ResourceRecord' --output json)
