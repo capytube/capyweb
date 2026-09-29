@@ -40,9 +40,8 @@ these are the manager's decisions.
   `/api/*` route. Task W12 fixes that.
 - **Sign-in is still blocked on the missing Cognito grant (`capyweb-w26`).** Write features (votes, bids,
   chat, coins) can be built against the auth seam, but cannot be tested end to end until the grant exists.
-- **The beads database for capyweb exists only on the lent MacBook Pro.** The clone on this Mac has an
-  empty, uninitialised database, and origin has no Dolt data. Section 6 lists what can be recovered and
-  the access nic needs to grant.
+- **The beads database for capyweb existed only on the lent MacBook Pro.** It was rebuilt here from the
+  ids in the repo on 2026-09-29 (section 6); the lent Mac's own history merges when it is back.
 
 ---
 
@@ -478,8 +477,8 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
    - A private remote needs a private repo. Ask capyweb-manager when one is wanted.
 2. **Done:** `npm ci` in `backend/src`. Without it, pre-push skips the backend tests and the behavioural
    playback-locator check.
-3. `brew install aws-sam-cli` and `npm i -g esbuild@0.21` for backend deploys (only once there is an
-   identity).
+3. **Done:** SAM CLI from Homebrew (1.166.2). esbuild comes from `backend/src`'s own dev dependencies
+   (0.21.5), so no global install is needed.
 4. **Deploy identity for this Mac: it exists** (corrected by capyweb-manager, 2026-09-29 ~15:00). Profile `capy`
    here is IAM user `capyapp-mac-pro-japan-16`, in group `capyapp-deployers` only, with an active key made on
    24 Sep. herdr-master's go: **the dev stack only**. Going public (the `capytube-dns` role, the apex, W12)
@@ -515,8 +514,14 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
      `infra/site/headers-<stage>.json`, and the site stack only attaches one by id.
    - **The old key:** `capyapp-macbook-pro-14`'s key stays **deactivated** (herdr-master's choice), not
      deleted.
-5. Once the identity exists: read `ApiUrl`, set it as the app's proxy backend, and record it in
-   `infra/README.md`.
+5. **Done:** `ApiUrl` is recorded in `infra/README.md` (dev stack outputs); the dev site reaches it at
+   `/api` through CloudFront (W12), and `trunk serve` proxies to it (section 5).
+6. **Done on 2026-09-30:** `scripts/guard.sh` fails if beads data would reach git: anything tracked under
+   `.beads/` beyond its config, README, metadata and hooks, any tracked `*.jsonl`, a config without
+   `no-push: true`, or a config that names a sync remote. Six self-test cases.
+7. **Open: a private remote for the beads database.** It needs a private repository, which is
+   capyweb-manager's call. Until then the only copies are this Mac's database and beads' own backups
+   in `.beads/backup/` (ignored by git).
 
 ### Needs the lent Mac (when it is back)
 
@@ -550,7 +555,7 @@ everything else can start now.
 | W12 | Release: `/api/*` behaviour + CloudFront Function, CSP headers policy, `deploy.sh` web mode (immutable hashed files, wasm content type, keep the previous release) | 5% | new deploy identity (Q3) |
 | W13 | Guards and tests: the 8 new guard rules + self-tests, pre-push cargo checks, size budget, a headless browser smoke test | 5% | — |
 | W14 | Accessibility and performance pass, parity check against `demo/` and React, and QA of dev by a headless helper (not Instinct, capyweb-manager 2026-09-29 21:30): every route at phone and desktop widths, signed out and signed in; vote, bid, chat, react and the profile name; the free and paid cameras with a fresh test user (the old one deleted); then one reviewer pass over the QA results | 5% | W12 |
-| W15 | Carry-over: rebuild beads here, private Dolt remote, backend `npm ci`, record `ApiUrl`, lent-Mac clean-up when it returns | 3% | identity (Q3); the Mac |
+| W15 | Carry-over: rebuild beads here, private Dolt remote, backend `npm ci`, record `ApiUrl`, lent-Mac clean-up when it returns. Done here: the rebuild, `npm ci`, the tools, `ApiUrl`, the beads guard (section 6). Left: the private remote (a private repository), and everything under "Needs the lent Mac" | 3% | the Mac; a private repository |
 | W16 | Retire React after cutover: remove `src/`, `vite.config.ts`, `amplify/`, `amplify.yml` and the npm dependencies; update the guard baseline | 1% | W14 |
 | | **Total** | **100%** | |
 
@@ -645,11 +650,15 @@ must be fixed or decided again before real payments:
 1. **Paid footage is public elsewhere** (`capyweb-c8m`): wall-cam's minutes are in the public
    `magnus-video-public/capytube-stream.mp4`. `docs/VIDEO_DESIGN.md` section 8, "Not exclusive yet".
 2. **VOD cookies open the whole recording** while valid (up to 90 s), not only the minute paid for.
-   `docs/VIDEO_DESIGN.md` section 8, "Weak spot, accepted for a mock".
+   `docs/VIDEO_DESIGN.md` section 8, "Weak spot, accepted for a mock". `capyweb-1by.1` has a spec.
 3. **An access token keeps working for up to 15 minutes after sign-out.** The API's JWT authorizer
    does not check revocation; sign-out revokes the refresh token, and the web app holds tokens only
    in memory and clears them. Kept at 15 minutes (capyweb-manager, 2026-09-29 21:30). With real
-   money: a shorter access-token life, or a revocation check on the spending routes.
+   money: a shorter access-token life, or a revocation check on the spending routes. `capyweb-1by.2`
+   has a spec.
+
+All three are children of `capyweb-1by`. `c8m` is also item A5 of the React retirement
+(`docs/W16_PLAN.md` on the W16 branch): after the soak, on the master's go.
 
 ### Open questions (decided by capyweb-manager on 2026-09-29; see "Decisions" at the top)
 

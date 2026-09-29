@@ -319,6 +319,29 @@ else
 fi
 fi
 
+# The code repo is public, and the issues describe live leaked keys and attack surface, so beads
+# data never goes to git: only beads' config, README, metadata and hooks are tracked, no issue
+# export (*.jsonl) is tracked anywhere, and the config keeps no-push and names no sync remote
+# (docs/WASM_PLAN.md section 6; capyweb-manager, 2026-09-29).
+if [ -z "$hookdir" ]; then
+  pass "beads check skipped (not a git work tree)"
+else
+  beads_problem=""
+  beads_extra=$(git ls-files .beads | grep -v -E '^\.beads/(\.gitignore|README\.md|config\.yaml|metadata\.json|hooks/[A-Za-z-]+)$')
+  [ -n "$beads_extra" ] && beads_problem="$beads_problem tracked:$(echo $beads_extra | tr ' ' ',')"
+  jsonl_hits=$(git ls-files | grep -E '\.jsonl$')
+  [ -n "$jsonl_hits" ] && beads_problem="$beads_problem jsonl:$(echo $jsonl_hits | tr ' ' ',')"
+  grep -qE '^no-push:[[:space:]]*true[[:space:]]*$' .beads/config.yaml 2>/dev/null ||
+    beads_problem="$beads_problem no-push-missing"
+  grep -qE '^[[:space:]]*(sync\.)?remote[[:space:]]*:' .beads/config.yaml 2>/dev/null &&
+    beads_problem="$beads_problem sync-remote-set"
+  if [ -n "$beads_problem" ]; then
+    fail "beads data stays out of git" "the repo is public; untrack it or restore .beads/config.yaml -$beads_problem"
+  else
+    pass "beads data stays out of git (config, README, metadata and hooks only; no-push, no sync remote)"
+  fi
+fi
+
 # nic's Actions allowance is exhausted; a push queues runs that cannot execute.
 if [ -d .github/workflows ] && [ -n "$(ls -A .github/workflows 2>/dev/null)" ]; then
   fail "no GitHub Actions workflows" "Actions minutes are exhausted; use local hooks or AWS CodeBuild"

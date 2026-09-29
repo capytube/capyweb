@@ -133,6 +133,18 @@ expect_fail "unpinned npx" "npx must use --no-install" \
   "echo 'npx some-tool' > run.sh"
 expect_fail "hooks clobbered (beads block gone)" "hooks intact" \
   "h=\$(git rev-parse --git-path hooks); grep -v 'BEADS INTEGRATION' \"\$h/pre-commit\" > \"\$h/t\" && mv \"\$h/t\" \"\$h/pre-commit\" && chmod +x \"\$h/pre-commit\""
+expect_fail "a beads issue export staged in .beads/" "beads data stays out of git" \
+  "echo '{\"id\":\"x-1\"}' > .beads/issues.jsonl && git add .beads/issues.jsonl"
+expect_fail "an issue export staged outside .beads/" "jsonl:docs/issues.jsonl" \
+  "echo '{\"id\":\"x-1\"}' > docs/issues.jsonl && git add docs/issues.jsonl"
+expect_fail "beads' backup forced into git" "tracked:.beads/backup/x.darc" \
+  "mkdir -p .beads/backup && echo x > .beads/backup/x.darc && git add -f .beads/backup/x.darc"
+expect_fail "beads config without no-push" "no-push-missing" \
+  "sed -i '' '/^no-push:/d' .beads/config.yaml"
+expect_fail "beads config with a sync remote" "sync-remote-set" \
+  "sed -i '' 's|^# sync.remote:|sync.remote:|' .beads/config.yaml"
+expect_fail "beads config with a nested sync remote" "sync-remote-set" \
+  "printf 'sync:\n  remote: git+https://example.test/r\n' >> .beads/config.yaml"
 
 # B4: an unanchored baseline entry for :66 used to swallow a real violation at :660.
 expect_fail "baseline must not swallow a nearby line" "no direct S3 URLs" \

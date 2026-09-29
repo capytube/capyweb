@@ -316,8 +316,10 @@ A simulator check of each row at the go is the manager's call.
 
 Not blockers for play coins, and already on the "Before real money" list in `docs/WASM_PLAN.md`:
 - `c8m`: the paid footage is public elsewhere;
-- the VOD-cookie note;
-- the 15-minute access token after sign-out.
+- the VOD-cookie note (`1by.1`);
+- the 15-minute access token after sign-out (`1by.2`).
+
+All three are children of `capyweb-1by`, with a short spec each; none is built before real money.
 
 ## 4. Rollback
 
