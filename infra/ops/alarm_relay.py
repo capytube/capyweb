@@ -31,14 +31,16 @@ REASON_MAX = 120
 
 # Order matters: a URL holds a hostname, an ARN holds an account id.
 _SANITISE = [
-    re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s)\]>\"']*", re.I),     # URLs, queue URLs included
+    re.compile(r"[a-z][a-z0-9+.-]*://[^\s)\]>\"']*", re.I),       # URLs, queue URLs included, glued too
     re.compile(r"arn:[a-z0-9-]*:[^\s)\]>\"']*", re.I),               # ARNs, glued to a word too ("Warn: x" is kept)
     re.compile(r"\S+@\S+"),                                          # e-mail addresses
     re.compile(r"(?<![\d.])\d{1,3}(?:\.\d{1,3}){3}(?!\.?\d)"),          # IPv4, glued to a word too
-    re.compile(r"(?<![0-9a-f:])[0-9a-f]*::[0-9a-f:]*(?:%\w+)?", re.I),  # IPv6 with "::" (::1, fe80::1%eth0)
+    re.compile(r"(?<![0-9a-f:])[0-9a-f]*::[0-9a-f:]*(?:%[\w.-]+)?", re.I),  # IPv6 with "::" (::1, fe80::1%eth0)
     re.compile(r"(?<![0-9a-f:])(?:[0-9a-f]{0,4}:){3,7}[0-9a-f]{0,4}(?![0-9a-f:])", re.I),  # IPv6, 3+ colons (a time has 2)
     re.compile(r"\b(?:[a-z0-9-]+\.)+[a-z]{2,}\b", re.I),             # hostnames
+    re.compile(r"\bip-\d{1,3}(?:-\d{1,3}){3}\b", re.I),               # EC2 private names (ip-10-0-12-7)
     re.compile(r"\d{12,}"),                                          # account ids (any run of 12+ digits)
+    re.compile(r"(?<!\d)\d{4}-\d{4}-\d{4}(?!\d)"),                    # account ids as the console groups them
 ]
 
 

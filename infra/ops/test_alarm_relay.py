@@ -50,9 +50,10 @@ class Sanitise(unittest.TestCase):
     def test_identifiers_glued_to_words_go_too(self):
         # review rv headless 2026-09-30 (Kimi): these survived the first version
         for dirty in ("x10.0.12.7", "10.0.12.7x", "z2001:db8::1", f"xarn:aws:sns:x:{ACCT}:y", "::1", "fe80::1%eth0",
-                      "ip 10.0.12.7.", "host [2001:db8::1]:443"):
+                      "ip 10.0.12.7.", "host [2001:db8::1]:443", "z_https://ex.com/x", "0https://ex.com/x",
+                      "6190-7134-7239", "ip-10-0-12-7", "fe80::1%eth0.Zone"):
             clean = r.sanitise(f"a {dirty} b", 500)
-            for bad in ("10.0", "2001", "db8", "arn:", "::", "fe80", ACCT):
+            for bad in ("10.0", "10-0", "2001", "db8", "arn:", "::", "fe80", "://", "ex.com", "7134", "Zone", ACCT):
                 self.assertNotIn(bad, clean, f"{dirty!r} -> {clean!r}")
 
     def test_ordinary_words_and_times_stay(self):
