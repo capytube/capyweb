@@ -502,7 +502,7 @@ pub fn AccountControl() -> impl IntoView {
                     <span class="sr-only">" play coins"</span>
                 </A>
             })}
-            <button type="button" class="btn btn-ghost btn-small"
+            <button type="button" class="btn btn-ghost btn-small whitespace-nowrap"
                 data-testid=if signed_in { "sign-out" } else { "sign-in" }
                 title=user.and_then(|u| u.email)
                 on:click=move |_| if signed_in { auth.sign_out() } else { auth.sign_in(&page_path()) }>

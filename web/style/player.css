@@ -20,11 +20,13 @@
 }
 .player-note { margin-top: 0.5rem; font-size: 0.9rem; min-height: 1.35em; }
 .player { position: relative; }
-/* "Recorded" on the picture itself (W6): a recording never passes for live. */
+/* "Recorded" on the picture itself (W6): a recording never passes for live. Top right: the top
+   left is the camera's logo plate, and the top centre has the "Recorded" burned into our cuts over
+   the source's "Live stream" (infra/media/make-recordings.sh), which the W14 QA saw it cover. */
 .player-badge {
   position: absolute;
   top: 0.6rem;
-  left: 0.6rem;
+  right: 0.6rem;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;

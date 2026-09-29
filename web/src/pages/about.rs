@@ -13,7 +13,7 @@ pub fn About() -> impl IntoView {
                 <p>
                     " Welcome to "
                     <strong>"CapyTube"</strong>
-                    ", your window into the charming world of capybara live streams! "
+                    ", your window into the charming world of capybara cameras! "
                 </p>
                 <p>
                     " Here, you can watch your favorite capybara, "

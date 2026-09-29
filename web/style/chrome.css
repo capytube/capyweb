@@ -12,7 +12,10 @@
   z-index: 20;
 }
 
+/* Fixed while focused: Tab wrapping round from the page's end scrolls to the top smoothly, and
+   the link must be on screen at once, not half above it (W14 QA). */
 .skip:focus {
+  position: fixed;
   top: 0.5rem;
 }
 

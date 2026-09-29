@@ -592,6 +592,45 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
     release build), or raise the budget with a reason. The guard fails the push first, so this cannot
     drift unseen. W14 owns the decision.
 
+### W14 results (2026-09-29)
+
+**Accessibility.** axe-core (WCAG 2.2 A and AA) found no violations on 18 routes at 390 and 1280 px,
+signed out and in, with the dialogs open. Found by hand and fixed: the Play picker's `aria-pressed`
+rendered empty (never announced); the phone tab bar's focus ring was 1.69:1 (now 6.43:1) and it
+clipped "Me" at 320 px or 200% text; the sticky top bar hid focused fields; dialogs opened on
+Confirm (now on Cancel, so a held Enter never spends); Play card and Profile name errors were not
+tied to their fields; chat's reactions and send failures were not announced; the home camera
+cards scrolled sideways at 200% text; the skip link could be half off screen after Tab wrapped.
+`web/tests/pages/a11y.mjs` keeps axe and the keyboard checks in the suite. Left: captions for any
+recording with speech (ours are silent), and at 200% text the two-row tab bar covers the footer's
+last ~70 px.
+
+**Performance** (Lighthouse 12.8, local release build served with brotli as the CDN does, single
+runs): mobile scores 80-93 and LCP 3.1-4.6 s; desktop 97-100 and LCP 0.7-1.2 s; CLS 0.045 or less
+(the footer used to jump as data arrived: `min-height` on the view took mobile CLS from 0.085-0.196
+to 0.002 or less). For W12: self-host the three font families (the Google Fonts stylesheet blocks
+rendering, ~850 ms), `Cache-Control: immutable` on hashed files, brotli at the CDN, and recompress
+`/assets/cast/*.jpg` (~261 KiB on /watch) with `srcset`.
+
+**Size.** With `erase_components` (section 5, rule 2) and everything W14 added, production is
+265,133 bytes brotli, the dev build with the WebMCP tools 288,388 of the 350,000 cap.
+
+**Parity** (`docs/PARITY.md`): 37 rows, 28 the same, 4 deliberate drops, 5 gaps and none blocks
+cutover. The first-sign-in name prompt, which this plan promised, is built; the reaction bursts, the
+"Hi, {name}" greeting, the footer copyright, the demo's coin top-up and `og:image` wait for W12 or
+later (capyweb-manager, 2026-09-29).
+
+**QA of dev** (a headless helper, then a reviewer): 64 page loads (16 routes, 390 and 1280, signed
+out and in) and the flows (sign-in and the name prompt, vote and a cancelled vote, a bid looked at,
+reaction and chat, the free recording, the paid camera with a renewal and Stop, profile, keyboard,
+sign-out) passed. Fixed from it: the dev media bucket lacked the three pass pictures (403;
+`infra/media/upload-pass-images.sh`); paid minutes showed as "Other" in the ledger; About promised
+"live streams"; "Sign out" wrapped on a phone; the player's badge covered the camera's logo plate
+(moved to the top right; the recordings keep their burned-in "Recorded", which hides the source's
+"Live stream"). Before it, the lead's own dev check found a stall late in a paid minute cost a
+second minute; the fresh start now reuses cookies that are still good (`docs/VIDEO_DESIGN.md`
+section 8).
+
 ### Before real money (accepted for play coins; revisit before any real payment)
 
 Each is fine while coins are play coins that are not money (capyweb-manager, 2026-09-29), and each

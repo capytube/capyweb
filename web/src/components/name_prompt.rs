@@ -102,6 +102,7 @@ pub fn NamePrompt() -> impl IntoView {
                         session.coins.set(me.balance);
                     }
                     session.needs_name.set(false);
+                    note.set("");
                     open.set(false);
                     toasts.show("Display name saved.");
                 }

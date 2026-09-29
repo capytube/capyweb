@@ -61,6 +61,8 @@ fn entry_label(kind: &str) -> &'static str {
         "bid_refund" => "Bid returned (outbid)",
         "chat" => "Chat message",
         "reaction" => "Reaction",
+        "playback" => "Paid camera minute",
+        "grant" => "Grant",
         _ => "Other",
     }
 }
@@ -224,6 +226,7 @@ mod tests {
     #[test]
     fn ledger_lines_read_plainly() {
         assert_eq!(entry_label("signup_grant"), "Welcome grant");
+        assert_eq!(entry_label("playback"), "Paid camera minute");
         assert_eq!(entry_label("something_new"), "Other");
         assert_eq!(entry_amount(50), "+50 play coins");
         assert_eq!(entry_amount(-1), "-1 play coin");
