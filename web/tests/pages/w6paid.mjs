@@ -152,11 +152,46 @@ export async function check({ browser, BASE, SHOTS }) {
   assert.equal(api.posts.length, gaveUp, 'nothing bought after giving up');
   await page.unroute('**/fixtures/paid/wall-cam/**');
 
-  // -- a refusal: a plain message, no player -------------------------------------------------
-  api.refuse = { error: 'not enough coins', code: 'insufficient_coins' };
+  // -- a picture that never comes (the server takes the request and never answers): no error,
+  //    so the player's 15 s watchdog fails it; one fresh start, then no more buying, even at
+  //    the fake's 5 s cadence (review rv-1790680891-72131) ------------------------------------
+  const hung = [];
+  await page.route('**/fixtures/paid/wall-cam/**', (r) => { hung.push(r); }); // never answered
+  const hang = api.posts.length;
   await page.click('[data-testid=paid-watch]');
   await page.click('[data-testid=paid-start]');
-  await note.getByText(/Not enough play coins: a minute costs 6 play coins and you have \d+ play coins\. Nothing more was spent\./).waitFor();
+  await video.waitFor();
+  await sleep(8000); // past the 5 s renewal: nothing has played, so nothing more is bought
+  assert.equal(api.posts.length - hang, 1, 'no renewal for a picture that has not played');
+  await note.getByText('The recording would not play, so nothing more will be charged.').waitFor({ timeout: 40000 });
+  assert.equal(api.posts.length - hang, 2, 'the purchase and one fresh start');
+  assert.equal(await video.count(), 0);
+  await sleep(6000);
+  assert.equal(api.posts.length - hang, 2, 'nothing bought after giving up');
+  await page.unroute('**/fixtures/paid/wall-cam/**');
+  await Promise.all(hung.map((r) => r.abort().catch(() => {})));
+
+  // -- no autoplay (reduced motion): nothing more is bought until the viewer presses play ------
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const still = api.posts.length;
+  await page.click('[data-testid=paid-watch]');
+  await page.click('[data-testid=paid-start]');
+  await page.waitForFunction(() => document.querySelector('[data-testid=locked-camera] video')?.readyState >= 1);
+  await sleep(7000);
+  assert.equal(api.posts.length - still, 1, 'no renewal while the picture waits for play');
+  assert.equal(await video.evaluate((v) => v.paused), true);
+  await video.evaluate((v) => v.play());
+  await until(() => api.posts.length - still === 2, 'the next minute once it plays', 8000);
+  await page.click('[data-testid=paid-stop]');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+  // -- a refusal: a plain message, no player -------------------------------------------------
+  api.refuse = { error: 'not enough coins', code: 'insufficient_coins' };
+  api.balance = 4; // what the server would see when it refuses a 6-coin minute
+  await page.click('[data-testid=paid-watch]');
+  await page.click('[data-testid=paid-start]');
+  await note.getByText('Not enough play coins: a minute costs 6 play coins and you have 4 play coins. Nothing more was spent.').waitFor();
+  api.balance = 42;
   assert.equal(await video.count(), 0);
   await page.locator('[data-testid=paid-watch]').waitFor();
 

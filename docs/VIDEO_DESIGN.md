@@ -237,6 +237,10 @@ This is what the front end relies on. W6 built the front-end half.
 - A non-live source keeps its position in `sessionStorage` and resumes there after a reload.
 - A fatal error moves to the reel. If the reel fails too, the player shows the poster and an
   offline message.
+- A picture that never comes is a fatal error too. The trigger is 15 s of visible time with the video
+  wanting to play (a play request or a stall) and no `playing` event. A server that takes the request
+  and never answers raises no error of its own, and hls.js retries for a minute or more. Refused
+  autoplay (iOS Low Power Mode) and reduced motion arm nothing until the viewer presses play.
 - Unmounting removes every listener and timer and destroys hls.js.
 
 **CSP** for W12's response-headers policy:
@@ -384,10 +388,16 @@ free tiers (about one call a minute per paying viewer).
   have N play coins.") with Start watching and Cancel. Without sign-in configured: no button.
 - Start buys through `POST /api/playback/<id>` (same-origin, one Idempotency-Key per purchase;
   a lost answer is asked again twice with the same key), then plays the checked source. It buys
-  again after `renew_after_s`, but never while the tab is hidden; after 40 s or more hidden it
-  starts the player again once the next minute is paid, in case the cookies ran out. Stop,
-  leaving the camera or a refusal ends it; after a refusal the minute already paid still plays.
+  again after `renew_after_s`, but only while the tab is visible and only once the picture has
+  played since its player started. After 40 s or more hidden it starts the player again once the
+  next minute is paid, in case the cookies ran out. Stop, leaving the camera or a refusal ends it;
+  after a refusal the minute already paid still plays.
+- A picture that fails or never comes (the player's 15 s rule) gets one fresh start. It is
+  usually free: the server charges only when fewer than 30 s are paid. If it fails again before
+  it has played, nothing more is bought, and the note says "The recording would not play, so
+  nothing more will be charged." A hang therefore costs the first minute and no more.
 - Tests: `web/tests/pages/w6.mjs` (recordings, the live path on a stubbed camera, the reel, the
   paid camera signed out) and `w6paid.mjs` (sign-in, confirm, buy, renew with a new key, a lost
-  answer retried with the same key, nothing bought while hidden, Stop, a refusal, a foreign
-  source refused, leaving).
+  answer retried with the same key, nothing bought while hidden, Stop, a double Start, media
+  refused (403) and media that never answers (one fresh start, then nothing), no renewal before
+  play under reduced motion, a refusal, a foreign source refused, leaving).

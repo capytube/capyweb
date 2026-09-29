@@ -7,6 +7,9 @@
 //! error moves to the fallback reel, then to the offline state, and unmounting destroys the
 //! player (listeners, timers, the hls.js instance). Design: docs/VIDEO_DESIGN.md.
 //!
+//! A source that never shows a picture fails too: wanting to play, visible, and no picture for
+//! 15 s (a server that takes the request and never answers raises no error).
+//!
 //! It never decides that a camera may be watched: callers pass a source only for a public camera
 //! (`api::camera_src`) or a paid one the viewer has just paid for (`api::paid_src`).
 //!
@@ -16,7 +19,7 @@
 use leptos::{html, prelude::*};
 use wasm_bindgen::prelude::*;
 
-// `attach(video, src, live, resumeKey, onFatal)` in js/player.js:
+// `attach(video, src, live, resumeKey, onFatal, onPlaying)` in js/player.js:
 // - an .mp4 plays natively; an .m3u8 plays natively in WebKit (Safari, every iOS browser) and
 //   through hls.js elsewhere. Chrome now answers canPlayType "maybe" for HLS too, so that answer
 //   alone no longer means Safari: the shim also looks for WebKit's AirPlay picker.
@@ -24,7 +27,9 @@ use wasm_bindgen::prelude::*;
 // - `resumeKey`: a non-live source saves its position in sessionStorage under this key and the
 //   source, every few seconds and on pause, hide and destroy, and restores it on the next attach.
 // - `onFatal()`: called once, asynchronously (never inside a call from Rust), when the source
-//   cannot play. `destroy()` removes every listener and timer and frees the hls.js instance.
+//   cannot play: an error, or 15 s of visible time wanting to play with no picture.
+// - `onPlaying()` (or null): called on each `playing` event, when the picture starts or resumes.
+// `destroy()` removes every listener and timer and frees the hls.js instance.
 #[wasm_bindgen(module = "/js/player.js")]
 extern "C" {
     type Handle;
@@ -36,6 +41,7 @@ extern "C" {
         live: bool,
         resume_key: &str,
         on_fatal: &JsValue,
+        on_playing: &JsValue,
     ) -> Handle;
 
     #[wasm_bindgen(method)]
@@ -81,6 +87,10 @@ pub fn VideoPlayer(
     /// paid camera stops buying on it: nobody pays for a picture that does not come.
     #[prop(optional, into)]
     on_offline: Option<Callback<()>>,
+    /// Called each time the picture starts or resumes moving. A paid camera buys the next minute
+    /// only once this has happened since its player started.
+    #[prop(optional, into)]
+    on_playing: Option<Callback<()>>,
 ) -> impl IntoView {
     let failed = RwSignal::new(Vec::<String>::new());
     let current = Memo::new(move |_| {
@@ -88,9 +98,10 @@ pub fn VideoPlayer(
     });
     let playing = Memo::new(move |_| current.with(Option::is_some));
     let video = NodeRef::<html::Video>::new();
-    let handle = StoredValue::new_local(None::<(Handle, Closure<dyn FnMut()>)>);
+    type Js = Closure<dyn FnMut()>;
+    let handle = StoredValue::new_local(None::<(Handle, Js, Option<Js>)>);
     let stop = move || {
-        if let Some((h, _on_fatal)) = handle.try_update_value(Option::take).flatten() {
+        if let Some((h, ..)) = handle.try_update_value(Option::take).flatten() {
             h.destroy();
         }
     };
@@ -101,10 +112,12 @@ pub fn VideoPlayer(
         stop();
         if let (Some((src, live)), Some(el)) = (cur, el) {
             let bad = src.clone();
-            let on_fatal =
-                Closure::<dyn FnMut()>::new(move || failed.update(|f| f.push(bad.clone())));
-            let h = attach_js(&el, &src, live, &resume_key, on_fatal.as_ref());
-            handle.set_value(Some((h, on_fatal)));
+            let on_fatal = Js::new(move || failed.update(|f| f.push(bad.clone())));
+            let moving = on_playing.map(|cb| Js::new(move || cb.run(())));
+            let none = JsValue::NULL;
+            let moving_js = moving.as_ref().map_or(&none, |c| c.as_ref());
+            let h = attach_js(&el, &src, live, &resume_key, on_fatal.as_ref(), moving_js);
+            handle.set_value(Some((h, on_fatal, moving)));
         }
     });
     on_cleanup(stop);

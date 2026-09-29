@@ -3,6 +3,10 @@
 
 const HLS_URL = '/vendor/hls/1.7.3/hls.light.min.mjs';
 const POS = 'capyweb:pos:';
+// Wanting to play, visible, and no picture for this long is a failure too. A server that takes
+// the request and never answers raises no error (hls.js retries for a minute or more), and a
+// paid camera must not keep buying for a picture that does not come.
+const STUCK_MS = 15000;
 let hlsModule = null; // Promise of the Hls class, shared by every player
 
 function loadHls() {
@@ -27,18 +31,27 @@ function nativeHls(video) {
     && (!window.MediaSource || 'webkitShowPlaybackTargetPicker' in video);
 }
 
-export function attach(video, src, live, resumeKey, onFatal) {
+export function attach(video, src, live, resumeKey, onFatal, onPlaying) {
   const key = POS + resumeKey + ' ' + src;
   let hls = null;
   let gone = false;
   let failed = false;
   let wasPlaying = false;
   let timer = 0;
+  let dog = 0;
 
   const fail = () => {
     if (failed || gone) return;
     failed = true;
     setTimeout(() => { if (!gone) onFatal(); }); // never re-enter Rust from inside its own call
+  };
+  // Armed from a play request or a stall until the picture moves; off while paused (the viewer's
+  // choice, or autoplay refused: no play event then) or hidden.
+  const rest = () => { clearTimeout(dog); dog = 0; };
+  const watch = () => {
+    rest();
+    if (failed || gone || document.hidden || video.paused) return;
+    dog = setTimeout(() => { if (!document.hidden && !video.paused) fail(); }, STUCK_MS);
   };
   const save = () => {
     if (!live && !failed && video.currentTime > 0) savePos(key, video.currentTime);
@@ -57,6 +70,7 @@ export function attach(video, src, live, resumeKey, onFatal) {
   };
   const onVisibility = () => {
     if (document.hidden) {
+      rest();
       wasPlaying = !video.paused;
       video.pause();
       save();
@@ -68,6 +82,8 @@ export function attach(video, src, live, resumeKey, onFatal) {
         toLiveEdge();
       }
       video.play().catch(() => {});
+    } else if (!video.paused && video.readyState < 3) {
+      watch(); // opened in a background tab, still waiting for its first picture
     }
   };
 
@@ -75,6 +91,12 @@ export function attach(video, src, live, resumeKey, onFatal) {
   video.loop = !live; // a reel never ends on a dead frame
   video.autoplay = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   video.addEventListener('error', fail);
+  const moving = () => { rest(); if (onPlaying) onPlaying(); };
+  const WATCH = { play: watch, waiting: watch, playing: moving, pause: rest };
+  for (const [ev, f] of Object.entries(WATCH)) video.addEventListener(ev, f);
+  // An explicit play, so the watchdog starts from the request and not from the first data (the
+  // autoplay attribute alone fires play only once data has come). Refused autoplay is not an error.
+  const start = () => { if (video.autoplay) video.play().catch(() => {}); };
   document.addEventListener('visibilitychange', onVisibility);
   if (!live) {
     video.addEventListener('loadedmetadata', restore, { once: true });
@@ -85,6 +107,7 @@ export function attach(video, src, live, resumeKey, onFatal) {
 
   if (!/\.m3u8$/i.test(src) || nativeHls(video)) {
     video.src = src;
+    start();
   } else {
     loadHls().then((Hls) => {
       if (gone) return;
@@ -100,6 +123,7 @@ export function attach(video, src, live, resumeKey, onFatal) {
       hls.on(Hls.Events.ERROR, (_event, data) => { if (data.fatal) fail(); });
       hls.loadSource(src);
       hls.attachMedia(video);
+      start();
     }, fail);
   }
 
@@ -109,6 +133,8 @@ export function attach(video, src, live, resumeKey, onFatal) {
       save();
       gone = true;
       clearInterval(timer);
+      rest();
+      for (const [ev, f] of Object.entries(WATCH)) video.removeEventListener(ev, f);
       document.removeEventListener('visibilitychange', onVisibility);
       removeEventListener('pagehide', save);
       video.removeEventListener('error', fail);
