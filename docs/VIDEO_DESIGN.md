@@ -363,7 +363,9 @@ URLs signed for a moving window.
 point shows the paid camera's picture with no cookie and no coins. The gate itself holds; the
 footage is simply public elsewhere. Making the paid camera exclusive needs that object made private,
 which is a production change because the current site plays it, or footage that is not public.
-Waiting on capyweb-manager.
+**Accepted for the mock** (capyweb-manager, 2026-09-29 18:11: play coins are not money). The object
+is made private after the cutover, through capyweb-manager: `capyweb-c8m`, blocked by W16
+(`capyweb-b6e.16`). Nobody touches `magnus-video-public` before then.
 
 **Cost per month on dev.** Storage 1.19 GB × $0.025 = **$0.03**. The uploads were about 1,600 PUTs
 ($0.008, once). Egress is inside CloudFront's free 1 TB and 10M requests: one viewer-hour at
