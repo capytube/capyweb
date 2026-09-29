@@ -48,6 +48,32 @@ export async function check({ open, browser, BASE, SHOTS }) {
     await page.close();
   }
 
+  // While the list loads, the cameras and the Now showing photo keep their places: nothing below
+  // jumps when they come (review rv-1790682691-81087 measured 0.31 before).
+  for (const [width, height] of [[390, 844], [1280, 800]]) {
+    const page = await browser.newPage({ viewport: { width, height } });
+    await page.addInitScript(() => {
+      window.__shift = 0;
+      new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__shift += e.value; })
+        .observe({ type: 'layout-shift', buffered: true });
+    });
+    let release;
+    const held = new Promise((r) => { release = r; });
+    await page.route('**/fixtures/streams.json', async (route) => { await held; await route.continue(); });
+    await page.goto(BASE + '/');
+    await page.locator('.home-now-slot').waitFor();
+    assert.equal(await page.locator('.cam-slot').count(), 3);
+    assert.equal(await page.getByRole('status').filter({ hasText: 'Loading cameras…' }).count(), 1);
+    const before = await page.locator('.home-now').evaluate((e) => e.getBoundingClientRect().height);
+    release();
+    await page.locator('.home-now > img').waitFor();
+    await page.locator('.home-now > img').evaluate((el) => el.decode());
+    assert.equal(await page.locator('.home-now').evaluate((e) => e.getBoundingClientRect().height), before);
+    const shift = await page.evaluate(() => window.__shift);
+    assert.ok(shift < 0.02, `layout shift ${shift.toFixed(3)} at ${width}px`);
+    await page.close();
+  }
+
   // Missing data must not invent a photo, awake hours, or a public room.
   const page = await browser.newPage();
   await page.route('**/fixtures/streams.json', route => route.fulfill({

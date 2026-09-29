@@ -31,13 +31,13 @@ pub fn watch_href(s: &LiveStream) -> String {
 #[component]
 pub fn Home() -> impl IntoView {
     let streams = LocalResource::new(|| api::list_streams(None));
-    // The featured room's own capybara, never a stand-in: no photo while loading, without a
-    // public room, or for a capybara with no bundled photo.
-    let now_photo = move || {
-        streams
-            .get()
-            .and_then(Result::ok)
-            .and_then(|page| featured(&page.items).and_then(room_photo))
+    // The featured room's own capybara, never a stand-in. While the list loads, an empty slot of
+    // the same size keeps its place, so the page does not jump when the photo comes. Without a
+    // public room, or for a capybara with no bundled photo, there is no picture at all.
+    let now_photo = move || match streams.get() {
+        None => Some(None),
+        Some(Ok(page)) => featured(&page.items).and_then(room_photo).map(Some),
+        Some(Err(_)) => None,
     };
     view! {
         <PageHead
@@ -47,7 +47,13 @@ pub fn Home() -> impl IntoView {
         />
         <section aria-labelledby="cams-heading" class="mt-8">
             <h2 id="cams-heading">"Cameras"</h2>
-            <Suspense fallback=|| view! { <p>"Loading cameras…"</p> }>
+            // Three card-sized places while the list loads, so nothing below jumps when it comes.
+            <Suspense fallback=|| view! {
+                <p class="sr-only" role="status">"Loading cameras…"</p>
+                <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
+                    <li class="card cam-slot"></li><li class="card cam-slot"></li><li class="card cam-slot"></li>
+                </ul>
+            }>
                 {move || streams.get().map(|r| match r {
                     Err(e) => view! { <p class="text-alertRed">{format!("Could not load cameras: {e}")}</p> }.into_any(),
                     Ok(page) => view! {
@@ -82,8 +88,11 @@ pub fn Home() -> impl IntoView {
             class:home-now-text=move || now_photo().is_none()
             aria-labelledby="now-title"
         >
-            {move || now_photo().map(|photo| view! {
-                <img src=photo.src alt=photo.alt width=photo.width height=photo.height/>
+            {move || now_photo().map(|photo| match photo {
+                Some(photo) => view! {
+                    <img src=photo.src alt=photo.alt width=photo.width height=photo.height/>
+                }.into_any(),
+                None => view! { <div class="home-now-slot" aria-hidden="true"></div> }.into_any(),
             })}
             <div>
                 <h2 id="now-title">"Now showing"</h2>
