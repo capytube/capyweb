@@ -1,3 +1,8 @@
+pub mod about;
 pub mod coming;
+pub mod deletion;
 pub mod home;
 pub mod not_found;
+pub mod privacy;
+pub mod robot;
+pub mod terms;
