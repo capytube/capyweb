@@ -19,7 +19,8 @@ use serde::de::DeserializeOwned;
 use crate::auth::Auth;
 
 use crate::domain::{
-    AccessType, ActivityLog, Capybara, Interaction, InteractionType, LiveStream, Offer, Page, Pass,
+    AccessType, ActivityLog, Capybara, ChatMessage, ChatPage, Interaction, InteractionType,
+    LiveStream, Offer, Page, Pass, RatingCounts,
 };
 
 pub const FIXTURES: &str = "fixtures";
@@ -68,6 +69,8 @@ pub struct ApiError {
     pub status: u16,
     pub url: String,
     pub message: String,
+    /// Stable `code` from the write API, empty when the body has none.
+    pub code: String,
 }
 
 impl ApiError {
@@ -124,11 +127,20 @@ pub fn error_message(status: u16, body: &str) -> String {
         .unwrap_or_else(|| format!("request failed with {status}"))
 }
 
+/// The write API's stable `code` (`slow_down`, `display_name_required`, …).
+pub fn error_code(body: &str) -> String {
+    serde_json::from_str::<serde_json::Value>(body)
+        .ok()
+        .and_then(|v| v.get("code").and_then(|c| c.as_str()).map(str::to_owned))
+        .unwrap_or_default()
+}
+
 pub fn decode<T: DeserializeOwned>(status: u16, url: &str, body: &str) -> Result<T, ApiError> {
     let err = |message: String| ApiError {
         status,
         url: url.to_owned(),
         message,
+        code: error_code(body),
     };
     if !(200..300).contains(&status) {
         return Err(err(error_message(status, body)));
@@ -149,22 +161,26 @@ pub async fn request<T: DeserializeOwned>(
     signal: Option<&web_sys::AbortSignal>,
 ) -> Result<T, ApiError> {
     let url = build_url(base_url(), path, query);
-    let (status, body) = send(&url, Method::GET, None, None, signal).await?;
+    let (status, body) = send(&url, Method::GET, None, None, None, signal).await?;
     decode(status, &url, &body)
 }
 
 /// One fetch: status and body text. Every API call goes through here.
+/// `idempotency` is the `Idempotency-Key` header. The server requires it only when the
+/// action spends coins; chat and reactions send one anyway so a later cost still replays.
 async fn send(
     url: &str,
     method: Method,
     token: Option<&str>,
     body: Option<&str>,
+    idempotency: Option<&str>,
     signal: Option<&web_sys::AbortSignal>,
 ) -> Result<(u16, String), ApiError> {
     let fail = |e: gloo_net::Error| ApiError {
         status: 0,
         url: url.to_owned(),
         message: format!("network error: {e}"),
+        code: String::new(),
     };
     let mut req = gloo_net::http::RequestBuilder::new(url)
         .method(method)
@@ -172,6 +188,9 @@ async fn send(
         .abort_signal(signal);
     if let Some(token) = token {
         req = req.header("authorization", &format!("Bearer {token}"));
+    }
+    if let Some(key) = idempotency {
+        req = req.header("idempotency-key", key);
     }
     let req = match body {
         Some(b) => req.header("content-type", "application/json").body(b),
@@ -185,13 +204,26 @@ async fn send(
 /// A request as the signed-in user. `body` is JSON. Without a session it fails with 401 and
 /// sends nothing. A 401 from the API triggers one refresh and one retry; if the refresh fails the
 /// user is signed out and the 401 is returned.
-pub async fn request_authed<T: DeserializeOwned>(
+pub async fn request_authed(
     auth: Auth,
     method: Method,
     path: &str,
     body: Option<&str>,
     signal: Option<&web_sys::AbortSignal>,
-) -> Result<T, ApiError> {
+) -> Result<serde_json::Value, ApiError> {
+    authed(auth, method, path, body, None, signal).await
+}
+
+/// One copy of the refresh-and-retry loop. Callers read the fields they need off the JSON
+/// value, so chat and reactions do not each compile their own copy of this function.
+async fn authed(
+    auth: Auth,
+    method: Method,
+    path: &str,
+    body: Option<&str>,
+    idempotency: Option<&str>,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<serde_json::Value, ApiError> {
     let url = build_url(base_url(), path, &[]);
     let mut retried = false;
     loop {
@@ -200,9 +232,18 @@ pub async fn request_authed<T: DeserializeOwned>(
                 status: 401,
                 url,
                 message: "sign in first".into(),
+                code: String::new(),
             });
         };
-        let (status, text) = send(&url, method.clone(), Some(&token), body, signal).await?;
+        let (status, text) = send(
+            &url,
+            method.clone(),
+            Some(&token),
+            body,
+            idempotency,
+            signal,
+        )
+        .await?;
         if status == 401 && !retried {
             retried = true;
             if auth.refresh().await {
@@ -211,6 +252,43 @@ pub async fn request_authed<T: DeserializeOwned>(
         }
         return decode(status, &url, &text);
     }
+}
+
+fn push_hex(out: &mut String, mut n: u64) {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    if n == 0 {
+        out.push('0');
+        return;
+    }
+    let mut buf = [0u8; 16];
+    let mut i = 16;
+    while n > 0 {
+        i -= 1;
+        buf[i] = HEX[(n & 0xf) as usize];
+        n >>= 4;
+    }
+    out.push_str(std::str::from_utf8(&buf[i..]).unwrap_or("0"));
+}
+
+/// A key of `A-Za-z0-9` the server accepts when an action spends coins (8–64 characters).
+fn action_key() -> String {
+    let n = js_sys::Date::now() as u64;
+    let r = (js_sys::Math::random() * 1.0e9) as u64;
+    let mut s = String::from("k");
+    push_hex(&mut s, n);
+    push_hex(&mut s, r);
+    s
+}
+
+/// `{"name":"value"}` with `value` escaped. Used for the two write bodies.
+fn json_field(name: &str, value: &str) -> String {
+    let quoted = serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_string());
+    let mut s = String::from("{\"");
+    s.push_str(name);
+    s.push_str("\":");
+    s.push_str(&quoted);
+    s.push('}');
+    s
 }
 
 /// The signed-in user's own record (`GET /me`, capyweb-7hj: `{id, display_name, balance,
@@ -257,6 +335,7 @@ fn bad_input(message: &str) -> ApiError {
         status: 400,
         url: String::new(),
         message: message.into(),
+        code: String::new(),
     }
 }
 
@@ -437,6 +516,218 @@ pub async fn list_activity(
         signal,
     )
     .await
+}
+
+/// The five reactions the write API accepts, in display order.
+pub const REACTIONS: [&str; 5] = ["capylove", "capylike", "capywow", "capyangry", "capyfire"];
+
+pub fn known_reaction(name: &str) -> bool {
+    REACTIONS.contains(&name)
+}
+
+/// 1–280 characters and at most 800 bytes, matching the write API.
+pub fn check_chat_text(text: &str) -> Result<(), ApiError> {
+    let trimmed = text.trim();
+    if trimmed.is_empty() || trimmed.chars().count() > 280 || text.len() > 800 {
+        return Err(bad_input("message must be 1 to 280 characters"));
+    }
+    Ok(())
+}
+
+/// GET `/streams/{id}/chat`. In fixture mode the cursor stays on the URL so a test can tell
+/// pages apart; a missing fixture file is an empty room, not an error.
+pub fn chat_get_url(id: &str, cursor: Option<&str>) -> Result<String, ApiError> {
+    validate_id(id)?;
+    let cursor = cursor.unwrap_or("");
+    if base_url() == FIXTURES {
+        let mut url = String::from("/fixtures/streams/");
+        url.push_str(id);
+        url.push_str("/chat.json");
+        if !cursor.is_empty() {
+            url.push_str("?cursor=");
+            url.push_str(&enc(cursor));
+        }
+        return Ok(url);
+    }
+    let path = stream_chat_path(id);
+    Ok(build_url(
+        base_url(),
+        &path,
+        &[("limit", "50"), ("cursor", cursor)],
+    ))
+}
+
+fn stream_chat_path(id: &str) -> String {
+    let mut path = String::from("/streams/");
+    path.push_str(id);
+    path.push_str("/chat");
+    path
+}
+
+fn stream_reaction_path(id: &str) -> String {
+    let mut path = String::from("/streams/");
+    path.push_str(id);
+    path.push_str("/reactions");
+    path
+}
+
+fn field_str(v: &serde_json::Value, key: &str) -> String {
+    v.get(key)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("")
+        .to_string()
+}
+
+fn chat_message(v: &serde_json::Value) -> Option<ChatMessage> {
+    let id = v.get("id").and_then(serde_json::Value::as_str)?;
+    if id.is_empty() {
+        return None;
+    }
+    let display_name = v
+        .get("display_name")
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string);
+    Some(ChatMessage {
+        id: id.to_string(),
+        stream_id: field_str(v, "stream_id"),
+        display_name,
+        text: field_str(v, "text"),
+        created_at: field_str(v, "createdAt"),
+    })
+}
+
+pub fn parse_chat_page(v: &serde_json::Value) -> ChatPage {
+    let items = v
+        .get("items")
+        .and_then(serde_json::Value::as_array)
+        .map(|a| a.iter().filter_map(chat_message).collect())
+        .unwrap_or_default();
+    let reactions = v
+        .get("reactions")
+        .cloned()
+        .and_then(|r| serde_json::from_value(r).ok());
+    let cursor = v
+        .get("cursor")
+        .and_then(serde_json::Value::as_str)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string);
+    ChatPage {
+        items,
+        count: v
+            .get("count")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0) as usize,
+        cursor,
+        reactions,
+    }
+}
+
+/// The chat page body. A missing fixture is an empty room, so the page stays calm.
+pub async fn read_chat_body(
+    id: &str,
+    cursor: Option<&str>,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<String, ApiError> {
+    let url = chat_get_url(id, cursor)?;
+    let (status, body) = send(&url, Method::GET, None, None, None, signal).await?;
+    if (200..300).contains(&status) {
+        return Ok(body);
+    }
+    if base_url() == FIXTURES && (status == 404 || status == 0) {
+        return Ok(r#"{"items":[],"count":0}"#.into());
+    }
+    Err(ApiError {
+        status,
+        url,
+        message: error_message(status, &body),
+        code: error_code(&body),
+    })
+}
+
+pub async fn read_chat(
+    id: &str,
+    cursor: Option<&str>,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<ChatPage, ApiError> {
+    let body = read_chat_body(id, cursor, signal).await?;
+    let value = serde_json::from_str(&body).unwrap_or(serde_json::Value::Null);
+    Ok(parse_chat_page(&value))
+}
+
+fn bad_shape(url: &str) -> ApiError {
+    ApiError {
+        status: 200,
+        url: url.to_string(),
+        message: "unexpected response shape".into(),
+        code: String::new(),
+    }
+}
+
+async fn post_json(
+    auth: Auth,
+    path: &str,
+    body: &str,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<String, ApiError> {
+    let key = action_key();
+    authed(auth, Method::POST, path, Some(body), Some(&key), signal)
+        .await
+        .map(|v| v.to_string())
+}
+
+pub async fn post_chat(
+    auth: Auth,
+    id: &str,
+    text: &str,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<ChatMessage, ApiError> {
+    let path = stream_chat_path(id);
+    let raw = post_chat_json(auth, id, text, signal).await?;
+    let value = serde_json::from_str::<serde_json::Value>(&raw).unwrap_or(serde_json::Value::Null);
+    chat_message(value.get("message").unwrap_or(&serde_json::Value::Null))
+        .ok_or_else(|| bad_shape(&path))
+}
+
+pub async fn post_reaction(
+    auth: Auth,
+    id: &str,
+    reaction: &str,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<RatingCounts, ApiError> {
+    let raw = post_reaction_json(auth, id, reaction, signal).await?;
+    let value = serde_json::from_str::<serde_json::Value>(&raw).unwrap_or(serde_json::Value::Null);
+    Ok(value
+        .get("reactions")
+        .cloned()
+        .and_then(|r| serde_json::from_value(r).ok())
+        .unwrap_or_default())
+}
+
+/// Post and return the server JSON. The page uses this so the parsed structs stay out of the wasm.
+pub async fn post_chat_json(
+    auth: Auth,
+    id: &str,
+    text: &str,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<String, ApiError> {
+    validate_id(id)?;
+    check_chat_text(text)?;
+    let path = stream_chat_path(id);
+    post_json(auth, &path, &json_field("text", text), signal).await
+}
+
+pub async fn post_reaction_json(
+    auth: Auth,
+    id: &str,
+    reaction: &str,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<String, ApiError> {
+    validate_id(id)?;
+    if !known_reaction(reaction) {
+        return Err(bad_input("unknown reaction"));
+    }
+    let path = stream_reaction_path(id);
+    post_json(auth, &path, &json_field("reaction", reaction), signal).await
 }
 
 #[cfg(test)]
@@ -699,5 +990,70 @@ mod tests {
             Paging::default(),
             None,
         ));
+        rejected(read_chat("../x", None, None));
+    }
+
+    #[test]
+    fn error_code_is_the_stable_field() {
+        assert_eq!(
+            error_code(r#"{"error":"one message every 2 seconds, please","code":"slow_down"}"#),
+            "slow_down"
+        );
+        assert_eq!(error_code("nope"), "");
+        let r: Result<ChatPage, _> = decode(
+            409,
+            "/api/streams/main-cam/chat",
+            r#"{"error":"choose a display name first (PUT /me)","code":"display_name_required"}"#,
+        );
+        let e = r.unwrap_err();
+        assert_eq!(e.status, 409);
+        assert_eq!(e.code, "display_name_required");
+    }
+
+    #[test]
+    fn chat_text_and_reaction_names() {
+        assert!(check_chat_text("hello capy").is_ok());
+        assert!(check_chat_text("  ").is_err());
+        assert!(check_chat_text(&"x".repeat(281)).is_err());
+        assert!(check_chat_text(&"x".repeat(801)).is_err());
+        assert!(known_reaction("capylove"));
+        assert!(!known_reaction("tip"));
+        assert!(!known_reaction("capylove "));
+    }
+
+    #[test]
+    fn chat_fixture_url_keeps_the_cursor() {
+        assert_eq!(
+            chat_get_url("main-cam", None).unwrap(),
+            "/fixtures/streams/main-cam/chat.json"
+        );
+        assert_eq!(
+            chat_get_url("main-cam", Some("")).unwrap(),
+            "/fixtures/streams/main-cam/chat.json"
+        );
+        assert_eq!(
+            chat_get_url("main-cam", Some("a b")).unwrap(),
+            "/fixtures/streams/main-cam/chat.json?cursor=a%20b"
+        );
+        assert!(chat_get_url("../x", None).is_err());
+    }
+
+    #[test]
+    fn chat_page_decodes_reactions_only_on_the_first_page() {
+        let page = parse_chat_page(
+            &serde_json::from_str(
+                r#"{"items":[{"id":"m1","stream_id":"main-cam","display_name":"Capy Fan","text":"hello","createdAt":"2026-09-29T00:00:00Z"}],"count":1,"reactions":{"capylove":3,"capylike":0,"capywow":1,"capyangry":0,"capyfire":0}}"#,
+            )
+            .unwrap(),
+        );
+        assert_eq!(page.items[0].text, "hello");
+        assert_eq!(page.items[0].display_name.as_deref(), Some("Capy Fan"));
+        assert_eq!(page.reactions.unwrap().capylove, Some(3));
+        let older = parse_chat_page(
+            &serde_json::from_str(r#"{"items":[],"count":0,"cursor":"next"}"#).unwrap(),
+        );
+        assert!(older.reactions.is_none());
+        assert_eq!(older.cursor.as_deref(), Some("next"));
+        assert!(chat_message(&serde_json::json!({})).is_none());
     }
 }

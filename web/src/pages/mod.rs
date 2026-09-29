@@ -9,4 +9,5 @@ pub mod profile;
 pub mod robot;
 pub mod shop;
 pub mod terms;
+pub mod watch;
 pub mod watch_room;
