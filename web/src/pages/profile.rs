@@ -10,29 +10,16 @@ pub fn ProfileSignedOut() -> impl IntoView {
         <PageHead
             title="Profile"
             eyebrow="Signed out"
-            lede="Track your play-coin moments, snack votes, and watch history once sign-in is ready."
+            lede="Sign in soon to track your play coins."
         />
         <section class="profile-pitch" aria-labelledby="profile-perks">
             <h2 id="profile-perks">"What you'll do with your profile"</h2>
-            <p>"Sign in unlocks your name, your play-coin balance, and your ledger history in one place."</p>
-            <div class="profile-cards">
-                <article class="card">
-                    <h3>"Free public streams"</h3>
-                    <p>"Watch Magnus and friends from the public room and keep up with each capybara's routine."</p>
-                </article>
-                <article class="card">
-                    <h3>"Play-coin activity"</h3>
-                    <p>"Spend play coins on snack votes and bids, then review each action in your profile ledger."</p>
-                </article>
-                <article class="card">
-                    <h3>"Member-only extras"</h3>
-                    <p>"Profile history and pass perks stay in sync once account routes are available."</p>
-                </article>
-            </div>
+            <ul class="play-rules">
+                <li>"See your display name."</li>
+                <li>"Check your play-coin balance."</li>
+                <li>"Review your vote and bid ledger."</li>
+            </ul>
         </section>
-        <section class="notice profile-slot" aria-label="Sign-in slot">
-            <h2>"Sign-in action (coming soon)"</h2>
-            <p>"Lane 3 adds the sign-in button here. This lane keeps the slot visible but non-interactive."</p>
-        </section>
+        <div data-slot="sign-in" aria-hidden="true"></div>
     }
 }

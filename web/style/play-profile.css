@@ -19,20 +19,10 @@
   background: var(--persimmon);
 }
 
-.play-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1.2rem;
-}
-
-.play-grid > section > h2 {
-  margin-bottom: 0.7rem;
-}
-
 .play-stack {
   display: grid;
   gap: 0.8rem;
+  margin-top: 1rem;
 }
 
 .play-card h2 {
@@ -67,48 +57,8 @@
   margin-top: 0.35rem;
 }
 
-.play-muted {
-  font-size: 0.9rem;
-  color: var(--leaf-green);
-}
-
-.play-preview {
-  margin-top: 1rem;
-}
-
-.profile-pitch h2,
-.profile-slot h2 {
+.profile-pitch h2 {
   margin-bottom: 0.5rem;
 }
 
-.profile-cards {
-  display: grid;
-  gap: 0.9rem;
-  margin-top: 1rem;
-}
 
-.profile-cards h3 {
-  margin: 0 0 0.3rem;
-  font-family: var(--font-ui);
-  font-size: 1.2rem;
-}
-
-.profile-cards p {
-  margin: 0;
-}
-
-.profile-slot {
-  margin-top: 1.3rem;
-}
-
-@media (max-width: 860px) {
-  .play-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (min-width: 900px) {
-  .profile-cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}

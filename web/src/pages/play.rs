@@ -1,110 +1,102 @@
-//! Play page (W5): capybara picker, vote and bid cards, and the gated confirm/thanks steps.
+//! Play page: capybara picker plus read-only vote and bid cards.
 
 use leptos::prelude::*;
+use leptos_router::{
+    hooks::{use_navigate, use_query_map},
+    NavigateOptions,
+};
 
 use crate::{
     api::{self, Paging},
     components::chrome::PageHead,
     domain::{Capybara, Interaction, InteractionType, VoteOption},
-    state::use_session,
 };
 
-fn selected_from_query() -> Option<String> {
-    let search = web_sys::window()?.location().search().ok()?;
-    let query = search.strip_prefix('?').unwrap_or(&search);
-    for pair in query.split('&') {
-        let mut parts = pair.splitn(2, '=');
-        if parts.next() == Some("capy") {
-            let value = parts.next().unwrap_or_default();
-            if !value.is_empty() {
-                return Some(value.to_string());
-            }
-        }
+fn coin_label(count: u64) -> String {
+    if count == 1 {
+        "1 play coin".into()
+    } else {
+        let mut label = count.to_string();
+        label.push_str(" play coins");
+        label
     }
-    None
-}
-
-fn set_capy_query(id: &str) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Some(history) = window.history().ok() else {
-        return;
-    };
-    let _ = history.replace_state_with_url(
-        &wasm_bindgen::JsValue::NULL,
-        "",
-        Some(&format!("/play?capy={id}")),
-    );
 }
 
 fn option_label(option: &VoteOption) -> String {
-    option
-        .description
-        .as_ref()
-        .map(|desc| format!("{} - {}", option.title, desc))
-        .unwrap_or_else(|| option.title.clone())
-}
-
-#[component]
-fn CostConfirmPreview(cost: u64, action: &'static str) -> impl IntoView {
-    view! {
-        <section class="card play-preview" aria-label="Cost confirmation preview">
-            <h2>"Cost confirmation (preview)"</h2>
-            <p>{format!("Before this {action} can run, you'll confirm a cost of {cost} play coin(s).")}</p>
-        </section>
+    let mut label = option.title.clone();
+    if let Some(desc) = option.description.as_ref() {
+        label.push_str(" - ");
+        label.push_str(desc);
     }
+    label
 }
 
 #[component]
-fn ThanksPreview(action: &'static str) -> impl IntoView {
+fn InteractionCard(interaction: Interaction) -> impl IntoView {
+    let is_vote = interaction.interaction_type == InteractionType::Vote;
+    let rules = interaction.rules.unwrap_or_default();
     view! {
-        <section class="card play-preview" aria-label="Thanks step preview">
-            <h2>"Thanks step (preview)"</h2>
-            <p>{format!("After a successful {action}, this page shows a thank-you state.")}</p>
-        </section>
-    }
-}
-
-#[component]
-fn VoteCard(interaction: Interaction) -> impl IntoView {
-    let vote_cost = interaction.vote_cost.unwrap_or(0);
-    let custom_cost = interaction.custom_request_cost.unwrap_or(0);
-    view! {
-        <article class="card play-card" data-testid="vote-card">
+        <article class="card play-card" data-testid=if is_vote { "vote-card" } else { "bid-card" }>
             <h2>{interaction.title.clone()}</h2>
             <p>{interaction.description.clone().unwrap_or_default()}</p>
-            <p class="play-cost">{format!("Cost: {vote_cost} coin(s) per vote")}</p>
-            <p class="play-cost">{format!("Custom request cost: {custom_cost} coin(s)")}</p>
-            <ul class="play-options" aria-label="Vote options">
-                {interaction.options.unwrap_or_default().into_iter().map(|option| view! {
-                    <li>
-                        <p>{option_label(&option)}</p>
-                        <p class="play-muted">"Current votes: 0 (fixtures do not carry tallies yet)"</p>
-                    </li>
-                }).collect_view()}
-            </ul>
+            {if is_vote {
+                let vote_cost = interaction.vote_cost;
+                let custom_cost = interaction.custom_request_cost;
+                let options = interaction.options.unwrap_or_default();
+                view! {
+                    <p class="play-cost">
+                        {match vote_cost {
+                            Some(cost) => {
+                                let mut label = "Cost: ".to_string();
+                                label.push_str(&coin_label(cost));
+                                label.push_str(" per vote");
+                                label
+                            }
+                            None => "Cost: Price not set".to_string(),
+                        }}
+                    </p>
+                    {custom_cost.map(|cost| view! {
+                        <p class="play-cost">
+                            {
+                                let mut label = "Custom request: ".to_string();
+                                label.push_str(&coin_label(cost));
+                                label
+                            }
+                        </p>
+                    })}
+                    <ul class="play-options" aria-label="Vote options">
+                        {options.into_iter().map(|option| view! {
+                            <li><p>{option_label(&option)}</p></li>
+                        }).collect_view()}
+                    </ul>
+                }.into_any()
+            } else {
+                let current = interaction.current_bid;
+                view! {
+                    <p class="play-cost">
+                        {match current {
+                            Some(value) => {
+                                let mut label = "Current top bid: ".to_string();
+                                label.push_str(&coin_label(value));
+                                label
+                            }
+                            None => "Current top bid: No bids yet".to_string(),
+                        }}
+                    </p>
+                    {current.map(|value| view! {
+                        <p class="play-cost">
+                            {
+                                let mut label = "Minimum next bid: ".to_string();
+                                label.push_str(&coin_label(value.saturating_add(1)));
+                                label
+                            }
+                        </p>
+                    })}
+                }.into_any()
+            }}
             <h3>"Rules"</h3>
             <ul class="play-rules">
-                {interaction.rules.unwrap_or_default().into_iter().map(|rule| view! { <li>{rule}</li> }).collect_view()}
-            </ul>
-        </article>
-    }
-}
-
-#[component]
-fn BidCard(interaction: Interaction) -> impl IntoView {
-    let current = interaction.current_bid.unwrap_or(0);
-    let minimum = current.saturating_add(1);
-    view! {
-        <article class="card play-card" data-testid="bid-card">
-            <h2>{interaction.title.clone()}</h2>
-            <p>{interaction.description.clone().unwrap_or_default()}</p>
-            <p class="play-cost">{format!("Current top bid: {current} coin(s)")}</p>
-            <p class="play-cost">{format!("Minimum next bid: {minimum} coin(s)")}</p>
-            <h3>"Rules"</h3>
-            <ul class="play-rules">
-                {interaction.rules.unwrap_or_default().into_iter().map(|rule| view! { <li>{rule}</li> }).collect_view()}
+                {rules.into_iter().map(|rule| view! { <li>{rule}</li> }).collect_view()}
             </ul>
         </article>
     }
@@ -112,13 +104,26 @@ fn BidCard(interaction: Interaction) -> impl IntoView {
 
 #[component]
 pub fn Play() -> impl IntoView {
-    let session = use_session();
+    let query = use_query_map();
+    let navigate = use_navigate();
     let capybaras = LocalResource::new(|| api::list_capybaras(Paging::default(), None));
-    let selected_capy = RwSignal::new(selected_from_query());
+    let selected_capy = Memo::new(move |_| {
+        let query_capy = query.with(|q| q.get("capy").filter(|value| !value.is_empty()));
+        let mut cast = capybaras.get().and_then(Result::ok)?.items;
+        cast.sort_by(|a: &Capybara, b: &Capybara| a.name.cmp(&b.name));
+        if let Some(capy) = query_capy {
+            if cast.iter().any(|item| item.id == capy) {
+                return Some(capy);
+            }
+        }
+        cast.first().map(|capy| capy.id.clone())
+    });
     let interactions = LocalResource::new(move || {
-        let capy = selected_capy.get().unwrap_or_default();
+        let capy = selected_capy.get();
         async move {
-            if capy.is_empty() {
+            if let Some(capy) = capy {
+                api::list_interactions(&capy, None, Paging::default(), None).await
+            } else {
                 Ok(crate::domain::Page {
                     items: Vec::new(),
                     count: 0,
@@ -126,58 +131,45 @@ pub fn Play() -> impl IntoView {
                     truncated: false,
                     hint: None,
                 })
-            } else {
-                api::list_interactions(&capy, None, Paging::default(), None).await
             }
         }
     });
-
-    let choose = move |id: String| {
-        selected_capy.set(Some(id.clone()));
-        set_capy_query(&id);
-    };
 
     view! {
         <PageHead
             title="Play"
             eyebrow="Play coins only"
-            lede="Choose a capybara, review open votes and bids, and see the coin cost before confirmation."
+            lede="Choose a capybara and review open vote and bid cards."
         />
-        <p class="notice" data-testid="play-soon">"Voting and bidding open soon. The cards below are read-only until write routes are live."</p>
+        <p class="notice" data-testid="play-soon">"Voting and bidding open soon."</p>
         <Suspense fallback=|| view! { <p role="status">"Loading capybaras…"</p> }>
             {move || capybaras.get().map(|result| match result {
                 Err(_) => view! { <p class="notice" role="alert">"Could not load capybaras right now."</p> }.into_any(),
                 Ok(page) => {
                     let mut cast = page.items;
                     cast.sort_by(|a: &Capybara, b: &Capybara| a.name.cmp(&b.name));
-                    if let Some(current) = selected_capy.get() {
-                        if !cast.iter().any(|c| c.id == current) {
-                            if let Some(first) = cast.first() {
-                                choose(first.id.clone());
-                            }
-                        }
-                    } else if let Some(first) = cast.first() {
-                        choose(first.id.clone());
-                    }
                     view! {
                         <section aria-labelledby="play-capy-picker">
                             <h2 id="play-capy-picker">"Choose your capybara"</h2>
-                            <div class="play-picker" role="listbox" aria-label="Choose a capybara">
+                            <div class="play-picker" role="group" aria-label="Choose a capybara">
                                 {cast.into_iter().map(|capy| {
-                                    let capy_id = capy.id.clone();
-                                    let selected_id = capy.id;
-                                    let capy_name = capy.name.clone();
-                                    let active_id = selected_id.clone();
-                                    let aria_id = selected_id.clone();
+                                    let active_id = capy.id.clone();
+                                    let pressed_id = capy.id.clone();
+                                    let nav_id = capy.id;
+                                    let go = navigate.clone();
                                     view! {
                                         <button
                                             type="button"
                                             class="play-picker-btn"
                                             class:active=move || selected_capy.get().as_deref() == Some(active_id.as_str())
-                                            aria-selected=move || selected_capy.get().as_deref() == Some(aria_id.as_str())
-                                            on:click=move |_| choose(capy_id.clone())
+                                            aria-pressed=move || selected_capy.get().as_deref() == Some(pressed_id.as_str())
+                                            on:click=move |_| {
+                                                let mut next = "/play?capy=".to_string();
+                                                next.push_str(&nav_id);
+                                                go(&next, NavigateOptions { replace: true, ..Default::default() })
+                                            }
                                         >
-                                            {capy_name}
+                                            {capy.name.clone()}
                                         </button>
                                     }
                                 }).collect_view()}
@@ -194,32 +186,13 @@ pub fn Play() -> impl IntoView {
                     <p class="notice" role="status">"No open vote or bid cards for this capybara yet."</p>
                 }.into_any(),
                 Ok(page) => {
-                    let (votes, bids): (Vec<_>, Vec<_>) = page.items
-                        .into_iter()
-                        .partition(|item| item.interaction_type == InteractionType::Vote);
                     view! {
-                        <div class="play-grid" data-testid="play-grid">
-                            <section aria-labelledby="play-votes">
-                                <h2 id="play-votes">"Vote cards"</h2>
-                                <div class="play-stack">
-                                    {votes.into_iter().map(|item| view! { <VoteCard interaction=item/> }).collect_view()}
-                                </div>
-                            </section>
-                            <section aria-labelledby="play-bids">
-                                <h2 id="play-bids">"Bid cards"</h2>
-                                <div class="play-stack">
-                                    {bids.into_iter().map(|item| view! { <BidCard interaction=item/> }).collect_view()}
-                                </div>
-                            </section>
+                        <div class="play-stack" data-testid="play-grid">
+                            {page.items.into_iter().map(|item| view! { <InteractionCard interaction=item/> }).collect_view()}
                         </div>
                     }.into_any()
                 }
             })}
         </Suspense>
-        <Show when=move || session.writes_enabled.get()>
-            <CostConfirmPreview cost=5 action="vote"/>
-            <CostConfirmPreview cost=21 action="bid"/>
-            <ThanksPreview action="vote or bid"/>
-        </Show>
     }
 }
