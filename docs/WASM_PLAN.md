@@ -1,12 +1,31 @@
 # CapyTube front end in Rust/WebAssembly: plan
 
-Status: **draft, reviewed twice (Cursor rv-1790656808-53577, findings applied; Kimi rv-1790657924-75648, PASS). Plan only: nothing deployed,
-no AWS calls.**
+Status: **approved by capyweb-manager on 2026-09-29** (see "Decisions" below). Reviewed twice: Cursor
+rv-1790656808-53577 (findings applied) and Kimi rv-1790657924-75648 (PASS). The build runs locally on
+`feat/wasm-frontend`, tracked as beads epic `capyweb-b6e` (W1–W16 = `capyweb-b6e.1`–`.16`). No AWS calls
+and no deploy until a deploy identity exists.
 Author: capyweb-wasm-lead (Claude), 2026-09-29, on mac-pro-japan-16.
 Asked by nic on 2026-09-29: "i want the web rewritten as webassembly." herdr-master scoped it to a plan
 plus, at most, a local prototype. The HTTP API stays as it is. Only the front end is rewritten.
 
 Read with: `docs/PLAN.md` (architecture, cost model, epics), `docs/DATA_MODEL.md`, `docs/AGENT_LEARNINGS.md`.
+
+## Decisions (capyweb-manager, 2026-09-29)
+
+nic asked not to be consulted ("make your own decision with as little interference as possible"), so
+these are the manager's decisions.
+
+- **Q1 wallet features:** play coins only in v1. No Dynamic, Solana, NFT-trading or airdrop code in the
+  WASM app. A wallet link can come later as its own reviewed module.
+- **Q2 sign-in:** Cognito managed login with PKCE and passwordless email OTP.
+- **Q3 deploy identity:** an access decision, so it is with herdr-master. Until it exists: nothing that
+  needs AWS. The lent Mac's key stays **deactivated**; the master chose not to delete it.
+- **Cognito grant:** in place, but not tag-scoped (details in section 6).
+- **Beads:** rebuilt on this Mac with the 25 known ids, marked `reconstructed`. **No remote, and never
+  push beads to the public repo.**
+- **Build:** start now, locally, in the order of section 7. Push only to `plan/wasm-rewrite` or
+  `feat/wasm-frontend`, never to main. Each unit is reviewed before it counts as done. Write buttons stay
+  hidden until their routes exist.
 
 ## Summary
 
@@ -343,21 +362,26 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
 
 ### Steps to carry on without it
 
-1. **Beads** (a manager decision, not nic's):
-   - Run `bd init --prefix capyweb` here and recreate the 25 known issues with their original ids
-     (`bd create --id capyweb-962 …`). Each title and first line comes from the table above, marked
-     "reconstructed; full record on the lent MBP".
-   - When the Mac is back, `bd export` there and merge issue by issue here. The two Dolt histories are
-     unrelated, so JSONL is the merge path.
-   - **Then give beads a private remote.** The code repo is public, and these issues describe live leaked
-     keys and attack surface (`capyweb-962`, `capyweb-s6d`). Pushing `refs/dolt/data` to
-     `capytube/capyweb` would publish them. Use a private repo such as `capytube/capyweb-beads` as the
-     Dolt remote.
-2. `npm ci` in `backend/src`. Without it, pre-push skips the backend tests and the behavioural
+1. **Beads: done on 2026-09-29.**
+   - `bd init --reinit-local --prefix capyweb` (the local DB was empty).
+   - The 25 known ids were recreated with their original ids and the label `reconstructed`. 16 are open
+     and 9 closed; each closed one cites its commit.
+   - The rewrite's tasks are epic `capyweb-b6e`.
+   - When the lent Mac is back, `bd export` there and merge issue by issue here. The two Dolt histories
+     are unrelated, so JSONL is the merge path.
+   - **No remote.** The code repo is public, and these issues describe live leaked keys and attack
+     surface (`capyweb-962`, `capyweb-s6d`).
+   - **A trap found while doing this:** the tracked `.beads/config.yaml` set `sync.remote` to
+     `github.com/capytube/capyweb`, from the first `bd init` on the lent Mac. `bd init` on a new clone
+     wires that up as a Dolt remote. `bd init` and `bd dolt remote remove` also each made their own git
+     commit. Those two commits were reset before anything was pushed. The Dolt remote is removed,
+     `sync.remote` is commented out, `no-push: true` is committed, and origin has no `refs/dolt/*`.
+   - A private remote needs a private repo. Ask capyweb-manager when one is wanted.
+2. **Done:** `npm ci` in `backend/src`. Without it, pre-push skips the backend tests and the behavioural
    playback-locator check.
 3. `brew install aws-sam-cli` and `npm i -g esbuild@0.21` for backend deploys (only once there is an
    identity).
-4. **New deploy identity for this Mac: an access decision for nic (Q3).** Exactly:
+4. **New deploy identity for this Mac: an access decision, now with herdr-master (Q3).** The request:
    - **IAM user `capyapp-mac-pro-japan-16`** in account 619071347239, member of the group
      **`capyapp-deployers`** and nothing else. It inherits exactly what `capyapp-macbook-pro-14` had: the
      group's five policies, including `capyapp-deploy-core` and `capyapp-deploy-apigw`, scoped to
@@ -368,12 +392,21 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
      `capyapp-capytube-dns` in autonomous-lab. The user needs `sts:AssumeRole` on that role, if the group
      does not already grant it. This is only needed for new records or certificates, not for re-deploying
      the dev site's content.
-   - **Two grants still missing, whoever deploys:** `cognito-idp:*` limited to user pools tagged
-     `capy-scope=capyapp` (create with `aws:RequestTag`, manage with `aws:ResourceTag`; `capyweb-w26`),
-     and the CloudFront response-headers-policy and function actions from section 5, if a probe shows
-     they are missing.
-   - **The old key:** `capyapp-macbook-pro-14`'s key is deactivated. Recommend deleting it now, since it
-     sits on a Mac that is out of our hands, and keeping the user for its CloudTrail history.
+   - **Grants added on 2026-09-29** in policy `capyapp-deploy-auth-billing-alarms` (v3, 12:24):
+     - **Cognito:** `cognito-idp:*` on user pools in ap-southeast-1, and `CreateUserPool` in
+       ap-southeast-1 only.
+     - The grant has an **explicit deny on the 13 existing Amplify pools** of other projects.
+     - It is **not tag-scoped**, as this plan first proposed: IAM Access Analyzer reports that Cognito
+       does not support `aws:ResourceTag`, so a tag condition would allow nothing.
+     - When capyweb's own pool exists, report its id to capyweb-manager so the grant can be pinned to it
+       (`capyweb-w26`).
+     - **Also in:** billing read (`ce`, `budgets`; `capyweb-0v3`) and SNS on `capyapp-*` topics
+       (`capyweb-19a`).
+     - The S3 object grant was never needed: `capyapp-*` already matches objects (`capyweb-083`, closed).
+   - **Still to probe once there is an identity:** the CloudFront response-headers-policy and function
+     actions from section 5.
+   - **The old key:** `capyapp-macbook-pro-14`'s key stays **deactivated** (herdr-master's choice), not
+     deleted.
 5. Once the identity exists: read `ApiUrl`, set it as the app's proxy backend, and record it in
    `infra/README.md`.
 
@@ -446,13 +479,13 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
 10. **Unrelated but still open:** both Livepeer keys are live and unrotated in the public history
     (`capyweb-962`).
 
-### Open questions for nic (through capyweb-manager)
+### Open questions (decided by capyweb-manager on 2026-09-29; see "Decisions" at the top)
 
-| # | Question | Recommendation |
+| # | Question | Recommendation → decision |
 |---|---|---|
-| Q1 | Do the wallet features (Dynamic login, Solana CAPYL balance and transfers, NFT trading, the watch-time "airdrop" counter) carry over into the WASM app, or does v1 run on server-side play coins only, as `demo/` and `docs/PLAN.md` B6 describe? | **Play coins only in v1.** It removes the largest dependencies and the client-side balance overwrite (the app currently writes the on-chain balance into the DB from the browser). A wallet link can come later as a separately reviewed module if it is still wanted |
-| Q2 | Sign-in: Cognito managed login (redirect, PKCE), or sign-in inside the page with email OTP and no hosted UI, as `docs/PLAN.md` B3 said? | **Managed login with PKCE and email OTP.** Least auth code in the app, standard token refresh, social sign-in later by configuration, and the same flow for the admin console. The redirect happens at the first spend and then only when the refresh token expires, and the pending action resumes afterwards |
-| Q3 | Approve a deploy identity for mac-pro-japan-16: IAM user `capyapp-mac-pro-japan-16` in group `capyapp-deployers`, trusted by `capyapp-capytube-dns`, plus the Cognito grant for `capyweb-w26`? Delete the lent Mac's deactivated key? | **Yes to all.** It is the same scope as before, on a Mac that is ours. The Cognito grant unblocks sign-in for either front end |
+| Q1 | Do the wallet features (Dynamic login, Solana CAPYL balance and transfers, NFT trading, the watch-time "airdrop" counter) carry over into the WASM app, or does v1 run on server-side play coins only, as `demo/` and `docs/PLAN.md` B6 describe? | **Play coins only in v1.** It removes the largest dependencies and the client-side balance overwrite (the app currently writes the on-chain balance into the DB from the browser). A wallet link can come later as a separately reviewed module if it is still wanted. **Decided: yes** |
+| Q2 | Sign-in: Cognito managed login (redirect, PKCE), or sign-in inside the page with email OTP and no hosted UI, as `docs/PLAN.md` B3 said? | **Managed login with PKCE and email OTP.** Least auth code in the app, standard token refresh, social sign-in later by configuration, and the same flow for the admin console. The redirect happens at the first spend and then only when the refresh token expires, and the pending action resumes afterwards. **Decided: yes** |
+| Q3 | Approve a deploy identity for mac-pro-japan-16: IAM user `capyapp-mac-pro-japan-16` in group `capyapp-deployers`, trusted by `capyapp-capytube-dns`, plus the Cognito grant for `capyweb-w26`? Delete the lent Mac's deactivated key? | **Yes to all.** It is the same scope as before, on a Mac that is ours. **Decided:** the identity is with herdr-master; the Cognito grant is already in (section 6); the old key stays deactivated, not deleted |
 
 ---
 
