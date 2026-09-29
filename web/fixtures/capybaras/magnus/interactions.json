@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "entity": "Interaction",
+      "createdAt": "2026-09-26T00:00:00.000Z",
+      "updatedAt": "2026-09-26T00:00:00.000Z",
+      "id": "snack-vote-1",
+      "capybara_id": "magnus",
+      "interaction_type": "vote",
+      "title": "Pick Magnus's snack",
+      "description": "Four options. The winner gets fed on camera.",
+      "session_date": "2026-09-27",
+      "vote_cost": 1,
+      "custom_request_cost": 5,
+      "options": [
+        {
+          "id": "carrots",
+          "title": "Carrots",
+          "description": "Sweet crunchy baby carrots"
+        },
+        {
+          "id": "pandan",
+          "title": "Pandan leaf",
+          "description": "Fresh tips from Chiang Mai"
+        },
+        {
+          "id": "watermelon",
+          "title": "Watermelon",
+          "description": "Chilled, for a thirsty capy"
+        },
+        {
+          "id": "grass",
+          "title": "Timothy grass",
+          "description": "Silky and aromatic"
+        }
+      ],
+      "rules": [
+        "One vote costs 1 coin",
+        "Custom requests cost 5 and need staff approval"
+      ]
+    }
+  ],
+  "count": 1
+}

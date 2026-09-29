@@ -19,10 +19,15 @@ pub enum AccessType {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct RatingCounts {
+    #[serde(default)]
     pub capylove: Option<u32>,
+    #[serde(default)]
     pub capylike: Option<u32>,
+    #[serde(default)]
     pub capywow: Option<u32>,
+    #[serde(default)]
     pub capyangry: Option<u32>,
+    #[serde(default)]
     pub capyfire: Option<u32>,
 }
 
@@ -30,17 +35,25 @@ pub struct RatingCounts {
 pub struct LiveStream {
     pub id: String,
     pub title: String,
+    #[serde(default)]
     pub access_type: Option<AccessType>,
+    #[serde(default)]
     pub is_live: Option<bool>,
+    #[serde(default)]
     pub start_time: Option<String>,
+    #[serde(default)]
     pub end_time: Option<String>,
+    #[serde(default)]
     pub viewer_count: Option<u32>,
     #[serde(default)]
     pub capybara_ids: Vec<String>,
+    #[serde(default)]
     pub price_per_10_sec: Option<u32>,
     /// Recorded reel shown when nothing is live, so the page is never dead.
+    #[serde(default)]
     pub fallback_reel: Option<String>,
     #[serde(rename = "ratingCounts")]
+    #[serde(default)]
     pub rating_counts: Option<RatingCounts>,
 }
 
@@ -69,11 +82,172 @@ impl LiveStream {
 pub struct Page<T> {
     pub items: Vec<T>,
     pub count: usize,
+    #[serde(default)]
     pub cursor: Option<String>,
     /// Set when an unfiltered list merged two partitions and could not page.
     #[serde(default)]
     pub truncated: bool,
+    #[serde(default)]
     pub hint: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum InteractionType {
+    Vote,
+    Bid,
+    #[serde(other)]
+    Unknown,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Rarity {
+    Common,
+    Rare,
+    Epic,
+    Legendary,
+    UltraRare,
+    #[serde(other)]
+    Unknown,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Capybara {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub gender: Option<String>,
+    #[serde(default)]
+    pub bio: Option<String>,
+    #[serde(default)]
+    pub personality: Option<String>,
+    #[serde(default)]
+    pub fun_fact: Option<String>,
+    #[serde(default)]
+    pub favorite_activities: Option<Vec<String>>,
+    #[serde(default)]
+    pub awake_from: Option<String>,
+    #[serde(default)]
+    pub awake_to: Option<String>,
+    #[serde(rename = "createdAt")]
+    #[serde(default)]
+    pub created_at: Option<String>,
+    #[serde(rename = "updatedAt")]
+    #[serde(default)]
+    pub updated_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct VoteOption {
+    pub id: String,
+    pub title: String,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Interaction {
+    pub id: String,
+    pub capybara_id: String,
+    pub interaction_type: InteractionType,
+    pub title: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub session_date: Option<String>,
+    #[serde(default)]
+    pub vote_cost: Option<u64>,
+    #[serde(default)]
+    pub custom_request_cost: Option<u64>,
+    #[serde(default)]
+    pub options: Option<Vec<VoteOption>>,
+    #[serde(default)]
+    pub current_bid: Option<u64>,
+    #[serde(default)]
+    pub rules: Option<Vec<String>>,
+    #[serde(rename = "createdAt")]
+    #[serde(default)]
+    pub created_at: Option<String>,
+    #[serde(rename = "updatedAt")]
+    #[serde(default)]
+    pub updated_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PassProperty {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Pass {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub rarity: Option<Rarity>,
+    #[serde(default)]
+    pub price: Option<u64>,
+    #[serde(default)]
+    pub is_for_sale: Option<u8>,
+    #[serde(default)]
+    pub image_url: Option<String>,
+    #[serde(default)]
+    pub labels: Option<Vec<String>>,
+    #[serde(default)]
+    pub properties: Option<Vec<PassProperty>>,
+    #[serde(default)]
+    pub owner_id: Option<String>,
+    #[serde(rename = "createdAt")]
+    #[serde(default)]
+    pub created_at: Option<String>,
+    #[serde(rename = "updatedAt")]
+    #[serde(default)]
+    pub updated_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Offer {
+    pub id: String,
+    #[serde(rename = "nftId")]
+    pub nft_id: String,
+    pub from: String,
+    pub price: u64,
+    #[serde(default)]
+    pub expires_at: Option<String>,
+    #[serde(rename = "createdAt")]
+    #[serde(default)]
+    pub created_at: Option<String>,
+    #[serde(rename = "updatedAt")]
+    #[serde(default)]
+    pub updated_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ActivityLog {
+    pub id: String,
+    #[serde(rename = "nftId")]
+    pub nft_id: String,
+    pub event: String,
+    #[serde(default)]
+    pub price: Option<u64>,
+    #[serde(default)]
+    pub from: Option<String>,
+    #[serde(default)]
+    pub to: Option<String>,
+    pub timestamp: String,
+    #[serde(rename = "createdAt")]
+    #[serde(default)]
+    pub created_at: Option<String>,
+    #[serde(rename = "updatedAt")]
+    #[serde(default)]
+    pub updated_at: Option<String>,
+}
+
+impl Pass {
+    pub fn for_sale(&self) -> bool {
+        self.is_for_sale == Some(1)
+    }
 }
 
 #[cfg(test)]
@@ -126,5 +300,336 @@ mod tests {
     fn missing_access_type_is_not_public() {
         let s: LiveStream = serde_json::from_str(r#"{"id":"x","title":"t"}"#).unwrap();
         assert!(!s.is_public());
+    }
+
+    #[test]
+    fn every_catalog_fixture_matches_the_wire_contract() {
+        let capys: Page<Capybara> =
+            serde_json::from_str(include_str!("../fixtures/capybaras.json")).unwrap();
+        assert_eq!(capys.count, 3);
+        assert_eq!(
+            capys
+                .items
+                .iter()
+                .map(|c| c.id.as_str())
+                .collect::<Vec<_>>(),
+            ["einstein", "elon", "magnus"]
+        );
+        let passes: Page<Pass> =
+            serde_json::from_str(include_str!("../fixtures/nfts.json")).unwrap();
+        assert_eq!(passes.count, 3);
+        assert!(!passes.truncated);
+        assert_eq!(
+            passes
+                .items
+                .iter()
+                .map(|p| p.id.as_str())
+                .collect::<Vec<_>>(),
+            ["capy-1234", "capy-5687", "capy-632574"]
+        );
+        assert!(passes.items[0].for_sale());
+        assert!(!passes.items[2].for_sale());
+        let streams: Page<LiveStream> =
+            serde_json::from_str(include_str!("../fixtures/streams.json")).unwrap();
+        assert_eq!(
+            streams
+                .items
+                .iter()
+                .map(|s| s.id.as_str())
+                .collect::<Vec<_>>(),
+            ["food-cam", "main-cam", "wall-cam"]
+        );
+        assert!(!streams.truncated);
+        let c: Capybara =
+            serde_json::from_str(include_str!("../fixtures/capybaras/einstein.json")).unwrap();
+        assert_eq!(c.id, "einstein");
+        assert_eq!(c.created_at.as_deref(), Some("2026-09-26T00:00:00.000Z"));
+        assert!(c
+            .favorite_activities
+            .as_ref()
+            .is_some_and(|v| !v.is_empty()));
+        let interactions: Page<Interaction> = serde_json::from_str(include_str!(
+            "../fixtures/capybaras/einstein/interactions.json"
+        ))
+        .unwrap();
+        assert_eq!(interactions.count, 0);
+        assert_eq!(interactions.items.len(), interactions.count);
+        let c: Capybara =
+            serde_json::from_str(include_str!("../fixtures/capybaras/elon.json")).unwrap();
+        assert_eq!(c.id, "elon");
+        assert_eq!(c.created_at.as_deref(), Some("2026-09-26T00:00:00.000Z"));
+        assert!(c
+            .favorite_activities
+            .as_ref()
+            .is_some_and(|v| !v.is_empty()));
+        let interactions: Page<Interaction> =
+            serde_json::from_str(include_str!("../fixtures/capybaras/elon/interactions.json"))
+                .unwrap();
+        assert_eq!(interactions.count, 1);
+        assert_eq!(interactions.items.len(), interactions.count);
+        assert_eq!(interactions.items[0].interaction_type, InteractionType::Bid);
+        assert_eq!(interactions.items[0].current_bid, Some(20));
+        assert_eq!(interactions.items[0].options, None);
+        let c: Capybara =
+            serde_json::from_str(include_str!("../fixtures/capybaras/magnus.json")).unwrap();
+        assert_eq!(c.id, "magnus");
+        assert_eq!(c.created_at.as_deref(), Some("2026-09-26T00:00:00.000Z"));
+        assert!(c
+            .favorite_activities
+            .as_ref()
+            .is_some_and(|v| !v.is_empty()));
+        let interactions: Page<Interaction> = serde_json::from_str(include_str!(
+            "../fixtures/capybaras/magnus/interactions.json"
+        ))
+        .unwrap();
+        assert_eq!(interactions.count, 1);
+        assert_eq!(interactions.items.len(), interactions.count);
+        let vote = &interactions.items[0];
+        assert_eq!(vote.interaction_type, InteractionType::Vote);
+        assert_eq!(vote.vote_cost, Some(1));
+        assert_eq!(vote.custom_request_cost, Some(5));
+        assert_eq!(
+            vote.options
+                .as_ref()
+                .unwrap()
+                .iter()
+                .map(|o| o.id.as_str())
+                .collect::<Vec<_>>(),
+            ["carrots", "pandan", "watermelon", "grass"]
+        );
+        assert_eq!(vote.rules.as_ref().unwrap().len(), 2);
+        assert_eq!(vote.current_bid, None);
+        let stream: LiveStream =
+            serde_json::from_str(include_str!("../fixtures/streams/food-cam.json")).unwrap();
+        assert_eq!(stream.id, "food-cam");
+        assert_eq!(stream.capybara_ids, ["einstein"]);
+        assert_eq!(stream.reel_key(), Some("capytube-stream.mp4"));
+        let stream: LiveStream =
+            serde_json::from_str(include_str!("../fixtures/streams/main-cam.json")).unwrap();
+        assert_eq!(stream.id, "main-cam");
+        assert_eq!(stream.capybara_ids, ["magnus"]);
+        assert_eq!(stream.reel_key(), Some("capytube-stream.mp4"));
+        let stream: LiveStream =
+            serde_json::from_str(include_str!("../fixtures/streams/wall-cam.json")).unwrap();
+        assert_eq!(stream.id, "wall-cam");
+        assert_eq!(stream.capybara_ids, ["elon"]);
+        assert_eq!(stream.reel_key(), Some("capytube-stream.mp4"));
+        let pass: Pass =
+            serde_json::from_str(include_str!("../fixtures/nfts/capy-1234.json")).unwrap();
+        assert_eq!(pass.id, "capy-1234");
+        assert_eq!(pass.rarity, Some(Rarity::UltraRare));
+        assert!(pass.for_sale());
+        assert!(pass.image_url.as_deref().unwrap().starts_with("media/"));
+        assert_eq!(pass.labels.as_ref().unwrap().len(), 2);
+        assert!(!pass.properties.as_ref().unwrap()[0].value.is_empty());
+        let offers: Page<Offer> =
+            serde_json::from_str(include_str!("../fixtures/nfts/capy-1234/offers.json")).unwrap();
+        let activity: Page<ActivityLog> =
+            serde_json::from_str(include_str!("../fixtures/nfts/capy-1234/activity.json")).unwrap();
+        assert_eq!(offers.count, 2);
+        assert_eq!(offers.items.len(), offers.count);
+        assert_eq!(activity.count, offers.count);
+        assert_eq!(activity.items.len(), activity.count);
+        assert_eq!(
+            offers
+                .items
+                .iter()
+                .map(|o| o.id.as_str())
+                .collect::<Vec<_>>(),
+            ["offer-2", "offer-1"]
+        );
+        assert_eq!(offers.items[0].price, 7);
+        assert_eq!(offers.items[0].nft_id, pass.id);
+        assert_eq!(
+            offers.items[0].created_at.as_deref(),
+            Some("2026-09-26T00:00:00.000Z")
+        );
+        assert_eq!(
+            activity
+                .items
+                .iter()
+                .map(|a| a.event.as_str())
+                .collect::<Vec<_>>(),
+            ["Listed", "Minted"]
+        );
+        assert_eq!(activity.items[0].nft_id, pass.id);
+        assert_eq!(pass.owner_id, None);
+        let pass: Pass =
+            serde_json::from_str(include_str!("../fixtures/nfts/capy-5687.json")).unwrap();
+        assert_eq!(pass.id, "capy-5687");
+        assert_eq!(pass.rarity, Some(Rarity::Rare));
+        assert!(pass.for_sale());
+        assert!(pass.image_url.as_deref().unwrap().starts_with("media/"));
+        assert_eq!(pass.labels.as_ref().unwrap().len(), 2);
+        assert!(!pass.properties.as_ref().unwrap()[0].value.is_empty());
+        let offers: Page<Offer> =
+            serde_json::from_str(include_str!("../fixtures/nfts/capy-5687/offers.json")).unwrap();
+        let activity: Page<ActivityLog> =
+            serde_json::from_str(include_str!("../fixtures/nfts/capy-5687/activity.json")).unwrap();
+        assert_eq!(offers.count, 0);
+        assert_eq!(offers.items.len(), offers.count);
+        assert_eq!(activity.count, offers.count);
+        assert_eq!(activity.items.len(), activity.count);
+        assert_eq!(pass.owner_id.as_deref(), None);
+        let pass: Pass =
+            serde_json::from_str(include_str!("../fixtures/nfts/capy-632574.json")).unwrap();
+        assert_eq!(pass.id, "capy-632574");
+        assert_eq!(pass.rarity, Some(Rarity::Epic));
+        assert!(!pass.for_sale());
+        assert!(pass.image_url.as_deref().unwrap().starts_with("media/"));
+        assert_eq!(pass.labels.as_ref().unwrap().len(), 2);
+        assert!(!pass.properties.as_ref().unwrap()[0].value.is_empty());
+        let offers: Page<Offer> =
+            serde_json::from_str(include_str!("../fixtures/nfts/capy-632574/offers.json")).unwrap();
+        let activity: Page<ActivityLog> =
+            serde_json::from_str(include_str!("../fixtures/nfts/capy-632574/activity.json"))
+                .unwrap();
+        assert_eq!(offers.count, 0);
+        assert_eq!(offers.items.len(), offers.count);
+        assert_eq!(activity.count, offers.count);
+        assert_eq!(activity.items.len(), activity.count);
+        assert_eq!(pass.owner_id.as_deref(), Some("seed-user-1"));
+    }
+
+    #[test]
+    fn unknown_enums_and_missing_optional_fields() {
+        assert_eq!(
+            serde_json::from_str::<InteractionType>(r#""future""#).unwrap(),
+            InteractionType::Unknown
+        );
+        assert_eq!(
+            serde_json::from_str::<Rarity>(r#""future""#).unwrap(),
+            Rarity::Unknown
+        );
+        let pass: Pass = serde_json::from_str(r#"{"id":"p","name":"Pass","extra":true}"#).unwrap();
+        assert!(!pass.for_sale());
+        assert_eq!(pass.owner_id, None);
+        assert_eq!(pass.labels, None);
+    }
+
+    fn forbidden_name(name: &str) -> bool {
+        let name = name.to_ascii_lowercase();
+        [
+            "playback",
+            "hls",
+            "m3u8",
+            "manifest",
+            "streaming_address",
+            "s3_video",
+        ]
+        .iter()
+        .any(|part| name.contains(part))
+            || ["stream", "streaming", "video", "media"]
+                .iter()
+                .any(|prefix| {
+                    ["url", "uri", "address", "src"].iter().any(|suffix| {
+                        name.contains(&format!("{prefix}{suffix}"))
+                            || name.contains(&format!("{prefix}_{suffix}"))
+                    })
+                })
+    }
+
+    // Tokenize names and quoted values, ignoring comments. This catches multiline fields and
+    // serde renames without mistaking documentation or test examples for declarations.
+    fn wire_names(source: &str) -> Vec<String> {
+        let bytes = source.as_bytes();
+        let mut tokens = Vec::<String>::new();
+        let mut i = 0;
+        while i < bytes.len() {
+            if bytes[i..].starts_with(b"//") {
+                while i < bytes.len() && bytes[i] != b'\n' {
+                    i += 1;
+                }
+            } else if bytes[i..].starts_with(b"/*") {
+                i += 2;
+                let mut depth = 1;
+                while i < bytes.len() && depth > 0 {
+                    if bytes[i..].starts_with(b"/*") {
+                        depth += 1;
+                        i += 2;
+                    } else if bytes[i..].starts_with(b"*/") {
+                        depth -= 1;
+                        i += 2;
+                    } else {
+                        i += 1;
+                    }
+                }
+            } else if bytes[i] == b'"' {
+                let start = i;
+                i += 1;
+                while i < bytes.len() {
+                    if bytes[i] == b'\\' {
+                        i = (i + 2).min(bytes.len());
+                    } else if bytes[i] == b'"' {
+                        i += 1;
+                        break;
+                    } else {
+                        i += 1;
+                    }
+                }
+                tokens.push(source[start..i].into());
+            } else if bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' {
+                let start = i;
+                while i < bytes.len() && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_') {
+                    i += 1;
+                }
+                tokens.push(source[start..i].into());
+            } else {
+                if !bytes[i].is_ascii_whitespace() {
+                    tokens.push((bytes[i] as char).to_string());
+                }
+                i += 1;
+            }
+        }
+        let mut names = Vec::new();
+        for (i, token) in tokens.iter().enumerate() {
+            if token == ":"
+                && i > 0
+                && tokens.get(i + 1).is_some_and(|t| t != ":")
+                && tokens[i - 1]
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_')
+            {
+                names.push(tokens[i - 1].clone());
+            }
+            if token == "rename" && tokens.get(i + 1).is_some_and(|t| t == "=") {
+                if let Some(value) = tokens.get(i + 2) {
+                    names.push(value.trim_matches('"').into());
+                }
+            }
+        }
+        names
+    }
+
+    #[test]
+    fn domain_has_no_locator_fields_or_wire_renames() {
+        // Test examples deliberately contain rejected names; scan the domain declarations.
+        let source = include_str!("domain.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        for name in wire_names(source) {
+            assert!(!forbidden_name(&name), "forbidden domain name: {name}");
+        }
+        for bad in [
+            "playbackId",
+            "HLS",
+            "m3u8",
+            "manifest",
+            "streaming_address",
+            "s3_video",
+            "videoUrl",
+            "media_uri",
+            "streamingSrc",
+            "stream_address",
+        ] {
+            assert!(forbidden_name(bad), "{bad}");
+        }
+        assert!(!forbidden_name("image_url"));
+        assert_eq!(wire_names("pub video_url : Option<String>"), ["video_url"]);
+        assert_eq!(
+            wire_names("#[serde(\n rename = \"playbackId\"\n)]"),
+            ["playbackId"]
+        );
     }
 }

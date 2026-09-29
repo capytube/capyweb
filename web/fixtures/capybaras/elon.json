@@ -1,0 +1,17 @@
+{
+  "entity": "Capybara",
+  "createdAt": "2026-09-26T00:00:00.000Z",
+  "updatedAt": "2026-09-26T00:00:00.000Z",
+  "id": "elon",
+  "name": "Elon",
+  "gender": "male",
+  "bio": "Looks at the high holds and thinks about it.",
+  "personality": "Ambitious, briefly.",
+  "fun_fact": "Has never actually climbed anything.",
+  "favorite_activities": [
+    "planning",
+    "napping"
+  ],
+  "awake_from": "09:00",
+  "awake_to": "12:00"
+}

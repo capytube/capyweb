@@ -1,0 +1,22 @@
+{
+  "entity": "NFT",
+  "createdAt": "2026-09-26T00:00:00.000Z",
+  "updatedAt": "2026-09-26T00:00:00.000Z",
+  "id": "capy-632574",
+  "name": "Capy #632574",
+  "rarity": "epic",
+  "price": 3,
+  "is_for_sale": 0,
+  "image_url": "media/pass-trail.png",
+  "labels": [
+    "Capybara",
+    "Trail"
+  ],
+  "owner_id": "seed-user-1",
+  "properties": [
+    {
+      "key": "Climbing gym",
+      "value": "+10 minutes on a call"
+    }
+  ]
+}

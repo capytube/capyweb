@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "entity": "ActivityLog",
+      "id": "log-2",
+      "nftId": "capy-1234",
+      "event": "Listed",
+      "price": 5,
+      "from": "seed-user-1",
+      "to": "seed-user-1",
+      "timestamp": "2026-09-22T14:30:00.000Z"
+    },
+    {
+      "entity": "ActivityLog",
+      "id": "log-1",
+      "nftId": "capy-1234",
+      "event": "Minted",
+      "price": 0,
+      "from": "system",
+      "to": "seed-user-1",
+      "timestamp": "2026-09-20T10:00:00.000Z"
+    }
+  ],
+  "count": 2
+}

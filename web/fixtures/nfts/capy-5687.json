@@ -1,0 +1,21 @@
+{
+  "entity": "NFT",
+  "createdAt": "2026-09-26T00:00:00.000Z",
+  "updatedAt": "2026-09-26T00:00:00.000Z",
+  "id": "capy-5687",
+  "name": "Capy #5687",
+  "rarity": "rare",
+  "price": 6,
+  "is_for_sale": 1,
+  "image_url": "media/pass-cafe.png",
+  "labels": [
+    "Capybara",
+    "Cafe"
+  ],
+  "properties": [
+    {
+      "key": "Chalk powder",
+      "value": "+5 bidding bonus"
+    }
+  ]
+}
