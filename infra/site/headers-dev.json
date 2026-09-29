@@ -1,0 +1,27 @@
+{
+  "Name": "capyapp-capyweb-dev-headers",
+  "Comment": "capyweb dev: CSP and security headers (docs/RELEASE_PLAN.md 1a item 3)",
+  "SecurityHeadersConfig": {
+    "ContentSecurityPolicy": {
+      "Override": true,
+      "ContentSecurityPolicy": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://capyapp-capyweb-dev.auth.ap-southeast-1.amazoncognito.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    },
+    "StrictTransportSecurity": {
+      "Override": true,
+      "AccessControlMaxAgeSec": 31536000,
+      "IncludeSubdomains": false,
+      "Preload": false
+    },
+    "ContentTypeOptions": {
+      "Override": true
+    },
+    "FrameOptions": {
+      "Override": true,
+      "FrameOption": "DENY"
+    },
+    "ReferrerPolicy": {
+      "Override": true,
+      "ReferrerPolicy": "strict-origin-when-cross-origin"
+    }
+  }
+}
