@@ -50,6 +50,14 @@ function edgeChecks() {
   // Only a 200 is turned into a 404; anything else passes through untouched.
   const res = notFound({ request: { uri: '/x', headers: { 'x-capyweb-route': { value: 'unknown' } } }, response: { statusCode: 304, headers: {} } });
   assert.equal(res.statusCode, 304);
+
+  // www goes to the same path on the apex, query kept; sign-in returns only to the apex.
+  const www = (uri, querystring) => spa({ request: { uri, querystring, headers: { host: { value: 'www.capytube.xyz' } } } });
+  const moved = www('/stream/magnus', { a: { value: '1' }, b: { value: '', multiValue: [{ value: '' }, { value: '2' }] } });
+  assert.equal(moved.statusCode, 301);
+  assert.equal(moved.headers.location.value, 'https://capytube.xyz/stream/magnus?a=1&b&b=2');
+  assert.equal(www('/', {}).headers.location.value, 'https://capytube.xyz/');
+  assert.equal(spa({ request: { uri: '/watch', headers: { host: { value: 'capytube.xyz' } } } }).uri, '/index.html', 'the apex is served');
 }
 
 export async function check({ open, browser, BASE }) {

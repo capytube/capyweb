@@ -1,15 +1,18 @@
 #!/bin/bash
-# Upload the output of make-recordings.sh to the site stack's media bucket (dev only), with an
+# Upload the output of make-recordings.sh to the site stack's media bucket, with an
 # explicit Content-Type and Cache-Control per file type, then invalidate the video paths.
-# Usage: infra/media/upload-media.sh <dir made by make-recordings.sh>
+# Usage: infra/media/upload-media.sh <dev|prod> <dir made by make-recordings.sh>
 #
 # Paths on the site (docs/VIDEO_DESIGN.md section 8):
 #   media/rec/<camera>/index.m3u8   public recording   https://<site>/media/rec/<camera>/index.m3u8
 #   media/capytube-stream.mp4       the reel           https://<site>/media/capytube-stream.mp4
 #   paid/<camera>/index.m3u8        paid recording     /paid/* needs the signed cookies
 set -euo pipefail
-SRC=${1:?dir made by make-recordings.sh}
-STAGE=dev   # production needs its own go (docs/WASM_PLAN.md)
+STAGE=${1:?stage (dev or prod)}
+[ "$STAGE" = dev ] || [ "$STAGE" = prod ] || { echo "stage must be dev or prod" >&2; exit 2; }
+# Production needs herdr-master's go (docs/RELEASE_PLAN.md section 2).
+[ "$STAGE" != prod ] || [ "${CAPYWEB_PROD_GO:-}" = 1 ] || { echo "production: set CAPYWEB_PROD_GO=1 only with the go" >&2; exit 1; }
+SRC=${2:?dir made by make-recordings.sh}
 export AWS_PROFILE=capy AWS_DEFAULT_REGION=ap-southeast-1 AWS_PAGER=""
 out() { aws cloudformation describe-stacks --stack-name "capyapp-capyweb-site-$STAGE" \
         --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }

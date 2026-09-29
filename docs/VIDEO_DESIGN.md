@@ -322,7 +322,7 @@ baselined S3 URLs (`capyweb-c24`). 77.6 minutes, H.264 720p30. Its only date is 
 | `/api/<route>` | the HTTP API's `/<route>` | `/api/*`, nothing cached, every header and cookie passed |
 
 - `MediaBucket` is private, reached only through the distribution's OAC, TLS only, no versioning.
-  Upload: `infra/media/upload-media.sh` (explicit Content-Type and Cache-Control, then an invalidation).
+  Upload: `infra/media/upload-media.sh <stage> <dir>` (explicit Content-Type and Cache-Control, then an invalidation).
 - `/api/*` strips its prefix in a CloudFront Function. With it, the SPA fallback moved from the
   distribution-wide error responses into a second function that rewrites only extensionless paths to
   `/index.html`. So the API's own 403 and 404, CloudFront's refusals on `/paid/*` and a missing asset

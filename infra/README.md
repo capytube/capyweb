@@ -8,8 +8,8 @@ the **`capyapp-*`** naming prefix and to the regions ap-southeast-1 and us-east-
 - `backend/template.yaml`: SAM stack `capyapp-capyweb-backend-<stage>` in ap-southeast-1.
   On-demand only. API Gateway HTTP API (see `docs/PLAN.md` section 8).
 - `site/template.yaml` + `site/dns.yaml` + `site/deploy.sh`: site stack
-  `capyapp-capyweb-site-<stage>` (private S3 + CloudFront OAC, PriceClass_100) on
-  `<stage>.capytube.xyz`, and its DNS stack `capyapp-capyweb-dns-<stage>` in the **autonomous-lab**
+  `capyapp-capyweb-site-<stage>` (private S3 + CloudFront OAC) on `dev.capytube.xyz` or, for
+  prod, `capytube.xyz` and `www.capytube.xyz`, and its DNS stack `capyapp-capyweb-dns-<stage>` in the **autonomous-lab**
   account, where the `capytube.xyz` zone lives. The DNS stack is deployed through the `capytube-dns` profile.
 - Plan and cost model: `docs/PLAN.md`. Issue tracker: `bd list`.
 
@@ -111,61 +111,64 @@ covered by unit tests (`classify`) only.
 
 ## Site
 
-### The WASM app on dev (content only, 2026-09-29)
+### Deploying the site: `infra/site/deploy.sh` (W12)
 
-`dev.capytube.xyz` serves the WASM build, uploaded with `infra/site/upload-content.sh`: content only,
-profile `capy`, no stack, certificate or DNS step. `deploy.sh` stays for W12, and its S3-to-S3 re-stamp
-drops Content-Type, which breaks module scripts (`capyweb-b6e.12`).
-
-```sh
-cd web && CAPYWEB_API_BASE=https://geqi0or5tl.execute-api.ap-southeast-1.amazonaws.com/dev \
-  trunk build --release --features webmcp --dist /tmp/capyweb-dev-dist && rm -rf /tmp/capyweb-dev-dist/fixtures
-printf '{"auth": {"domain": "https://capyapp-capyweb-dev.auth.ap-southeast-1.amazoncognito.com", "client_id": "4hp9maame83ah6op5leebnturc"}}\n' \
-  > /tmp/capyweb-dev-dist/config.json
-cd .. && infra/site/upload-content.sh dev /tmp/capyweb-dev-dist
-```
-
-The API is called directly (CORS), so the dev backend is deployed with
-`AllowedOrigins=https://dev.capytube.xyz,http://127.0.0.1:8791,http://localhost:8791`; add it to
-`--parameter-overrides` on every dev backend deploy, or the dev site loses the API. **The way back:**
-`git archive main demo | tar -x -C /tmp && infra/site/upload-content.sh dev /tmp/demo`.
-
-### Video on dev (W6, recorded mode, 2026-09-29)
-
-`docs/VIDEO_DESIGN.md` section 8. The site stack now also has `MediaBucket`, `/media/*`, `/paid/*`
-(signed cookies), `/api/*` (the HTTP API, same-origin) and two CloudFront Functions (the `/api`
-prefix and the SPA fallback). Update it on its own, **not** with `deploy.sh`, which would also run
-the certificate and DNS steps:
+One step at a time, each naming the account it touches (`docs/RELEASE_PLAN.md` section 1). Stack
+changes are change sets: the script shows them and prints the execute line, and a person runs it after
+reading. The DNS-account steps (`cert`, `dns`) run only when named. Per-stage names and the ids an admin
+made (key group, headers policy) are in `infra/site/stages.json`. Production also needs
+`CAPYWEB_PROD_GO=1`, set only with herdr-master's go.
 
 ```sh
-aws cloudformation create-change-set --stack-name capyapp-capyweb-site-dev --change-set-name <name> \
-  --template-body file://infra/site/template.yaml \
-  --parameters ParameterKey=Stage,UsePreviousValue=true ParameterKey=DomainName,UsePreviousValue=true \
-    ParameterKey=CertArn,UsePreviousValue=true \
-    ParameterKey=PlaybackKeyGroupId,ParameterValue=fa62f0aa-b698-4a69-9c9d-baa777362153 \
-    ParameterKey=ApiDomain,ParameterValue=geqi0or5tl.execute-api.ap-southeast-1.amazonaws.com \
-    ParameterKey=ApiOriginPath,ParameterValue=/dev \
-  --tags Key=Project,Value=capyweb Key=Stage,Value=dev Key=capy-scope,Value=capyapp
-# read it (the distribution must say Replacement False), then execute-change-set
+scripts/build-release.sh dev /tmp/capyweb-dev-dist            # dev: with WebMCP; prod: without, and checked
+infra/site/deploy.sh dev content /tmp/capyweb-dev-dist --web  # upload, then invalidate
+infra/site/deploy.sh dev stack <change-set>     # the site stack (capy account); read it, then execute
+infra/site/deploy.sh dev alarms <change-set>    # the us-east-1 egress alarm stack
+infra/site/deploy.sh dev cert                   # the certificate; validation records via capytube-dns
+infra/site/deploy.sh dev dns <change-set>       # the DNS stack via capytube-dns (for prod: the apex switch)
+infra/site/deploy.sh dev prune <live dist>      # lists old hashed files and the commands to delete them
 ```
 
-The key group and its public key are made by an admin, not by any stack; the private key is only in
-SSM. The recordings: `infra/media/make-recordings.sh <capytube-stream.mp4> <dir>` (about 11 min on
-this Mac), then `infra/media/upload-media.sh <dir>`.
+`content --web` writes every object from the local file with its Content-Type (an S3-to-S3 re-stamp
+without one turned everything into `binary/octet-stream`, and browsers refused the module scripts), and:
+- root files whose names carry Trunk's content hash get `max-age=31536000,immutable`, and one that is
+  already in the bucket is skipped;
+- `index.html` and `snippets/` get `no-cache`. wasm-bindgen keeps a snippet folder's name when its files
+  change (two different `chat.js` under one name, checked 2026-09-29), so they are revalidated;
+- `assets/` and `vendor/` get a day, and everything else five minutes;
+- nothing is deleted, so a visitor holding the previous `index.html` still loads the previous release;
+  `prune` lists what could go, for a person to review;
+- `config.json` is written from the backend stack's outputs (managed-login domain and client id);
+- every stage except prod gets `Disallow: /` in `robots.txt`;
+- `scripts/build-release.sh --check` runs first: no inline script (the CSP), and for prod no WebMCP.
 
-### Stacks and first deploy
+The app calls the API same-origin, through the site's `/api/*` behaviour, so no CORS is involved. The
+dev backend's `AllowedOrigins` (`https://dev.capytube.xyz,http://127.0.0.1:8791,http://localhost:8791`)
+still serves the local dev server; keep it in `--parameter-overrides` on every dev backend deploy.
 
+**The way back on dev:** `git archive main demo | tar -x -C /tmp && infra/site/deploy.sh dev content /tmp/demo`
+(a plain static upload, without `--web`).
 
-```sh
-infra/site/deploy.sh dev demo    # stage, source dir; ~5.5 min the first time (cert + CloudFront)
-```
+### The site stack
 
-The script requests and validates the us-east-1 certificate, writing the validation CNAME
-through `--profile capytube-dns`, because the zone is in another account. It then deploys
-the site stack, then the DNS stack, then runs `s3 sync` and an invalidation. It is
-safe to re-run: it reuses the issued certificate and skips empty changesets. Until the
-React cutover (Epic C), the source is Nic's `demo/`. For the React SPA, change the
-403 error response to `ResponseCode: 200`.
+`infra/site/template.yaml` is private S3 plus CloudFront with OAC: `MediaBucket`, `/media/*`, `/paid/*`
+(signed cookies), `/api/*` (the HTTP API, same-origin), and CloudFront Functions for the `/api` prefix,
+the SPA fallback (which also sends `www.` names to the apex) and the edge 404. Its parameters come from
+`deploy.sh stack`:
+- `ResponseHeadersPolicyId`: the CSP and security headers. **No stack may create, update or delete a
+  response headers policy** (the right reaches every project's in the account; capyweb-manager,
+  2026-09-29). An admin creates `capyapp-capyweb-<stage>-headers` from `infra/site/headers-<stage>.json`,
+  and its id goes into `stages.json`; the stack only attaches it. Changes to the headers go through
+  capyweb-manager. `web/tests/serve.mjs` sends dev's CSP to every page test.
+- `WwwDomain` (prod: `www.capytube.xyz`) and `PriceClass` (prod: `PriceClass_200`, which adds Asia's
+  edges; dev stays on `PriceClass_100`).
+- `PlaybackKeyGroupId`: the key group and its public key are made by an admin, not by any stack; the
+  private key is only in SSM.
+
+The recordings: `infra/media/make-recordings.sh <capytube-stream.mp4> <dir>` (about 11 min on this
+Mac), then `infra/media/upload-media.sh <stage> <dir>`; the pass pictures:
+`infra/media/upload-pass-images.sh <stage>`. Production alarm emails:
+`CAPYWEB_PROD_GO=1 infra/ops/subscribe-alarms.sh` (the recipient must confirm each).
 
 ## Current dev endpoints
 

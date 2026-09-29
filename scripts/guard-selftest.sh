@@ -153,18 +153,16 @@ aws s3 cp "s3://$BUCKET/" "s3://$BUCKET/" --recursive --exclude "index.html" --e
   --metadata-directive REPLACE --cache-control "public,max-age=300"
 EOF
 }
-add_csp() {
-  cat >> infra/site/template.yaml <<EOF
-  CspHeaders:
-    Type: AWS::CloudFront::ResponseHeadersPolicy
-    Properties:
-      ResponseHeadersPolicyConfig:
-        Name: capyweb-csp
-        SecurityHeadersConfig:
-          ContentSecurityPolicy:
-            Override: true
-            ContentSecurityPolicy: "default-src 'self'; script-src 'self' $1"
-EOF
+# Rewrites infra/site/headers-dev.json: $1 = a python expression on c (the SecurityHeadersConfig).
+headers_edit() {
+  python3 - "$1" <<'PY'
+import json, sys
+p = "infra/site/headers-dev.json"
+d = json.load(open(p)); c = d["SecurityHeadersConfig"]
+csp = c["ContentSecurityPolicy"]
+exec(sys.argv[1])
+json.dump(d, open(p, "w"), indent=2)
+PY
 }
 # Fake release output of a given size: random bytes do not compress, so N bytes stay ~N.
 fake_dist() { mkdir -p big/snippets/s; head -c "$1" /dev/urandom > big/app_bg.wasm; head -c "${2:-10}" /dev/urandom > big/app.js
@@ -180,7 +178,7 @@ echo "WASM front end: rule 1 (pre-push fmt, clippy on both targets, tests)"
 expect_fail "rule 1: cargo fmt" "cargo fmt --check" \
   "printf 'pub fn   badly_formatted( ) {}\n' >> web/src/lib.rs" "$WC --steps fmt"
 # cfg-gated code is linted by one target only; each case proves its run really happens.
-expect_fail "rule 1: clippy wasm32 (wasm-only code)" "cargo clippy (wasm32)" \
+expect_fail "rule 1: clippy wasm32 (wasm-only code)" "cargo clippy (wasm32, webmcp)" \
   "printf '#[cfg(target_arch = \"wasm32\")]\npub fn selftest_lint(v: &[u8]) -> bool {\n    v.len() == 0\n}\n' >> web/src/lib.rs" \
   "$WC --steps clippy-wasm"
 expect_fail "rule 1: clippy host (host-only code)" "cargo clippy (host)" \
@@ -199,9 +197,9 @@ expect_fail "fixtures: a seed change without regenerating" "web/fixtures/nfts/ca
 expect_pass "fixtures: the committed fixtures match" "fixtures match the backend seed" "" "$WC --steps fixtures"
 
 echo "WASM front end: rule 2 (size budget, brotli -q 11)"
-expect_fail "rule 2: .wasm over 300,000 bytes" "over the 300000-byte" "fake_dist 310000" "$WC --steps size --dist big"
-expect_fail "rule 2: root .js counts" "over the 300000-byte" "fake_dist 290000 20000" "$WC --steps size --dist big"
-expect_fail "rule 2: snippets count" "over the 300000-byte" "fake_dist 290000 10 20000" "$WC --steps size --dist big"
+expect_fail "rule 2: .wasm over 350,000 bytes" "over the 350000-byte" "fake_dist 360000" "$WC --steps size --dist big"
+expect_fail "rule 2: root .js counts" "over the 350000-byte" "fake_dist 340000 20000" "$WC --steps size --dist big"
+expect_fail "rule 2: snippets count" "over the 350000-byte" "fake_dist 340000 10 20000" "$WC --steps size --dist big"
 expect_fail "rule 2: output of two builds mixed" "expected one .wasm" \
   "fake_dist 1000 && cp big/app_bg.wasm big/old_bg.wasm" "$WC --steps size --dist big"
 expect_pass "rule 2: under budget" "size budget: " "fake_dist 1000" "$WC --steps size --dist big"
@@ -209,21 +207,21 @@ expect_pass "rule 2: under budget" "size budget: " "fake_dist 1000" "$WC --steps
 echo "WASM front end: pre-push runs rules 1-2 only when the push changes web/ or the fixture sources"
 # An oversized fake dist makes "the checks ran" visible as a size failure, without a build.
 expect_pass "pre-push: push without web/ changes skips" "skipped: web checks" \
-  'commit_all base && echo x >> docs/WASM_PLAN.md && commit_all docs && fake_dist 310000' \
+  'commit_all base && echo x >> docs/WASM_PLAN.md && commit_all docs && fake_dist 360000' \
   "$PUSH_LINE \"\$(git rev-parse HEAD~1)\" | $WC --pre-push origin --steps size --dist big"
-expect_fail "pre-push: push with web/ changes runs" "over the 300000-byte" \
-  'commit_all base && echo x >> web/tests/smoke.mjs && commit_all web && fake_dist 310000' \
+expect_fail "pre-push: push with web/ changes runs" "over the 350000-byte" \
+  'commit_all base && echo x >> web/tests/smoke.mjs && commit_all web && fake_dist 360000' \
   "$PUSH_LINE \"\$(git rev-parse HEAD~1)\" | $WC --pre-push origin --steps size --dist big"
-expect_fail "pre-push: push changing only the fixture sources runs" "over the 300000-byte" \
-  'commit_all base && echo "// x" >> backend/src/scripts/seed-data.ts && commit_all seed && fake_dist 310000' \
+expect_fail "pre-push: push changing only the fixture sources runs" "over the 350000-byte" \
+  'commit_all base && echo "// x" >> backend/src/scripts/seed-data.ts && commit_all seed && fake_dist 360000' \
   "$PUSH_LINE \"\$(git rev-parse HEAD~1)\" | $WC --pre-push origin --steps size --dist big"
-expect_fail "pre-push: new branch runs" "over the 300000-byte" \
-  'commit_all base && fake_dist 310000' \
+expect_fail "pre-push: new branch runs" "over the 350000-byte" \
+  'commit_all base && fake_dist 360000' \
   "$PUSH_LINE 0000000000000000000000000000000000000000 | $WC --pre-push origin --steps size --dist big"
-expect_fail "pre-push: stdin already consumed, no upstream: runs" "over the 300000-byte" \
-  'commit_all base && fake_dist 310000' "$WC --pre-push origin --steps size --dist big </dev/null"
+expect_fail "pre-push: stdin already consumed, no upstream: runs" "over the 350000-byte" \
+  'commit_all base && fake_dist 360000' "$WC --pre-push origin --steps size --dist big </dev/null"
 expect_pass "pre-push: deleting a remote branch skips" "skipped: web checks" \
-  'commit_all base && fake_dist 310000' \
+  'commit_all base && fake_dist 360000' \
   "printf '(delete) 0000000000000000000000000000000000000000 refs/heads/old %s\n' \"\$(git rev-parse HEAD)\" | $WC --pre-push origin --steps size --dist big"
 
 echo "WASM front end: rule 3 (content scans cover web/, skip build output)"
@@ -298,14 +296,16 @@ expect_pass "rule 6: no web mode: says it skipped" "skipped: deploy.sh has no --
 
 echo "WASM front end: rule 7 (no GitHub Actions) is the \"GitHub Actions\" case above"
 
-echo "WASM front end: rule 8 (CSP allows 'wasm-unsafe-eval')"
-expect_fail "rule 8: CSP without it" "site CSP allows 'wasm-unsafe-eval'" "add_csp ''"
-expect_fail "rule 8: only in a comment" "site CSP allows 'wasm-unsafe-eval'" \
-  "add_csp '' && echo \"# TODO add 'wasm-unsafe-eval'\" >> infra/site/template.yaml"
-expect_pass "rule 8: CSP with it" "site CSP allows 'wasm-unsafe-eval'" "add_csp \"'wasm-unsafe-eval'\""
-expect_pass "rule 8: no CSP yet, says it skipped" \
-  "skipped: template.yaml defines no Content-Security-Policy yet (W12, capyweb-b6e.12)" \
-  "sed -i.bak '/ContentSecurityPolicy\\|Content-Security-Policy/d' infra/site/template.yaml"
+echo "WASM front end: rule 8 (CSP allows 'wasm-unsafe-eval'; HSTS never preloaded)"
+expect_fail "rule 8: CSP without it" "script-src lacks 'wasm-unsafe-eval'" \
+  "headers_edit \"csp['ContentSecurityPolicy'] = csp['ContentSecurityPolicy'].replace(\\\" 'wasm-unsafe-eval'\\\", '')\""
+expect_fail "rule 8: only in another directive" "script-src lacks 'wasm-unsafe-eval'" \
+  "headers_edit \"csp['ContentSecurityPolicy'] = csp['ContentSecurityPolicy'].replace(\\\" 'wasm-unsafe-eval'\\\", '').replace(\\\"style-src 'self'\\\", \\\"style-src 'self' 'wasm-unsafe-eval'\\\")\""
+expect_fail "rule 8: HSTS preload" "HSTS has includeSubDomains or preload" \
+  "headers_edit \"c['StrictTransportSecurity']['Preload'] = True\""
+expect_pass "rule 8: the configs as written" "headers-dev.json: CSP allows 'wasm-unsafe-eval'; HSTS without includeSubDomains or preload" ":"
+expect_pass "rule 8: no headers config yet, says it skipped" \
+  "skipped: no infra/site/headers-<stage>.json yet (W12, capyweb-b6e.12)" "rm -f infra/site/headers-*.json"
 
 echo "Smoke-test server (web/tests/serve.mjs)"
 # Loopback only, SPA fallback for page paths, 404 for missing files, wasm type, busy port.

@@ -83,9 +83,11 @@ done
 
 # Log retention defaults to "never expire"; ingest is the classic serverless sleeper cost.
 # Checked per function name, not by comparing counts - a comment or an unrelated log group
-# used to balance the totals while a real function's logs never expired.
+# used to balance the totals while a real function's logs never expired. A FunctionName that is a
+# reference (!GetAtt, !Ref: a Lambda permission naming its function) is not a function of its own.
 missing_retention=""
 for fn in $(grep -hE '^[[:space:]]*FunctionName[[:space:]]*:' $TEMPLATES 2>/dev/null \
+            | grep -vE 'FunctionName[[:space:]]*:[[:space:]]*(!GetAtt|!Ref|\{)' \
             | sed -E 's/.*FunctionName[[:space:]]*:[[:space:]]*//; s/[[:space:]]*$//'); do
   # The matching AWS::Logs::LogGroup must exist AND carry RetentionInDays.
   if ! awk -v fn="$fn" '
@@ -372,19 +374,31 @@ if [ -f "$DEPLOY_SH" ]; then
 fi
 
 # Without 'wasm-unsafe-eval' in the CSP, the browser refuses to compile the module and the app
-# is a blank page - on the live site only, since no local server sends the CSP
-# (docs/WASM_PLAN.md section 5, rule 8). W12 adds the CSP to the site template.
-SITE_TEMPLATE=infra/site/template.yaml
-if [ -f "$SITE_TEMPLATE" ]; then
-  csp_code=$(sed -E 's/(^|[[:space:]])#.*$//' "$SITE_TEMPLATE")
-  if ! echo "$csp_code" | grep -qiE 'ContentSecurityPolicy|Content-Security-Policy'; then
-    skip "template.yaml defines no Content-Security-Policy yet (W12, capyweb-b6e.12)"
-  elif echo "$csp_code" | grep -qF "'wasm-unsafe-eval'"; then
-    pass "site CSP allows 'wasm-unsafe-eval'"
+# is a blank page - on the live site only (docs/WASM_PLAN.md section 5, rule 8). The CSP lives in
+# the response headers policies an admin creates from infra/site/headers-<stage>.json (no stack may
+# create one; capyweb-manager, 2026-09-29), and web/tests/serve.mjs sends dev's to every page test.
+# HSTS must not carry includeSubDomains or preload: preload takes months to undo
+# (docs/RELEASE_PLAN.md section 4).
+for headers in infra/site/headers-*.json; do
+  [ -f "$headers" ] || { skip "no infra/site/headers-<stage>.json yet (W12, capyweb-b6e.12)"; break; }
+  if problem=$(python3 - "$headers" <<'PY'
+import json, sys
+c = json.load(open(sys.argv[1]))["SecurityHeadersConfig"]
+csp = c["ContentSecurityPolicy"]["ContentSecurityPolicy"]
+script = next((d for d in csp.split(";") if d.strip().startswith("script-src")), "")
+hsts = c["StrictTransportSecurity"]
+bad = []
+if "'wasm-unsafe-eval'" not in script: bad.append("script-src lacks 'wasm-unsafe-eval'")
+if hsts.get("IncludeSubdomains") or hsts.get("Preload"): bad.append("HSTS has includeSubDomains or preload")
+print("; ".join(bad))
+sys.exit(1 if bad else 0)
+PY
+  ); then
+    pass "$headers: CSP allows 'wasm-unsafe-eval'; HSTS without includeSubDomains or preload"
   else
-    fail "site CSP allows 'wasm-unsafe-eval'" "add 'wasm-unsafe-eval' to script-src in $SITE_TEMPLATE, or the app is a blank page"
+    fail "$headers is safe to ship" "$problem"
   fi
-fi
+done
 
 if [ "$FAILED" -eq 0 ]; then
   [ "$QUIET" -eq 1 ] || printf '\n\033[32mall guards passed\033[0m\n'

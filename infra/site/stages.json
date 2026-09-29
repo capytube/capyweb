@@ -1,0 +1,16 @@
+{
+  "dev": {
+    "domain": "dev.capytube.xyz",
+    "www": "",
+    "priceClass": "PriceClass_100",
+    "playbackKeyGroupId": "fa62f0aa-b698-4a69-9c9d-baa777362153",
+    "responseHeadersPolicyId": ""
+  },
+  "prod": {
+    "domain": "capytube.xyz",
+    "www": "www.capytube.xyz",
+    "priceClass": "PriceClass_200",
+    "playbackKeyGroupId": "",
+    "responseHeadersPolicyId": ""
+  }
+}

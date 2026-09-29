@@ -1,8 +1,13 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: capyweb site DNS - alias records in the capytube.xyz zone. Deployed in autonomous-lab with --profile capytube-dns.
+  For production this stack is the apex switch (docs/RELEASE_PLAN.md, D2), deployed only on herdr-master's go.
 Parameters:
   DomainName: {Type: String, Default: dev.capytube.xyz}
+  # Production's second name (www.capytube.xyz): the distribution answers it with a 301 to DomainName.
+  WwwDomain: {Type: String, Default: ""}
   CdnDomain: {Type: String}
+Conditions:
+  HasWww: !Not [!Equals [!Ref WwwDomain, ""]]
 Resources:
   Records:
     Type: AWS::Route53::RecordSetGroup
@@ -11,3 +16,11 @@ Resources:
       RecordSets:
         - {Name: !Ref DomainName, Type: A, AliasTarget: {DNSName: !Ref CdnDomain, HostedZoneId: Z2FDTNDATAQYW2}}
         - {Name: !Ref DomainName, Type: AAAA, AliasTarget: {DNSName: !Ref CdnDomain, HostedZoneId: Z2FDTNDATAQYW2}}
+  WwwRecords:
+    Type: AWS::Route53::RecordSetGroup
+    Condition: HasWww
+    Properties:
+      HostedZoneName: capytube.xyz.
+      RecordSets:
+        - {Name: !Ref WwwDomain, Type: A, AliasTarget: {DNSName: !Ref CdnDomain, HostedZoneId: Z2FDTNDATAQYW2}}
+        - {Name: !Ref WwwDomain, Type: AAAA, AliasTarget: {DNSName: !Ref CdnDomain, HostedZoneId: Z2FDTNDATAQYW2}}

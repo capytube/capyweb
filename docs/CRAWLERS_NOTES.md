@@ -145,7 +145,7 @@ wants otherwise.
   Applebot-Extended.
 - **Disallowed for every crawler:** `/api/`, `/paid/`, `/media/` and `/auth/`. They are for people using
   the site: the API, paid video, recordings and sign-in.
-- **Dev is not for crawlers at all.** `infra/site/upload-content.sh` writes `Disallow: /` over whatever
+- **Dev is not for crawlers at all.** `infra/site/deploy.sh <stage> content` writes `Disallow: /` over whatever
   `robots.txt` the build carries.
 
 ## Built on 2026-09-29, and what is left
