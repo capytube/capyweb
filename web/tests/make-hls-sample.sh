@@ -2,6 +2,9 @@
 # Makes the local video fixtures for the player (W6, docs/VIDEO_DESIGN.md "Player contract"):
 #
 #   web/fixtures/live/<id>/index.m3u8 + init.mp4 + seg*.m4s   one per PUBLIC camera in streams.json
+#   web/fixtures/media/rec/<id>/index.m3u8 + a/...             a recording (VOD) per public camera
+#                                                              whose video_mode is "recording"
+#   web/fixtures/paid/<id>/index.m3u8 + a/...                  the same for each paid recording
 #   web/fixtures/media/<fallback_reel>                         the reel those cameras name
 #
 # The output is committed, so the checks and the smoke test need no ffmpeg. Re-run this only
@@ -17,6 +20,8 @@
 #
 # The live playlists have no #EXT-X-ENDLIST, so the player treats them as live, as it will a
 # real camera's rolling playlist: it starts near the live edge and keeps reloading the playlist.
+# The recordings are shaped like infra/media/make-recordings.sh's output (a master index.m3u8
+# naming one rendition, VOD with #EXT-X-ENDLIST), so the paid path fetches nested files too.
 set -euo pipefail
 cd "$(dirname "$0")/.."   # web/
 
@@ -24,6 +29,7 @@ command -v ffmpeg >/dev/null || { echo "make-hls-sample: needs ffmpeg (brew inst
 command -v node >/dev/null || { echo "make-hls-sample: needs node" >&2; exit 1; }
 
 SECONDS_LIVE=16     # 8 segments of 2 s
+SECONDS_REC=8       # 4 segments of 2 s
 SECONDS_REEL=12
 SIZE=320x180
 FPS=15
@@ -56,8 +62,26 @@ for id in "${public_ids[@]}"; do
   hue=$((hue + 120))
 done
 
+# Recordings: public ones under media/rec/, paid ones under paid/ (docs/VIDEO_DESIGN.md section 8).
+read -r -a recordings <<<"$(node -e '
+  const s = require("./fixtures/streams.json").items.filter(s => s.video_mode === "recording");
+  const ok = s.every(x => /^[A-Za-z0-9_-]{1,128}$/.test(x.id));
+  if (!ok) { console.error("unexpected stream id"); process.exit(1); }
+  console.log(s.map(x => (x.access_type === "public" ? "media/rec/" : "paid/") + x.id).join(" "));')"
+rm -rf fixtures/media/rec fixtures/paid
+for dir in "${recordings[@]}"; do
+  out="fixtures/$dir"
+  mkdir -p "$out"
+  (cd "$out" && ffmpeg -hide_banner -loglevel error -f lavfi -i "testsrc=size=$SIZE:rate=$FPS:duration=$SECONDS_REC" \
+    -vf "hue=h=$hue" "${VP9[@]}" \
+    -f hls -hls_time 2 -hls_playlist_type vod -hls_segment_type fmp4 -hls_flags independent_segments \
+    -hls_fmp4_init_filename init.mp4 -hls_segment_filename "%v/seg%03d.m4s" \
+    -master_pl_name index.m3u8 -var_stream_map "v:0,name:a" "%v/index.m3u8")
+  hue=$((hue + 60))
+done
+
 mkdir -p fixtures/media
 ffmpeg -hide_banner -loglevel error -y -f lavfi -i "testsrc2=size=$SIZE:rate=$FPS:duration=$SECONDS_REEL" \
   "${VP9[@]}" -movflags +faststart "fixtures/media/$reel"
 
-du -ch fixtures/live "fixtures/media/$reel" | tail -1 | sed 's/total/total written/'
+du -ch fixtures/live fixtures/media/rec fixtures/paid "fixtures/media/$reel" | tail -1 | sed 's/total/total written/'

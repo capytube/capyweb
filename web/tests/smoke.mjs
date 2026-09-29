@@ -86,7 +86,8 @@ try {
   assert.equal(ann.pages.length, 10);
   const listed = await page.evaluate(() => window.__webmcpTools.get('list_streams').execute({}, {}));
   for (const r of JSON.parse(listed.content[0].text)) {
-    assert.deepEqual(Object.keys(r).sort(), ['access', 'id', 'live', 'price_per_10_sec', 'title'], 'no playback fields');
+    assert.deepEqual(Object.keys(r).sort(), ['access', 'id', 'live', 'price_per_10_sec', 'recorded', 'title'], 'no playback fields');
+    assert.equal(r.live && r.recorded, false, 'a recording is never reported live');
   }
   await page.evaluate(() => window.__webmcpTools.get('open_page').execute({ page: 'shop' }, {}));
   await page.waitForURL('**/shop');

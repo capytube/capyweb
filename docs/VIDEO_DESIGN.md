@@ -195,12 +195,15 @@ This is what the front end relies on. W6 built the front-end half.
 
 | Source | Production | Fixture mode (the default local build) | Built by |
 |---|---|---|---|
-| Public live camera | `/live/<streamId>/index.m3u8` | `/fixtures/live/<streamId>/index.m3u8` | `api::live_src` |
-| Private live camera | `/paid/<streamId>/index.m3u8`, only from the playback route's answer | — | never by the front end in W6 |
+| Public live camera | `/live/<streamId>/index.m3u8` | `/fixtures/live/<streamId>/index.m3u8` | `api::camera_src` |
+| Public recording (`video_mode: recording`) | `/media/rec/<streamId>/index.m3u8` | `/fixtures/media/rec/<streamId>/index.m3u8` | `api::camera_src` |
+| Paid camera | `/paid/<streamId>/index.m3u8`, only from the playback route's answer | `/fixtures/paid/<streamId>/index.m3u8` | `api::paid_src` checks the answer; never built by the front end |
 | Reel | `/media/<fallback_reel>` | `/fixtures/media/<fallback_reel>` | `LiveStream::reel_key` + `api::media_src` |
 
-- `api::live_src` returns `None` unless the stream is explicitly public (`is_public()`) and its id
+- `api::camera_src` returns `None` unless the stream is explicitly public (`is_public()`) and its id
   passes `validate_id`. A private or unknown camera never gets a media URL from the front end.
+- `api::paid_src` plays the playback route's `src` only if it is exactly this camera's own
+  `/paid/<id>/index.m3u8`. Anything else (another camera, another host, a query) plays nothing.
 - Fixture mode: `web/tests/make-hls-sample.sh` writes a short synthetic stream for each public
   fixture camera, and the fixture reel. The output is committed. It is VP9, because the test browser
   (Chromium headless shell) has no H.264. The live playlists have no `#EXT-X-ENDLIST`, so they play
@@ -350,3 +353,22 @@ URLs signed for a moving window.
 720p is about 0.8 GB and 600 segment requests, so the free tier covers about 1,250 viewer-hours a
 month. Beyond it, $0.085 per GB (PriceClass_100). The Lambda, KMS and SSM calls are inside their
 free tiers (about one call a minute per paying viewer).
+
+**The front end** (`web/src/pages/watch_room.rs`, `components/player.rs`):
+
+- A recording plays with a "Recorded" badge on the picture and "A recording, not happening right
+  now." under it; no viewer count. Cards say "Recorded". "Live" appears only for a source that is
+  live. The site footer and the Robot page no longer say "live".
+- A paid camera shows "Paid camera · Recorded", its title and its price a minute to everyone.
+  Signed out (with sign-in available): "Sign in to watch". Signed in: Watch, then a confirm line
+  ("You pay 6 play coins a minute: the first minute now, then each minute while you watch. You
+  have N play coins.") with Start watching and Cancel. Without sign-in configured: no button.
+- Start buys through `POST /api/playback/<id>` (same-origin, one Idempotency-Key per purchase;
+  a lost answer is asked again twice with the same key), then plays the checked source. It buys
+  again after `renew_after_s`, but never while the tab is hidden; after 40 s or more hidden it
+  starts the player again once the next minute is paid, in case the cookies ran out. Stop,
+  leaving the camera or a refusal ends it; after a refusal the minute already paid still plays.
+- Tests: `web/tests/pages/w6.mjs` (recordings, the live path on a stubbed camera, the reel, the
+  paid camera signed out) and `w6paid.mjs` (sign-in, confirm, buy, renew with a new key, a lost
+  answer retried with the same key, nothing bought while hidden, Stop, a refusal, a foreign
+  source refused, leaving).

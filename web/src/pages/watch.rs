@@ -26,6 +26,15 @@ pub fn private_cameras(id: &str, streams: &[LiveStream]) -> usize {
         .count()
 }
 
+/// Every camera of this capybara plays a recording: the card says so (never "Live").
+pub fn all_recorded(id: &str, streams: &[LiveStream]) -> bool {
+    let mut cams = streams
+        .iter()
+        .filter(|s| s.capybara_ids.iter().any(|c| c == id))
+        .peekable();
+    cams.peek().is_some() && cams.all(LiveStream::is_recording)
+}
+
 pub fn private_label(n: usize) -> String {
     match n {
         0 => "No private cameras".to_string(),
@@ -73,6 +82,7 @@ pub fn Watch() -> impl IntoView {
                                 <ul class="cast-grid" data-testid="capy-list">
                                     {page.items.into_iter().map(|c| {
                                         let n = private_cameras(&c.id, &streams);
+                                        let recorded = all_recorded(&c.id, &streams);
                                         let href = {
                                             let mut h = String::from("/stream/");
                                             h.push_str(&c.id);
@@ -86,6 +96,9 @@ pub fn Watch() -> impl IntoView {
                                                         <img src=src alt=name.clone() width="640" height="480"/>
                                                     })}
                                                     <h3>{name.clone()}</h3>
+                                                    {recorded.then(|| view! {
+                                                        <p class="recorded-pill" data-testid="recorded-label">"Recorded"</p>
+                                                    })}
                                                     <p>{blurb(&c)}</p>
                                                     <p class="cast-meta" data-testid="private-count">{private_label(n)}</p>
                                                 </A>

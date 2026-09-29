@@ -121,9 +121,9 @@ pub async fn register_catalog_tools(open: impl Fn(Page) + 'static) -> usize {
     n += register(
         "list_streams",
         "List CapyTube streams",
-        "List the capybara camera streams: id, title, whether it is live, and whether it is \
-         public or private. Private streams show a price per 10 seconds when one is set; \
-         watching one needs sign-in and payment on the site.",
+        "List the capybara camera streams: id, title, whether it is live or plays a recording \
+         (recorded), and whether it is public or private. Private streams show a price per 10 \
+         seconds when one is set; watching one needs sign-in and play coins on the site.",
         json!({ "type": "object", "properties": {} }),
         Effect::ReadOnly,
         |_input, signal| {
@@ -139,7 +139,8 @@ pub async fn register_catalog_tools(open: impl Fn(Page) + 'static) -> usize {
                             "id": s.id,
                             "title": s.title,
                             "access": if s.is_public() { "public" } else { "private" },
-                            "live": s.is_live.unwrap_or(false),
+                            "live": s.is_live.unwrap_or(false) && !s.is_recording(),
+                            "recorded": s.is_recording(),
                             "price_per_10_sec": s.price_per_10_sec,
                         })
                     })

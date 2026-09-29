@@ -47,20 +47,42 @@ pub fn media_src(key: &str) -> Option<String> {
     })
 }
 
-/// A public camera's live HLS playlist: `/live/<id>/index.m3u8`, or `/fixtures/live/<id>/…` in
-/// fixture mode (docs/VIDEO_DESIGN.md, "Player contract"). `None` for anything not explicitly
-/// public: the browser never builds a media URL for a private camera. That URL will come from
-/// the playback route, with signed cookies, once sign-in and payment exist.
-pub fn live_src(stream: &LiveStream) -> Option<String> {
-    if !stream.is_public() || validate_id(&stream.id).is_err() {
-        return None;
-    }
-    let root = if base_url() == FIXTURES {
+fn fixture_root() -> &'static str {
+    if base_url() == FIXTURES {
         "/fixtures"
     } else {
         ""
+    }
+}
+
+/// What a public camera plays, and whether it is live (docs/VIDEO_DESIGN.md, "Player contract"
+/// and section 8):
+/// - a recording: `/media/rec/<id>/index.m3u8`, a VOD playlist (`live` false);
+/// - otherwise its live window: `/live/<id>/index.m3u8`.
+///
+/// In fixture mode both sit under `/fixtures`. `None` for anything not explicitly public: the
+/// browser never builds a media URL for a paid camera. That URL comes only from the playback
+/// route, with its signed cookies (`paid_src`).
+pub fn camera_src(stream: &LiveStream) -> Option<(String, bool)> {
+    if !stream.is_public() || validate_id(&stream.id).is_err() {
+        return None;
+    }
+    let (dir, live) = if stream.is_recording() {
+        ("/media/rec/", false)
+    } else {
+        ("/live/", true)
     };
-    Some(format!("{root}/live/{}/index.m3u8", stream.id))
+    Some((
+        format!("{}{dir}{}/index.m3u8", fixture_root(), stream.id),
+        live,
+    ))
+}
+
+/// The paid playlist the playback route answered with, if it is exactly the one this camera's
+/// cookies open (`/paid/<id>/index.m3u8`). Anything else is refused, never played.
+pub fn paid_src(id: &str, answered: &str) -> Option<String> {
+    validate_id(id).ok()?;
+    (answered == format!("/paid/{id}/index.m3u8")).then(|| format!("{}{answered}", fixture_root()))
 }
 
 /// A non-2xx response, or a 2xx that was not JSON (usually the SPA's index.html).
@@ -931,6 +953,51 @@ pub async fn bid(auth: Auth, id: &str, amount: u64, key: &str) -> Result<Charge,
     .await
 }
 
+// -- Paid cameras (W6; backend/src/playback.ts, docs/VIDEO_DESIGN.md section 8) ---------------
+
+/// The playback route's answer: the camera is paid for until some time from now.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlaybackPass {
+    /// The paid playlist as the server named it. Played only through `paid_src`.
+    pub src: String,
+    /// Seconds until the player should buy again (the server leaves 20 s of margin).
+    pub renew_after_s: u32,
+    /// Coins this call took: 0 when enough time was already paid (a reload, a second tab).
+    pub charged: u64,
+}
+
+impl PlaybackPass {
+    pub fn from_value(v: &serde_json::Value) -> PlaybackPass {
+        PlaybackPass {
+            src: str_field(v, "src").unwrap_or_default(),
+            renew_after_s: v
+                .get("renew_after_s")
+                .and_then(|r| r.as_u64())
+                .map_or(5, |r| r.clamp(5, 600) as u32),
+            charged: v.get("charged").and_then(|c| c.as_u64()).unwrap_or(0),
+        }
+    }
+}
+
+/// Buy (or refresh) time on a paid camera. `key` is this purchase's `Idempotency-Key`, the same
+/// for every retry of it. Always same-origin (`/api/playback/<id>`), never the API's own domain:
+/// the answer sets the CloudFront cookies that open `/paid/<id>/`, and they must land on this
+/// site. In fixture mode it is `/fixtures/playback/<id>.json`, which the page tests fake.
+pub async fn buy_playback(auth: Auth, id: &str, key: &str) -> Result<PlaybackPass, CodedError> {
+    validate_id(id)?;
+    validate_key(key)?;
+    let path = format!("/playback/{id}");
+    let url = if base_url() == FIXTURES {
+        build_url(FIXTURES, &path, &[])
+    } else {
+        format!("/api{path}")
+    };
+    let (status, url, text) = authed_send(auth, Method::POST, url, None, Some(key), None).await?;
+    decode::<serde_json::Value>(status, &url, &text)
+        .map(|v| PlaybackPass::from_value(&v))
+        .map_err(CodedError::from)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -971,22 +1038,52 @@ mod tests {
     }
 
     #[test]
-    fn live_src_only_for_public_cameras_with_safe_ids() {
-        let prefix = if base_url() == FIXTURES {
-            "/fixtures"
-        } else {
-            ""
+    fn camera_src_only_for_public_cameras_with_safe_ids() {
+        let prefix = fixture_root();
+        assert_eq!(
+            camera_src(&cam("main-cam", Some(AccessType::Public))),
+            Some((format!("{prefix}/live/main-cam/index.m3u8"), true))
+        );
+        let recorded = LiveStream {
+            video_mode: Some("recording".into()),
+            ..cam("food-cam", Some(AccessType::Public))
         };
         assert_eq!(
-            live_src(&cam("main-cam", Some(AccessType::Public))),
-            Some(format!("{prefix}/live/main-cam/index.m3u8"))
+            camera_src(&recorded),
+            Some((format!("{prefix}/media/rec/food-cam/index.m3u8"), false))
         );
         for access in [Some(AccessType::Private), Some(AccessType::Unknown), None] {
-            assert_eq!(live_src(&cam("wall-cam", access)), None, "{access:?}");
+            assert_eq!(camera_src(&cam("wall-cam", access)), None, "{access:?}");
+            let paid_recording = LiveStream {
+                video_mode: Some("recording".into()),
+                ..cam("wall-cam", access)
+            };
+            assert_eq!(camera_src(&paid_recording), None, "{access:?} recording");
         }
         for id in ["", "../x", "a/b", "a?b", "a.m3u8", &"x".repeat(129)] {
-            assert_eq!(live_src(&cam(id, Some(AccessType::Public))), None, "{id}");
+            assert_eq!(camera_src(&cam(id, Some(AccessType::Public))), None, "{id}");
         }
+    }
+
+    #[test]
+    fn a_paid_source_is_played_only_if_it_is_that_cameras_own() {
+        let prefix = fixture_root();
+        assert_eq!(
+            paid_src("wall-cam", "/paid/wall-cam/index.m3u8"),
+            Some(format!("{prefix}/paid/wall-cam/index.m3u8"))
+        );
+        for bad in [
+            "/paid/main-cam/index.m3u8",
+            "https://evil.example/paid/wall-cam/index.m3u8",
+            "//evil.example/paid/wall-cam/index.m3u8",
+            "/paid/wall-cam/../main-cam/index.m3u8",
+            "/paid/wall-cam/index.m3u8?x=1",
+            "/media/rec/wall-cam/index.m3u8",
+            "",
+        ] {
+            assert_eq!(paid_src("wall-cam", bad), None, "{bad}");
+        }
+        assert_eq!(paid_src("../x", "/paid/../x/index.m3u8"), None);
     }
 
     #[test]

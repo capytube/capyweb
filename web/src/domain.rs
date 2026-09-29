@@ -49,6 +49,10 @@ pub struct LiveStream {
     pub capybara_ids: Vec<String>,
     #[serde(default)]
     pub price_per_10_sec: Option<u32>,
+    /// `recording`: the camera plays CapyTube's recording, never live (W6, until the encoder box;
+    /// docs/VIDEO_DESIGN.md section 8). Anything else is a live camera.
+    #[serde(default)]
+    pub video_mode: Option<String>,
     /// Recorded reel shown when nothing is live, so the page is never dead.
     #[serde(default)]
     pub fallback_reel: Option<String>,
@@ -61,6 +65,19 @@ impl LiveStream {
     /// Only an explicitly public stream is watchable without sign-in and payment.
     pub fn is_public(&self) -> bool {
         self.access_type == Some(AccessType::Public)
+    }
+
+    /// Plays a recording: every page says "Recorded", never "Live".
+    pub fn is_recording(&self) -> bool {
+        self.video_mode.as_deref() == Some("recording")
+    }
+
+    /// A paid camera's price for one minute (the server sells 60 s blocks at 6 x the
+    /// 10-second price). `None` when it has no price: then it cannot be bought.
+    pub fn price_per_minute(&self) -> Option<u32> {
+        self.price_per_10_sec
+            .filter(|p| *p > 0)
+            .and_then(|p| p.checked_mul(6))
     }
 
     /// The reel as a bare media key (served under /media/), or None. `fallback_reel` is free text

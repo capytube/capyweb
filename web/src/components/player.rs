@@ -1,4 +1,5 @@
-//! The video player (W6): one `<video>` for a public live camera (HLS) or a recorded reel (MP4).
+//! The video player (W6): one `<video>` for a camera (HLS, live or a recording) or a recorded
+//! reel (MP4).
 //!
 //! The media work is in js/player.js: native playback, hls.js loaded only when needed, pause
 //! while the tab is hidden, the jump to the live edge on return, and the resume position of a
@@ -7,7 +8,10 @@
 //! player (listeners, timers, the hls.js instance). Design: docs/VIDEO_DESIGN.md.
 //!
 //! It never decides that a camera may be watched: callers pass a source only for a public camera
-//! (`api::live_src`). A private camera gets no source until the playback route exists.
+//! (`api::camera_src`) or a paid one the viewer has just paid for (`api::paid_src`).
+//!
+//! A recording always says so: the "Recorded" badge sits on the picture and the note under it,
+//! and "Live" appears only for a source that is live (docs/VIDEO_DESIGN.md section 8).
 
 use leptos::{html, prelude::*};
 use wasm_bindgen::prelude::*;
@@ -64,6 +68,9 @@ pub fn VideoPlayer(
     #[prop(into)]
     label: String,
     #[prop(optional)] live: bool,
+    /// The main source is a recording: badge it "Recorded" (the reel always is).
+    #[prop(optional)]
+    recorded: bool,
     /// Stable key (a camera id) under which a non-live source keeps its position.
     #[prop(into)]
     resume_key: String,
@@ -100,6 +107,9 @@ pub fn VideoPlayer(
 
     let state = move || match current.get() {
         Some((_, true)) => "live",
+        Some((s, false)) if recorded && src.with(|m| m.as_deref() == Some(s.as_str())) => {
+            "recording"
+        }
         Some(_) => "reel",
         None => "offline",
     };
@@ -118,8 +128,12 @@ pub fn VideoPlayer(
                     </div>
                 }.into_any()
             }}
+            {move || matches!(state(), "recording" | "reel").then(|| view! {
+                <span class="player-badge" data-testid="recorded-badge">"Recorded"</span>
+            })}
             <p class="player-note">{move || match state() {
                 "live" => "Live",
+                "recording" => "A recording, not happening right now.",
                 "reel" => "Recorded reel: the camera is resting",
                 _ => "",
             }}</p>

@@ -92,3 +92,27 @@
 @media (min-width: 760px) {
   .watch-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
 }
+/* W6: a recording says so on its card, never "Live". */
+.recorded-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.recorded-pill::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #9a9a9a;
+}
+.paid-confirm { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.75rem; }
+.paid-confirm p { flex-basis: 100%; }
+.paid-note:empty { display: none; }
+.locked-cam .player { margin-top: 0.75rem; }

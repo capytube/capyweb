@@ -1,28 +1,45 @@
-//! Watch room (`/stream/:capyId`): camera tabs, the player for a public camera, a locked
-//! panel for a private one, and (public only) reactions plus chat.
+//! Watch room (`/stream/:capyId`): camera tabs, the player for a public camera, the paid panel
+//! for a private one, and (public only) reactions plus chat.
 //!
-//! A private camera shows its title and price only. No media URL is built or requested for
-//! it, and it has no chat, reactions or buttons. Chat text and display names are other
-//! people's words: the panel in js/chat.js sets textContent only, and caps the lengths.
+//! A paid camera shows its title and price. The browser never builds a media URL for it: a
+//! signed-in viewer buys time through the playback route, and plays only the playlist that route
+//! answers with, and only if it is this camera's own (`api::paid_src`). It has no chat or
+//! reactions. Chat text and display names are other people's words: the panel in js/chat.js
+//! sets textContent only, and caps the lengths.
+//!
+//! Every camera plays CapyTube's recording for now (docs/VIDEO_DESIGN.md section 8), so every
+//! camera says "Recorded", never "Live".
 
 use std::time::Duration;
 
 use js_sys::Promise;
 use leptos::html;
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 use leptos_router::hooks::{use_location, use_navigate, use_params_map, use_query_map};
 use leptos_router::NavigateOptions;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::future_to_promise;
 
-use crate::api;
-use crate::auth::use_auth;
+use crate::api::{self, CodedError};
+use crate::auth::{use_auth, Auth};
 use crate::components::chrome::PageHead;
 use crate::components::player::VideoPlayer;
 use crate::domain::{ChatMessage, LiveStream};
+use crate::pages::watch::portrait;
+use crate::state::{use_session, Session};
 
 const POSTER: &str = "/assets/posters/magnus-gym.webp";
+
+/// The camera's own capybara as its poster, so Einstein's food cam does not show Magnus.
+fn poster(stream: &LiveStream) -> &'static str {
+    stream
+        .capybara_ids
+        .first()
+        .and_then(|c| portrait(c))
+        .unwrap_or(POSTER)
+}
 
 pub fn pick_camera(cams: &[LiveStream], cam: &str) -> Option<usize> {
     if !cam.is_empty() {
@@ -157,9 +174,12 @@ fn PublicCam(stream: LiveStream) -> impl IntoView {
         key.push_str(k);
         api::media_src(&key)
     });
-    let src = api::live_src(&stream);
+    let (src, live) = api::camera_src(&stream).map_or((None, false), |(s, l)| (Some(s), l));
+    let recorded = stream.is_recording();
+    let poster = poster(&stream);
     let title = stream.title.clone();
-    let viewers = stream.viewer_count;
+    // A viewer count means "watching now": nothing for a recording.
+    let viewers = stream.viewer_count.filter(|_| !stream.is_recording());
     let panel_label = tab_id(&stream.id);
     let stream_id = stream.id.clone();
     let auth = use_auth();
@@ -233,8 +253,8 @@ fn PublicCam(stream: LiveStream) -> impl IntoView {
             <section class="card watch-cam">
                 <h2>{title.clone()}</h2>
                 {viewers.map(|n| view! { <p data-testid="viewer-count">{watching(n)}</p> })}
-                <VideoPlayer src=Signal::stored(src) poster=POSTER label=title live=true
-                    resume_key=stream.id.clone() fallback=reel/>
+                <VideoPlayer src=Signal::stored(src) poster=poster label=title live=live
+                    recorded=recorded resume_key=stream.id.clone() fallback=reel/>
             </section>
             <aside class="card chat-panel" aria-label="Chat">
                 <h2>"Chat"</h2>
@@ -259,26 +279,273 @@ fn open_cam(nav: &impl Fn(&str, NavigateOptions), ids: &[String], capy: &str, in
     set_timeout(move || focus_tab(&focus), Duration::from_millis(0));
 }
 
-fn price_label(price: Option<u32>) -> String {
-    match price {
-        Some(1) => "1 coin per 10 seconds".to_string(),
-        Some(p) => {
-            let mut s = p.to_string();
-            s.push_str(" coins per 10 seconds");
-            s
-        }
+fn coins(n: u64) -> String {
+    let mut s = n.to_string();
+    s.push_str(if n == 1 { " play coin" } else { " play coins" });
+    s
+}
+
+fn price_label(per_minute: Option<u32>) -> String {
+    match per_minute {
+        Some(p) => coins(p.into()) + " a minute",
         None => "Price not set yet".to_string(),
     }
 }
 
-fn locked_camera(s: LiveStream) -> impl IntoView {
-    let price = price_label(s.price_per_10_sec);
+/// Where a paid camera is. `Watching` carries the checked source and a count that moves on when
+/// the player must start again (after a long hidden spell, when the old cookies may be gone).
+#[derive(Clone, PartialEq)]
+enum Paid {
+    Idle,
+    Confirm,
+    Busy,
+    Watching(String, u32),
+}
+
+async fn sleep_s(secs: u32) {
+    let wait = Promise::new(&mut |done, _| {
+        if let Some(w) = web_sys::window() {
+            let _ = w.set_timeout_with_callback_and_timeout_and_arguments_0(
+                &done,
+                (secs.min(600) * 1000) as i32,
+            );
+        }
+    });
+    let _ = wasm_bindgen_futures::JsFuture::from(wait).await;
+}
+
+fn page_hidden() -> bool {
+    web_sys::window()
+        .and_then(|w| w.document())
+        .is_some_and(|d| d.hidden())
+}
+
+/// The balance from `GET /me` into the header's coin count.
+async fn refresh_coins(auth: Auth, session: Session) -> Option<u64> {
+    let c = api::get_me(auth).await.ok().flatten()?.balance;
+    session.coins.set(c);
+    c
+}
+
+fn refusal(e: &CodedError, per_minute: u32, have: Option<u64>) -> String {
+    if e.is("insufficient_coins") {
+        let mut s = String::from("Not enough play coins: a minute costs ");
+        s.push_str(&coins(per_minute.into()));
+        if let Some(h) = have {
+            s.push_str(" and you have ");
+            s.push_str(&coins(h));
+        }
+        s.push_str(". Nothing more was spent.");
+        return s;
+    }
+    if e.outcome_unknown() {
+        return "No answer from CapyTube. Nothing more will be charged. Try again in a moment."
+            .into();
+    }
+    if e.is("not_ready") {
+        return "Paid cameras are not open right now. Nothing was spent.".into();
+    }
+    "This camera cannot be watched right now. Nothing was spent.".into()
+}
+
+/// One viewing: buy, play, and buy the next minute when the server says so, while the tab is
+/// visible. It ends when `gen` moves on (Stop, leaving the camera) or on a refusal. Each
+/// purchase has its own Idempotency-Key, reused only to ask again after a lost answer.
+#[allow(clippy::too_many_arguments)]
+async fn watch_loop(
+    auth: Auth,
+    session: Session,
+    id: String,
+    my: u32,
+    gen: StoredValue<u32>,
+    state: RwSignal<Paid>,
+    note: RwSignal<String>,
+    per_minute: u32,
+) {
+    let current = move || gen.try_get_value() == Some(my);
+    let mut first = true;
+    let mut epoch = 0;
+    loop {
+        let key = crate::auth::random_key();
+        let mut answer = api::buy_playback(auth, &id, &key).await;
+        for wait in [2, 4] {
+            if !current() || !matches!(&answer, Err(e) if e.outcome_unknown()) {
+                break;
+            }
+            sleep_s(wait).await;
+            answer = api::buy_playback(auth, &id, &key).await;
+        }
+        if !current() {
+            return;
+        }
+        let pass = match answer {
+            Ok(p) => p,
+            Err(e) => {
+                let have = if e.is("insufficient_coins") {
+                    refresh_coins(auth, session).await
+                } else {
+                    session.coins.get_untracked()
+                };
+                if !current() {
+                    return;
+                }
+                note.set(refusal(&e, per_minute, have));
+                if !first {
+                    // The minute already paid for still plays; the server renews 20 s early.
+                    sleep_s(20).await;
+                    if !current() {
+                        return;
+                    }
+                }
+                state.set(Paid::Idle);
+                return;
+            }
+        };
+        if pass.charged > 0 {
+            refresh_coins(auth, session).await;
+        }
+        let Some(src) = api::paid_src(&id, &pass.src) else {
+            note.set(
+                "That answer did not look right, so nothing plays. Nothing more will be charged."
+                    .into(),
+            );
+            state.set(Paid::Idle);
+            return;
+        };
+        if !current() {
+            return;
+        }
+        if state.with_untracked(|s| *s != Paid::Watching(src.clone(), epoch)) {
+            state.set(Paid::Watching(src, epoch));
+        }
+        first = false;
+        sleep_s(pass.renew_after_s).await;
+        // Hidden: the player has paused, so buy nothing until the viewer is back. After a long
+        // spell the cookies may have run out: start the player again once the next minute is paid.
+        let mut away = 0;
+        while current() && page_hidden() {
+            sleep_s(1).await;
+            away += 1;
+        }
+        if !current() {
+            return;
+        }
+        if away >= 40 {
+            epoch += 1;
+        }
+    }
+}
+
+/// A paid camera (W6): title, price and "Recorded" for everyone. A signed-in viewer confirms,
+/// then watches while the playback route takes the price each minute (backend/src/playback.ts).
+/// Signed out, with sign-in available, it offers sign-in; without sign-in it offers nothing.
+#[component]
+fn PaidCam(stream: LiveStream) -> impl IntoView {
+    let auth = use_auth();
+    let session = use_session();
+    let loc = use_location();
+    let id = StoredValue::new(stream.id.clone());
+    let title = stream.title.clone();
+    let recorded = stream.is_recording();
+    let poster = poster(&stream);
+    let per_minute = stream.price_per_minute();
+    let sellable = per_minute.is_some() && (recorded || stream.is_live == Some(true));
+    let state = RwSignal::new(Paid::Idle);
+    let note = RwSignal::new(String::new());
+    let gen = StoredValue::new(0u32);
+    on_cleanup(move || gen.update_value(|g| *g += 1));
+
+    let confirm = move |_| {
+        note.set(String::new());
+        state.set(Paid::Confirm);
+        spawn_local(async move {
+            refresh_coins(auth, session).await;
+        });
+    };
+    let start = move |_| {
+        let Some(p) = per_minute else { return };
+        let my = gen.get_value() + 1;
+        gen.set_value(my);
+        note.set(String::new());
+        state.set(Paid::Busy);
+        spawn_local(watch_loop(
+            auth,
+            session,
+            id.get_value(),
+            my,
+            gen,
+            state,
+            note,
+            p,
+        ));
+    };
+    let stop = move |_| {
+        gen.update_value(|g| *g += 1);
+        state.set(Paid::Idle);
+        note.set("Stopped. Nothing more will be charged.".into());
+    };
+    let sign_in = move |_| {
+        let mut to = loc.pathname.get_untracked();
+        to.push_str(&loc.search.get_untracked());
+        auth.sign_in(&to);
+    };
+    let ask = move || {
+        let mut s = String::from("You pay ");
+        s.push_str(&price_label(per_minute));
+        s.push_str(": the first minute now, then each minute while you watch.");
+        if let Some(c) = session.coins.get() {
+            s.push_str(" You have ");
+            s.push_str(&coins(c));
+            s.push('.');
+        }
+        s
+    };
+    let eyebrow = if recorded {
+        "Paid camera · Recorded"
+    } else {
+        "Paid camera"
+    };
+
     view! {
-        <section class="card watch-cam locked-cam" data-testid="locked-camera" role="tabpanel" id="cam-panel" aria-labelledby=tab_id(&s.id)>
-            <p class="eyebrow">"Private camera"</p>
-            <h2>{s.title}</h2>
-            <p class="font-dynapuff">{price}</p>
-            <p>"Watching a private camera needs an account and play coins. Both are on their way."</p>
+        <section class="card watch-cam locked-cam" data-testid="locked-camera" role="tabpanel" id="cam-panel"
+            aria-labelledby=tab_id(&stream.id)>
+            <p class="eyebrow">{eyebrow}</p>
+            <h2>{title.clone()}</h2>
+            <p class="font-dynapuff" data-testid="paid-price">{price_label(per_minute)}</p>
+            {move || match state.get() {
+                Paid::Watching(src, _) => view! {
+                    <VideoPlayer src=Signal::stored(Some(src)) poster=poster label=title.clone()
+                        recorded=recorded resume_key=id.get_value()/>
+                    <p>"Taken each minute while you watch. Nothing is taken while the tab is hidden."</p>
+                    <button type="button" class="btn btn-ghost" data-testid="paid-stop" on:click=stop>
+                        "Stop watching"</button>
+                }.into_any(),
+                Paid::Confirm => view! {
+                    <div class="paid-confirm" data-testid="paid-confirm">
+                        <p>{ask}</p>
+                        <button type="button" class="btn" data-testid="paid-start" on:click=start>
+                            "Start watching"</button>
+                        <button type="button" class="btn btn-ghost" on:click=move |_| state.set(Paid::Idle)>
+                            "Cancel"</button>
+                    </div>
+                }.into_any(),
+                Paid::Busy => view! { <p>"Starting…"</p> }.into_any(),
+                Paid::Idle if !sellable => view! {
+                    <p>"This camera cannot be watched right now."</p>
+                }.into_any(),
+                Paid::Idle if auth.signed_in() => view! {
+                    <button type="button" class="btn" data-testid="paid-watch" on:click=confirm>
+                        "Watch"</button>
+                }.into_any(),
+                Paid::Idle if auth.ready() => view! {
+                    <button type="button" class="btn" data-testid="paid-sign-in" on:click=sign_in>
+                        "Sign in to watch"</button>
+                }.into_any(),
+                Paid::Idle => view! {
+                    <p>"Watching a paid camera needs an account and play coins."</p>
+                }.into_any(),
+            }}
+            <p class="paid-note" role="status" data-testid="paid-note">{move || note.get()}</p>
         </section>
     }
 }
@@ -349,7 +616,7 @@ pub fn WatchRoom() -> impl IntoView {
                                 // previous camera (and its poll) and mounts the next one.
                                 view! { <PublicCam stream=chosen /> }.into_any()
                             } else {
-                                locked_camera(chosen).into_any()
+                                view! { <PaidCam stream=chosen /> }.into_any()
                             }}
                         </div>
                     }.into_any()

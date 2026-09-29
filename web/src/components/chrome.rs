@@ -56,7 +56,7 @@ pub fn Footer() -> impl IntoView {
     view! {
         <footer class="footer">
             <p>
-                "CapyTube · Magnus and friends, live from Thailand. "
+                "CapyTube · Magnus and friends, from Thailand. "
                 <button type="button" class="underline font-dynapuff" on:click=move |_| about_coins.set(true)>
                     "Play coins are not money"
                 </button>

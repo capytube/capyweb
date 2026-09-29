@@ -75,7 +75,7 @@ pub fn Robot() -> impl IntoView {
         <div class="robot-page">
             <PageHead title="Watch now. Drive when your hour begins."
                 eyebrow="Capybara robot experience · private prototype"
-                lede="A live window into the capybara habitat, with one supervised robot controller at a time. The stream below uses existing demo footage while the ROLA hardware API is being verified."/>
+                lede="A window into the capybara habitat, with one supervised robot controller at a time. The stream below uses existing demo footage while the ROLA hardware API is being verified."/>
             <ul class="robot-badges" aria-label="Prototype status">
                 <li>"Demo stream"</li><li>"Robot controls: API pending"</li><li>"No payment enabled"</li>
             </ul>

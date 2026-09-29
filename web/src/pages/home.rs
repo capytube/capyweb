@@ -34,7 +34,7 @@ pub fn Home() -> impl IntoView {
     view! {
         <PageHead
             title="Watch Magnus. Then pick his snack."
-            eyebrow="Live capybaras · play coins only"
+            eyebrow="Real capybaras · play coins only"
             lede="Tune in to the capy cams, react with the room, and vote on what gets served next."
         />
         <section aria-labelledby="cams-heading" class="mt-8">
@@ -45,7 +45,13 @@ pub fn Home() -> impl IntoView {
                     Ok(page) => view! {
                         <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="stream-list">
                             {page.items.into_iter().map(|s| {
-                                let live = s.is_live.unwrap_or(false);
+                                let line = if s.is_recording() {
+                                    "Recorded"
+                                } else if s.is_live.unwrap_or(false) {
+                                    "Live now"
+                                } else {
+                                    "Resting. Showing the reel."
+                                };
                                 view! {
                                     <li class="card">
                                         <A href=watch_href(&s) attr:class="block no-underline">
@@ -53,9 +59,7 @@ pub fn Home() -> impl IntoView {
                                                 <span class="font-dynapuff text-lg">{s.title.clone()}</span>
                                                 {access_badge(&s)}
                                             </div>
-                                            <p class="text-sm mt-1">
-                                                {if live { "Live now" } else { "Resting. Showing the reel." }}
-                                            </p>
+                                            <p class="text-sm mt-1" data-testid="stream-state">{line}</p>
                                         </A>
                                     </li>
                                 }
