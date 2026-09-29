@@ -106,7 +106,7 @@ impl Page {
 /// The document title for a page heading: "Watch · CapyTube".
 pub fn title_for(heading: &str) -> String {
     if heading.is_empty() {
-        "CapyTube, live capy stream".to_string()
+        "CapyTube, capybara cameras".to_string()
     } else {
         format!("{heading} · CapyTube")
     }
@@ -156,6 +156,6 @@ mod tests {
     #[test]
     fn titles() {
         assert_eq!(title_for("Watch"), "Watch · CapyTube");
-        assert_eq!(title_for(""), "CapyTube, live capy stream");
+        assert_eq!(title_for(""), "CapyTube, capybara cameras");
     }
 }
