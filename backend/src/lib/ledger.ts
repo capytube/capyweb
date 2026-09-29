@@ -23,7 +23,7 @@ import { STARTING_BALANCE } from "./economy.ts";
 export type WriteItem = NonNullable<TransactWriteCommandInput["TransactItems"]>[number];
 
 export type TxnType =
-  | "signup_grant" | "grant" | "vote" | "bid" | "bid_raise" | "bid_refund" | "chat" | "reaction";
+  | "signup_grant" | "grant" | "vote" | "bid" | "bid_raise" | "bid_refund" | "chat" | "reaction" | "playback";
 
 export interface Posting {
   userId: string;

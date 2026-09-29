@@ -71,6 +71,11 @@ export const sk = {
   idem: (key: string) => `IDEM#${key}`,
   /** One reaction-counter item per stream, beside the chat. No index, so 1 write unit per reaction. */
   reactions: () => "REACTIONS",
+  /**
+   * A viewer's paid time on one paid camera (W6): `paid_until`, epoch seconds. In the viewer's
+   * USER# partition, so it sits in the same transaction as the coins that pay for it.
+   */
+  pass: (streamId: string) => `PASS#${streamId}`,
 } as const;
 
 /** begins_with() prefixes for range queries within a partition. */

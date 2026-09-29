@@ -29,6 +29,13 @@ Parameters:
     Type: String
     Default: ""
     Description: 'FROM header when SesIdentityArn is set, e.g. "CapyTube <no-reply@capytube.xyz>".'
+  # Paid cameras (W6, docs/VIDEO_DESIGN.md). The id of the CloudFront PUBLIC key whose private half
+  # is in SSM at /capyapp/capyweb/<stage>/playback-signing-key. The key and its key group are made
+  # by an admin, outside every stack (capyweb-manager, 2026-09-29). Empty = the route answers 503.
+  PlaybackKeyPairId:
+    Type: String
+    Default: ""
+    AllowedPattern: "^[A-Z0-9]*$"
 
 # The site each stage's sign-in returns to. Production is the apex domain, not "prod.".
 Mappings:
@@ -69,8 +76,8 @@ Resources:
       DefaultRouteSettings:
         ThrottlingRateLimit: 10
         ThrottlingBurstLimit: 20
-      # The playback route comes back with the new video source (task W6 in docs/WASM_PLAN.md).
-      # Until then there is no playback route.
+      # POST /playback/{id} (PlaybackFunction) is called same-origin through the site's /api/*,
+      # never cross-origin: its cookies must land on the site's domain. CORS below is for the rest.
       CorsConfiguration:
         AllowOrigins: !Ref AllowedOrigins
         AllowMethods: [GET, POST, PUT, DELETE, OPTIONS]
@@ -309,6 +316,48 @@ Resources:
         PostChat:         {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}/chat", Method: POST, Auth: {Authorizer: CognitoJwt}}}
         React:            {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}/reactions", Method: POST, Auth: {Authorizer: CognitoJwt}}}
 
+  # Paid cameras (W6): POST /playback/{id} takes the coins and sets the CloudFront signed cookies
+  # that open /paid/<id>/ on the site. The browser calls it as /api/playback/<id> through the
+  # site's distribution, so the cookies land on the site's domain. Its own function because it is
+  # the only one that may read the signing key.
+  PlaybackFunction:
+    Type: AWS::Serverless::Function
+    Metadata: {BuildMethod: esbuild, BuildProperties: {EntryPoints: [playback.ts], Target: es2022, Minify: true, Format: esm, OutExtension: [".js=.mjs"], External: ["@aws-sdk/*"]}}
+    Properties:
+      FunctionName: !Sub capyapp-capyweb-${Stage}-playback
+      CodeUri: ../../backend/src/
+      Handler: playback.handler
+      # One call a minute per paying viewer.
+      ReservedConcurrentExecutions: 3
+      Environment:
+        Variables:
+          SITE_ORIGIN: !FindInMap [StageSite, !Ref Stage, Origin]
+          SIGNING_KEY_PAIR_ID: !Ref PlaybackKeyPairId
+          SIGNING_KEY_PARAM: !Sub /capyapp/capyweb/${Stage}/playback-signing-key
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:ConditionCheckItem]
+              Resource: !GetAtt MainTable.Arn
+            - Effect: Allow
+              Action: [ssm:GetParameter]
+              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/capyapp/capyweb/${Stage}/playback-signing-key
+            # SecureString under the AWS managed key aws/ssm: decrypt only on SSM's behalf.
+            - Effect: Allow
+              Action: [kms:Decrypt]
+              Resource: "*"
+              Condition: {StringEquals: {kms:ViaService: !Sub "ssm.${AWS::Region}.amazonaws.com"}}
+      Events:
+        Playback: {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/playback/{id}", Method: POST, Auth: {Authorizer: CognitoJwt}}}
+
+  PlaybackLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/capyapp-capyweb-${Stage}-playback
+      RetentionInDays: 14
+      Tags:
+        - {Key: Project, Value: capyweb}
+
   WritesLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -450,7 +499,7 @@ Resources:
 
 Outputs:
   ApiUrl:
-    Description: HTTP API base URL. Public catalog /capybaras, /streams, /nfts; signed-in /me, /interactions/{id}/votes|bids, POST /streams/{id}/chat|reactions; public GET /streams/{id}/chat.
+    Description: HTTP API base URL. Public catalog /capybaras, /streams, /nfts; signed-in /me, /interactions/{id}/votes|bids, POST /streams/{id}/chat|reactions, POST /playback/{id}; public GET /streams/{id}/chat.
     Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
   MainTableName:
     Value: !Ref MainTable

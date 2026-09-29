@@ -1,9 +1,24 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: capyweb site - private S3 + CloudFront (OAC) on <stage>.capytube.xyz. Serves demo/ until the React cutover (Epic C).
+Description: capyweb site - private S3 + CloudFront (OAC) on <stage>.capytube.xyz, plus the video media bucket (W6).
 Parameters:
   Stage: {Type: String, Default: dev}
   DomainName: {Type: String, Default: dev.capytube.xyz}
   CertArn: {Type: String, Description: ACM cert in us-east-1 covering DomainName}
+  # Paid cameras (docs/VIDEO_DESIGN.md section 4). The id of the CloudFront key group that holds
+  # the signing key's PUBLIC half. The key group is made outside this stack, by an admin
+  # (capyweb-manager, 2026-09-29): the deploy user has no key-group permissions, because those
+  # would reach every project's signing keys in the account. The private half lives only in SSM
+  # (/capyapp/capyweb/<stage>/playback-signing-key). Empty = no /paid/* behaviour, so paid files
+  # are not reachable at all.
+  PlaybackKeyGroupId: {Type: String, Default: ""}
+  # The HTTP API behind /api/* (e.g. abc123.execute-api.ap-southeast-1.amazonaws.com) and its
+  # stage path (/dev). Empty = no /api/* behaviour. With it, the SPA fallback moves from the
+  # distribution-wide error responses to a viewer-request function (see SpaFunction).
+  ApiDomain: {Type: String, Default: ""}
+  ApiOriginPath: {Type: String, Default: ""}
+Conditions:
+  HasPlaybackKey: !Not [!Equals [!Ref PlaybackKeyGroupId, ""]]
+  HasApi: !Not [!Equals [!Ref ApiDomain, ""]]
 Resources:
   SiteBucket:
     Type: AWS::S3::Bucket
@@ -22,6 +37,36 @@ Resources:
             Action: s3:GetObject
             Resource: !Sub ${SiteBucket.Arn}/*
             Condition: {StringEquals: {AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Cdn}"}}
+  # Video (W6, docs/VIDEO_DESIGN.md). Recordings today (nic, 2026-09-29), the encoder box's live
+  # windows later. Keys: media/... (public, CloudFront /media/*) and paid/... (CloudFront /paid/*,
+  # signed cookies only). No versioning: a versioned bucket keeps every replaced segment, and that
+  # is paid storage. Only CloudFront reads it; the bucket answers nothing over plain HTTP.
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration: {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+      OwnershipControls: {Rules: [{ObjectOwnership: BucketOwnerEnforced}]}
+      BucketEncryption: {ServerSideEncryptionConfiguration: [{ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}}]}
+      LifecycleConfiguration:
+        Rules:
+          - {Id: abort-incomplete-uploads, Status: Enabled, AbortIncompleteMultipartUpload: {DaysAfterInitiation: 1}}
+      Tags: [{Key: capy-scope, Value: capyapp}, {Key: Project, Value: capyweb}, {Key: Stage, Value: !Ref Stage}]
+  MediaBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MediaBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: {Service: cloudfront.amazonaws.com}
+            Action: s3:GetObject
+            Resource: !Sub ${MediaBucket.Arn}/*
+            Condition: {StringEquals: {AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Cdn}"}}
+          - Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource: [!GetAtt MediaBucket.Arn, !Sub "${MediaBucket.Arn}/*"]
+            Condition: {Bool: {aws:SecureTransport: 'false'}}
   Oac:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
@@ -30,6 +75,38 @@ Resources:
         OriginAccessControlOriginType: s3
         SigningBehavior: always
         SigningProtocol: sigv4
+  # The SPA fallback, once /api/* exists. A path without a file extension is a page of the app:
+  # serve the shell and let the client router resolve it. Unlike the error responses it replaces,
+  # this touches only the site's own paths, so the API's 403/404 answers and CloudFront's refusals
+  # on /paid/* reach the browser as they are, and a missing asset is a real error, not HTML.
+  SpaFunction:
+    Type: AWS::CloudFront::Function
+    Condition: HasApi
+    Properties:
+      Name: !Sub capyapp-capyweb-${Stage}-spa
+      AutoPublish: true
+      FunctionConfig: {Comment: SPA fallback for extensionless paths, Runtime: cloudfront-js-2.0}
+      FunctionCode: |
+        function handler(event) {
+          var r = event.request;
+          if (r.uri.lastIndexOf('.') <= r.uri.lastIndexOf('/')) r.uri = '/index.html';
+          return r;
+        }
+  # /api/x -> the HTTP API's /x. Same-origin, so the playback route's Set-Cookie lands on the
+  # site's domain, where CloudFront checks it (docs/VIDEO_DESIGN.md section 4).
+  ApiFunction:
+    Type: AWS::CloudFront::Function
+    Condition: HasApi
+    Properties:
+      Name: !Sub capyapp-capyweb-${Stage}-api-prefix
+      AutoPublish: true
+      FunctionConfig: {Comment: strip the /api prefix, Runtime: cloudfront-js-2.0}
+      FunctionCode: |
+        function handler(event) {
+          var r = event.request;
+          r.uri = r.uri.slice(4) || '/';
+          return r;
+        }
   Cdn:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -47,13 +124,67 @@ Resources:
             DomainName: !GetAtt SiteBucket.RegionalDomainName
             OriginAccessControlId: !GetAtt Oac.Id
             S3OriginConfig: {OriginAccessIdentity: ''}
+          - Id: media
+            DomainName: !GetAtt MediaBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt Oac.Id
+            S3OriginConfig: {OriginAccessIdentity: ''}
+          - !If
+            - HasApi
+            - Id: api
+              DomainName: !Ref ApiDomain
+              OriginPath: !Ref ApiOriginPath
+              CustomOriginConfig: {OriginProtocolPolicy: https-only, OriginSSLProtocols: [TLSv1.2]}
+            - !Ref AWS::NoValue
         DefaultCacheBehavior:
           TargetOriginId: site
           ViewerProtocolPolicy: redirect-to-https
           Compress: true
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6            # Managed-CachingOptimized
           ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03  # Managed-SecurityHeadersPolicy
-        CustomErrorResponses:
+          FunctionAssociations: !If
+            - HasApi
+            - [{EventType: viewer-request, FunctionARN: !GetAtt SpaFunction.FunctionMetadata.FunctionARN}]
+            - !Ref AWS::NoValue
+        CacheBehaviors:
+          # Recordings, the reel and (later) public live windows. Objects carry their own
+          # Cache-Control from infra/media/upload-media.sh.
+          - PathPattern: /media/*
+            TargetOriginId: media
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6            # Managed-CachingOptimized
+            ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03  # Managed-SecurityHeadersPolicy
+          # Paid cameras: CloudFront accepts a /paid/* request only with cookies signed by a key in
+          # the key group; the playback Lambda (backend/src/playback.ts) signs them after it has
+          # taken the coins. Signed cookies are checked at the edge before the cache, and are not
+          # in the cache key, so every paying viewer shares one cached copy and nobody else gets it.
+          - !If
+            - HasPlaybackKey
+            - PathPattern: /paid/*
+              TargetOriginId: media
+              ViewerProtocolPolicy: https-only
+              Compress: true
+              TrustedKeyGroups: [!Ref PlaybackKeyGroupId]
+              CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6            # Managed-CachingOptimized
+              ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03  # Managed-SecurityHeadersPolicy
+            - !Ref AWS::NoValue
+          # The HTTP API, same-origin. Nothing cached; every viewer header (Authorization included)
+          # and cookie goes to the API, and its Set-Cookie comes back.
+          - !If
+            - HasApi
+            - PathPattern: /api/*
+              TargetOriginId: api
+              ViewerProtocolPolicy: https-only
+              AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+              CachedMethods: [GET, HEAD]
+              Compress: true
+              CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad          # Managed-CachingDisabled
+              OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # Managed-AllViewerExceptHostHeader
+              FunctionAssociations: [{EventType: viewer-request, FunctionARN: !GetAtt ApiFunction.FunctionMetadata.FunctionARN}]
+            - !Ref AWS::NoValue
+        CustomErrorResponses: !If
+          - HasApi
+          - !Ref AWS::NoValue    # SpaFunction does this job, for the site's paths only
           # SPA fallback: a deep link like /watch is not an object in the bucket, so S3+OAC
           # answers 403 (ListBucket is denied, so it cannot say 404). Serve index.html with
           # 200 and let the client router resolve the path - answering 404 here breaks every
@@ -62,20 +193,19 @@ Resources:
           # response is rewritten to 200, CloudFront caches it like any success, using
           # index.html's own Cache-Control. deploy.sh uploads index.html as no-cache for
           # exactly this reason - otherwise a missing path would be pinned to HTML for 24h.
-          - {ErrorCode: 403, ResponseCode: 200, ResponsePagePath: /index.html, ErrorCachingMinTTL: 10}
-          - {ErrorCode: 404, ResponseCode: 200, ResponsePagePath: /index.html, ErrorCachingMinTTL: 10}
+          - - {ErrorCode: 403, ResponseCode: 200, ResponsePagePath: /index.html, ErrorCachingMinTTL: 10}
+            - {ErrorCode: 404, ResponseCode: 200, ResponsePagePath: /index.html, ErrorCachingMinTTL: 10}
           # Tradeoff: a genuinely missing asset (e.g. /assets/stale.js after a deploy) also
           # returns index.html with 200, surfacing as "Unexpected token '<'" rather than a
           # 404. Custom error responses are DISTRIBUTION-wide - there is no per-behaviour
-          # override - so this cannot be fixed with an /assets/* cache behaviour. The sharp
-          # edge is blunted by index.html being no-cache (above), so a stale asset URL
-          # recovers on the next request rather than being pinned for a day. A real 404 for
-          # assets would need a viewer-response CloudFront Function, which is not worth it
-          # until it actually bites.
+          # override - so this cannot be fixed with an /assets/* cache behaviour. It also
+          # applies to /media/*: a missing recording is index.html with 200, which the player
+          # treats as a failed source. SpaFunction (with ApiDomain set) removes all of this.
           # Also note: every unknown path now returns 200 with the same shell, i.e. soft-404s.
           # Harmless on dev; revisit for crawlers at the production cutover (capyweb-1w5).
 Outputs:
   Url: {Value: !Sub "https://${DomainName}/"}
   Bucket: {Value: !Ref SiteBucket}
+  MediaBucket: {Value: !Ref MediaBucket}
   DistributionId: {Value: !Ref Cdn}
   CdnDomain: {Value: !GetAtt Cdn.DomainName}

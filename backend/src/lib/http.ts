@@ -22,6 +22,8 @@ export interface Response {
   statusCode: number;
   headers: Record<string, string>;
   body: string;
+  /** Set-Cookie values (payload format 2.0 sends each as its own header). Only playback.ts sets any. */
+  cookies?: string[];
 }
 
 /**

@@ -56,6 +56,7 @@ system; it should cost one write unit and then delete itself.
 | TokenTransaction | `USER#{user_id}` | `TXN#{ts}#{id}` | `TXN` / `{ts}#{id}` | `TXN#{id}` / `#META` |
 | Idempotency marker | `USER#{user_id}` | `IDEM#{key}` | — | — |
 | ReactionCounts | `STREAM#{stream_id}` | `REACTIONS` | — | — |
+| PlaybackPass | `USER#{user_id}` | `PASS#{stream_id}` | — | — |
 
 ‡ **sparse**: `GSI2PK` is written **only** when `is_custom_request` is true and `approved` is null.
 Approving or rejecting removes the attribute, and the item leaves the index. `GSI2` *is* the
@@ -83,6 +84,17 @@ Added with the ledger (lane 4, `capyweb-3ge`/`capyweb-7hj`), no existing key cha
 - **ReactionCounts** is one small item per stream with a number per reaction. No index, so a reaction is
   one write unit. (The seed's `ratingCounts` map on the stream's `#META` is not used by the API.)
 - The table now has **TTL on `expiresAt`** enabled in the template; chat (30 days) and markers use it.
+
+Added with paid cameras (W6, `backend/src/playback.ts`), no existing key changed:
+
+- **PlaybackPass** `PASS#{stream_id}` in the viewer's own partition: `paid_until` (epoch seconds) for
+  one paid camera. It is written in the same transaction as the coins that pay for it, conditional on
+  the `paid_until` that was read, so two tabs buying at once pay once. No TTL: one small item per
+  viewer and paid camera.
+- **LiveStream** gains `video_mode`: `recording` (plays CapyTube's recording, so every page says
+  "Recorded") or, later, `live`. It is on the private allow-list in `clean()`, so a paid camera's card
+  can say "Recorded" too. It says which label to show, never where the video is.
+- **TokenTransaction** gains the type `playback` (`related_type: stream`, `related_id`: the camera).
 
 ### NFT
 
@@ -198,6 +210,7 @@ constants in `backend/src/lib/economy.ts`, decided by capyweb-manager on 2026-09
 | `BID_MIN_INCREMENT` | 1 | a bid must beat `current_bid` by at least this |
 | `MAX_BID` | 1,000,000 | ceiling on one bid |
 | `REFUND_OUTBID` | true | the outbid bidder gets their coins back in the same transaction |
+| `PLAYBACK_BLOCK_SECONDS` | 60 | one paid-camera purchase adds this much time, at 6 × `price_per_10_sec` |
 
 Votes cost `number_of_votes × vote_cost`, plus `custom_request_cost` for a custom request; an
 interaction without a `vote_cost` is refused (`not_priced`), never free.
@@ -222,6 +235,7 @@ a different request: `409 idempotency_mismatch`.
 | `GET /streams/{id}/chat?limit&cursor` | **public, no sign-in**: chat newest first, display names only; the first page also carries `reactions` | 200 | 400, 403 `private_stream`, 404 |
 | `POST /streams/{id}/chat` | post one line (≤ 280 characters, ≤ 800 bytes), at most one per user per 2 s | 201 | 403 `private_stream`, 404, 409 `display_name_required`, 429 `slow_down` |
 | `POST /streams/{id}/reactions` | one of `capylove capylike capywow capyangry capyfire` | 200 | 400, 403 `private_stream`, 404 |
+| `POST /playback/{id}` | paid camera: adds 60 s of paid time (charged only when under 30 s are left) and sets the CloudFront cookies for `/paid/{id}/`. Function `…-playback`; called as `/api/playback/{id}` through the site | 201 charged, 200 not charged | 400 `free_camera`, 404, 409 `not_for_sale` `offline` `not_priced` `insufficient_coins`, 503 `not_ready` |
 
 Chat and reactions work only on streams whose `access_type` is exactly `public`. Anything else
 (private, missing, unknown) is `403 private_stream` for reads, posts and reactions, until private

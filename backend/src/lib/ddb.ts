@@ -58,9 +58,10 @@ export type Item = Record<string, unknown>;
  * A camera that is not explicitly public shows only what a visitor needs to see that it exists
  * and what it costs (capyweb-0m7): an allow-list, so a field added later (a recording, a
  * schedule, a description of what is on screen) stays private until someone decides otherwise.
- * Its recorded reel is paid content too.
+ * Its recorded reel is paid content too. `video_mode` ("recording" or "live") says which label the
+ * card shows, never where the video is.
  */
-const PRIVATE_STREAM_FIELDS = new Set(["id", "title", "access_type", "price_per_10_sec", "capybara_ids"]);
+const PRIVATE_STREAM_FIELDS = new Set(["id", "title", "access_type", "price_per_10_sec", "capybara_ids", "video_mode"]);
 
 const isStream = (item: Item): boolean =>
   item.entity === "LiveStream" || (String(item.PK ?? "").startsWith("STREAM#") && item.SK === "#META");

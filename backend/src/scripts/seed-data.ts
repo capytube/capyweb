@@ -15,10 +15,12 @@ export function seedItems(now: string): Record<string, unknown>[] {
   }
 
   // -- streams ------------------------------------------------------------------
+  // video_mode "recording": no camera is live yet (nic, 2026-09-29). Each plays its own third of
+  // CapyTube's recording (infra/media/make-recordings.sh); wall-cam is the paid one.
   const streams = [
-    { id: "main-cam", title: "Main cam", access_type: "public", is_live: false, start_time: "2026-09-26T08:00:00.000Z", capybara_ids: ["magnus"], fallback_reel: "capytube-stream.mp4", viewer_count: 0 },
-    { id: "food-cam", title: "Food cam", access_type: "public", is_live: false, start_time: "2026-09-26T09:00:00.000Z", capybara_ids: ["einstein"], fallback_reel: "capytube-stream.mp4", viewer_count: 0 },
-    { id: "wall-cam", title: "Climbing wall cam", access_type: "private", is_live: false, start_time: "2026-09-26T10:00:00.000Z", capybara_ids: ["elon"], price_per_10_sec: 1, fallback_reel: "capytube-stream.mp4", viewer_count: 0 },
+    { id: "main-cam", title: "Main cam", access_type: "public", video_mode: "recording", is_live: false, start_time: "2026-09-26T08:00:00.000Z", capybara_ids: ["magnus"], fallback_reel: "capytube-stream.mp4", viewer_count: 0 },
+    { id: "food-cam", title: "Food cam", access_type: "public", video_mode: "recording", is_live: false, start_time: "2026-09-26T09:00:00.000Z", capybara_ids: ["einstein"], fallback_reel: "capytube-stream.mp4", viewer_count: 0 },
+    { id: "wall-cam", title: "Climbing wall cam", access_type: "private", video_mode: "recording", is_live: false, start_time: "2026-09-26T10:00:00.000Z", capybara_ids: ["elon"], price_per_10_sec: 1, fallback_reel: "capytube-stream.mp4", viewer_count: 0 },
   ];
   for (const s of streams) {
     items.push({

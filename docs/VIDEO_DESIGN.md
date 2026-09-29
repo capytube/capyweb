@@ -1,6 +1,8 @@
 # Video design (W6)
 
-Status: design only, 2026-09-29. Nothing here is deployed, and no AWS call was made to write it.
+Status, 2026-09-29: sections 1 to 7 are the design for live cameras. **What runs on dev today is
+section 8, recorded mode** (nic: "mock it up with a playback for now"): the same player, bucket
+layout and paid-camera gate, with CapyTube's own recording in place of the encoder box.
 Author: capyweb W6 (Claude), for bead `capyweb-b6e.6`.
 It builds on `docs/VIDEO_OPTIONS.md` (Option 1 and its Recommendation): self-hosted HLS, uploaded
 to S3 by an encoder box at the capybaras' home and served by the site's own CloudFront.
@@ -268,3 +270,83 @@ Not built:
 - Tests on a real iPhone and Android phone (`docs/WASM_PLAN.md`, risk 7). The native HLS path
   (Safari) is not covered by the Chromium tests.
 - The full watch room (camera tabs, reactions, chat): W4.
+
+## 8. Recorded mode: what runs on dev now
+
+nic, 2026-09-29, through capyweb-manager: no encoder box and no purchase yet. The cameras play
+**recorded video as HLS from our own S3 and CloudFront**, through the same player and the same
+signed-cookie gate as sections 3 to 6, so the box later changes only where the segments come from.
+Every page and card says **Recorded**, never "Live".
+
+**Footage.** Only CapyTube's own recording: `capytube-stream.mp4`, the one file behind the 7
+baselined S3 URLs (`capyweb-c24`). 77.6 minutes, H.264 720p30. Its only date is the S3 upload date
+(2025-01-14), which is not a recording date, so the pages show no date.
+
+- The picture has "● Live stream" burned into its frame. `infra/media/make-recordings.sh` covers it
+  with "● Recorded" (`infra/media/recorded-label.png`, same place and colours; on the one camera
+  angle without the frame it shows as a small badge).
+- The audio is digital silence (-91 dB mean and peak), so the renditions have none.
+- Each camera gets its own third: `main-cam` and `food-cam` public, `wall-cam` paid.
+- Two renditions through the Mac's hardware encoder: 720p (about 1.7 Mbit/s average) and 360p
+  (about 0.5), a keyframe every 2 s, 6 s fMP4 segments, VOD playlists, a master `index.m3u8`.
+  Plus a one-minute MP4 reel. 1,570 files, 1.19 GB, 11 minutes to make.
+
+**Where it lives** (site stack `capyapp-capyweb-site-<stage>`, `infra/site/template.yaml`):
+
+| Path on the site | Bucket key | Served |
+|---|---|---|
+| `/media/rec/<camera>/index.m3u8` | `media/rec/<camera>/…` in `MediaBucket` | open (`/media/*`) |
+| `/media/capytube-stream.mp4` | `media/capytube-stream.mp4` | open: the reel |
+| `/paid/<camera>/index.m3u8` | `paid/<camera>/…` | `/paid/*`: only with the signed cookies (trusted key group) |
+| `/api/<route>` | the HTTP API's `/<route>` | `/api/*`, nothing cached, every header and cookie passed |
+
+- `MediaBucket` is private, reached only through the distribution's OAC, TLS only, no versioning.
+  Upload: `infra/media/upload-media.sh` (explicit Content-Type and Cache-Control, then an invalidation).
+- `/api/*` strips its prefix in a CloudFront Function. With it, the SPA fallback moved from the
+  distribution-wide error responses into a second function that rewrites only extensionless paths to
+  `/index.html`. So the API's own 403 and 404, CloudFront's refusals on `/paid/*` and a missing asset
+  now reach the browser as they are, instead of as index.html with 200.
+- **The signing key.** The private half is only in SSM (`/capyapp/capyweb/<stage>/playback-signing-key`,
+  SecureString, `aws/ssm`); the local copy was overwritten and deleted. The public key
+  (`KD0MHU27L6GFD` on dev) and the key group (`capyapp-capyweb-dev-media`) were made by an admin,
+  outside every stack: the deploy user has no key-group permissions, because they would reach every
+  project's keys in the account. The site stack takes the key group id (`PlaybackKeyGroupId`), the
+  backend stack the key id (`PlaybackKeyPairId`). Rotation goes through capyweb-manager.
+
+**The gate** (`backend/src/playback.ts`, `POST /playback/{id}`, called as `/api/playback/{id}`). This
+changes one thing from section 4: section 4 bought a fresh 60 s block on every renewal. With the
+player renewing 45 s in, that charges 60 s per 45 s watched, a third too much. Instead:
+
+- Each viewer has a `paid_until` per paid camera (`PASS#{stream_id}` in their partition). A
+  purchase adds 60 s **from where the paid time ends** (or from now, if it ran out), for 6 × the
+  camera's `price_per_10_sec`.
+- It charges only when **under 30 s** are left. Otherwise it just sets fresh cookies, so a reload or
+  a second tab pays nothing. (The first dev test used "a whole block ahead" and charged a second tab
+  that opened three seconds later; the unit and integration tests now cover that.)
+- The answer tells the player when to come back: `renew_after_s` = time left − 20 s (at least 5).
+  Steady viewing therefore pays exactly 6 coins a minute at price 1.
+- Cookies expire at `paid_until` + 30 s and are scoped to `/paid/<id>/`: Secure, HttpOnly,
+  SameSite=Strict, no Domain. A retried request (same Idempotency-Key) gets the first answer's
+  expiry, so a replay never stretches paid time.
+- The signing key is read before any coin moves: if SSM fails, the answer is 503 and nothing is
+  charged.
+- Five tabs buying at once pay for one block: the pass is written conditionally in the same
+  transaction as the coins, so the losers re-read and find the time already paid.
+
+**Measured on dev** (e2e user, headless Chromium, real managed login): `/paid/wall-cam/index.m3u8`
+403 `MissingKey` before paying; `POST /api/playback/wall-cam` 201, 6 coins, three cookies with
+`Path=/paid/wall-cam/`, HttpOnly, Secure, Strict, invisible to `document.cookie` and not sent to
+`/api`; then the master playlist, the 720p playlist and a segment all 200; a second tab 200 with
+nothing charged; the same key replayed; the free camera 400; no token 401.
+
+**Weak spot, accepted for a mock.** A recording is VOD: while the cookies are valid (up to 90 s), a
+paying viewer can download every segment of that camera's 26 minutes, not just the minute they
+paid for. A live window (section 2) only ever holds the last few segments. With play coins that
+are not money this is acceptable; with real payments, paid recordings would need per-segment
+URLs signed for a moving window.
+
+**Cost per month on dev.** Storage 1.19 GB × $0.025 = **$0.03**. The uploads were about 1,600 PUTs
+($0.008, once). Egress is inside CloudFront's free 1 TB and 10M requests: one viewer-hour at
+720p is about 0.8 GB and 600 segment requests, so the free tier covers about 1,250 viewer-hours a
+month. Beyond it, $0.085 per GB (PriceClass_100). The Lambda, KMS and SSM calls are inside their
+free tiers (about one call a minute per paying viewer).

@@ -4,7 +4,7 @@
 // this process, so the suite can never reach AWS or read ~/.aws.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomUUID, generateKeyPairSync, verify } from "node:crypto";
 
 const ENDPOINT = process.env.DDB_LOCAL_ENDPOINT;
 const skip = ENDPOINT ? false : "set DDB_LOCAL_ENDPOINT=http://127.0.0.1:8010 to run (see infra/README.md)";
@@ -23,11 +23,15 @@ if (ENDPOINT) {
   delete process.env.AWS_PROFILE;
   delete process.env.AWS_SESSION_TOKEN;
   process.env.TABLE_MAIN = `capyapp-capyweb-test-${Date.now()}`;
+  process.env.SITE_ORIGIN = "https://dev.capytube.xyz";
+  process.env.SIGNING_KEY_PAIR_ID = "KTEST";
+  process.env.SIGNING_KEY_PARAM = "/capyapp/capyweb/test/playback-signing-key";
 }
 
 // Loaded after the environment is pinned: ddb.ts builds its client at import time.
 type Mods = {
   writes: typeof import("./writes.ts");
+  playback: typeof import("./playback.ts");
   ledger: typeof import("./lib/ledger.ts");
   ddb: typeof import("./lib/ddb.ts");
   sdk: typeof import("@aws-sdk/client-dynamodb");
@@ -108,12 +112,14 @@ async function assertBooksBalance(u: string) {
 }
 
 const newUser = () => randomUUID();
+const SIGNING = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const key = () => randomUUID();
 
 before(async () => {
   if (skip) return;
   M = {
     writes: await import("./writes.ts"),
+    playback: await import("./playback.ts"),
     ledger: await import("./lib/ledger.ts"),
     ddb: await import("./lib/ddb.ts"),
     sdk: await import("@aws-sdk/client-dynamodb"),
@@ -162,6 +168,7 @@ before(async () => {
   await ixn("v-decided", "vote", { vote_cost: 1, options, result: "carrots" });
   await ixn("v-expired", "vote", { vote_cost: 1, options, closes_at: "2020-01-01T00:00:00.000Z" });
   await ixn("b-open", "bid", { current_bid: 5 });
+  M.playback.useSigningKeyForTests(SIGNING.privateKey.export({ type: "pkcs8", format: "pem" }).toString());
 });
 
 after(async () => {
@@ -436,4 +443,139 @@ test("streams that are not explicitly public refuse chat reads, posts and reacti
   const leftovers = await M.ddb.doc.send(new M.lib.GetCommand({ TableName: M.ddb.TABLE, Key: { PK: pk.stream("s-priv"), SK: sk.reactions() } }));
   assert.equal(leftovers.Item, undefined, "nothing was written");
   assert.equal((await publicGet("/streams/nope/chat")).status, 404);
+});
+
+// -- paid cameras (W6, playback.ts) -------------------------------------------------------------
+
+async function buy(streamId: string, sub: string, idem: string) {
+  const r = await M.playback.handler({
+    requestContext: { http: { method: "POST", path: `/dev/playback/${streamId}` }, stage: "dev", authorizer: { jwt: { claims: { sub, token_use: "access" } } } },
+    headers: { "idempotency-key": idem },
+  });
+  return { status: r.statusCode, body: JSON.parse(r.body), cookies: r.cookies ?? [] };
+}
+
+/** A paid camera of its own per test, so tests cannot see each other's passes. */
+async function paidCamera(extra: Record<string, unknown> = {}): Promise<string> {
+  const id = `paid-${randomUUID().slice(0, 8)}`;
+  const { pk, META } = M.keys;
+  await put({ PK: pk.stream(id), SK: META, entity: "LiveStream", id, title: id, access_type: "private", video_mode: "recording", price_per_10_sec: 2, ...extra });
+  return id;
+}
+
+const passOf = async (u: string, streamId: string) => (await M.ddb.doc.send(new M.lib.GetCommand({
+  TableName: M.ddb.TABLE, Key: { PK: M.keys.pk.user(u), SK: M.keys.sk.pass(streamId) }, ConsistentRead: true,
+}))).Item;
+
+const fromCf = (s: string) => Buffer.from(s.replace(/-/g, "+").replace(/_/g, "=").replace(/~/g, "/"), "base64");
+const cookieValue = (lines: string[], name: string) => lines.find((l) => l.startsWith(`${name}=`))!.split(";")[0].slice(name.length + 1);
+
+test("paid camera: one block costs 6 x the price, opens only that camera, and a retry replays", { skip }, async () => {
+  const u = newUser();
+  await startAt(u, 50);
+  const cam = await paidCamera();
+  const k1 = key();
+  const t0 = Math.floor(Date.now() / 1000);
+  const r1 = await buy(cam, u, k1);
+  assert.equal(r1.status, 201);
+  assert.equal(r1.body.charged, 12, "price 2 per 10 s, 60 s block");
+  assert.equal(r1.body.src, `/paid/${cam}/index.m3u8`);
+  assert.ok(Math.abs(r1.body.paid_until - (t0 + 60)) <= 2, "paid for the next minute");
+  assert.ok(r1.body.renew_after_s >= 38 && r1.body.renew_after_s <= 40);
+  assert.equal(await balance(u), 38);
+
+  assert.equal(r1.cookies.length, 3);
+  for (const line of r1.cookies) assert.match(line, new RegExp(`; Path=/paid/${cam}/; Max-Age=(8[89]|90); Secure; HttpOnly; SameSite=Strict$`));
+  const policy = fromCf(cookieValue(r1.cookies, "CloudFront-Policy"));
+  const stmt = JSON.parse(policy.toString()).Statement[0];
+  assert.equal(stmt.Resource, `https://dev.capytube.xyz/paid/${cam}/*`, "this camera only");
+  assert.equal(stmt.Condition.DateLessThan["AWS:EpochTime"], r1.body.paid_until + 30, "paid time plus the grace");
+  assert.equal(cookieValue(r1.cookies, "CloudFront-Key-Pair-Id"), "KTEST");
+  assert.ok(verify("RSA-SHA1", policy, SIGNING.publicKey, fromCf(cookieValue(r1.cookies, "CloudFront-Signature"))));
+
+  // A reload or a second tab while 30 s or more are paid: fresh cookies, no charge. Also a few
+  // seconds later (on dev this first charged twice, when the rule was "a whole block ahead").
+  await put({ ...(await passOf(u, cam))!, paid_until: r1.body.paid_until - 5 });
+  const r2 = await buy(cam, u, key());
+  assert.equal(r2.status, 200);
+  assert.equal(r2.body.charged, 0);
+  assert.equal(r2.body.paid_until, r1.body.paid_until - 5);
+  assert.equal(r2.cookies.length, 3);
+  // The same key again: the first answer, same expiry, no second charge.
+  const r3 = await buy(cam, u, k1);
+  assert.equal(r3.status, 200);
+  assert.equal(r3.body.replayed, true);
+  assert.equal(r3.body.charged, 12);
+  assert.equal(r3.body.paid_until, r1.body.paid_until, "the first answer, not the pass as it is now");
+  assert.equal(await balance(u), 38);
+  // The same key for another camera is refused, not replayed.
+  const other = await paidCamera();
+  assert.equal((await buy(other, u, k1)).body.code, "idempotency_mismatch");
+
+  const mine = (await entries(u)).filter((x) => x.type === "playback");
+  assert.equal(mine.length, 1);
+  assert.equal(mine[0].amount, -12);
+  assert.equal(mine[0].related_id, cam);
+  await assertBooksBalance(u);
+});
+
+test("paid camera: a renewal near the end extends from the end, so no second is paid twice", { skip }, async () => {
+  const u = newUser();
+  await startAt(u, 50);
+  const cam = await paidCamera();
+  const now = Math.floor(Date.now() / 1000);
+  await put({ PK: M.keys.pk.user(u), SK: M.keys.sk.pass(cam), entity: "PlaybackPass", user_id: u, stream_id: cam, paid_until: now + 15 });
+  const r = await buy(cam, u, key());
+  assert.equal(r.status, 201);
+  assert.equal(r.body.paid_until, now + 15 + 60);
+  assert.equal((await passOf(u, cam))?.paid_until, now + 75);
+  assert.equal(await balance(u), 38);
+});
+
+test("paid camera: five tabs buying at once pay for one block", { skip }, async () => {
+  const u = newUser();
+  await startAt(u, 50);
+  const cam = await paidCamera();
+  const rs = await Promise.all(Array.from({ length: 5 }, () => buy(cam, u, key())));
+  assert.deepEqual(rs.map((r) => r.status).sort(), [200, 200, 200, 200, 201]);
+  assert.equal(rs.reduce((a, r) => a + r.body.charged, 0), 12);
+  assert.equal(new Set(rs.map((r) => r.body.paid_until)).size, 1, "every tab got the same paid time");
+  assert.equal(await balance(u), 38);
+  await assertBooksBalance(u);
+});
+
+test("paid camera: not enough coins, free, offline, unpriced and unknown cameras charge nothing", { skip }, async () => {
+  const u = newUser();
+  await startAt(u, 11);
+  const cam = await paidCamera(); // 12 coins a block
+  const poor = await buy(cam, u, key());
+  assert.equal(poor.status, 409);
+  assert.equal(poor.body.code, "insufficient_coins");
+  assert.equal(poor.cookies.length, 0, "no cookies without payment");
+  assert.equal(await passOf(u, cam), undefined, "no paid time");
+  const cases: [string, number, string][] = [
+    ["s1", 400, "free_camera"],
+    ["s-none", 409, "not_for_sale"],
+    [await paidCamera({ video_mode: undefined }), 409, "offline"],
+    [await paidCamera({ price_per_10_sec: 0 }), 409, "not_priced"],
+    ["nope", 404, "not_found"],
+  ];
+  for (const [id, status, code] of cases) {
+    const r = await buy(id, u, key());
+    assert.equal(r.status, status, id);
+    assert.equal(r.body.code, code, id);
+    assert.equal(r.cookies.length, 0, id);
+  }
+  assert.equal(await balance(u), 11);
+  assert.equal((await entries(u)).filter((x) => x.type === "playback").length, 0);
+});
+
+test("paid camera: the price is the camera's own at the moment of purchase, never a remembered one", { skip }, async () => {
+  const u = newUser();
+  await startAt(u, 50);
+  const cam = await paidCamera({ price_per_10_sec: 1 });
+  await put({ PK: M.keys.pk.stream(cam), SK: M.keys.META, entity: "LiveStream", id: cam, access_type: "private", video_mode: "recording", price_per_10_sec: 3 });
+  const r = await buy(cam, u, key());
+  assert.equal(r.body.charged, 18);
+  assert.equal(await balance(u), 32);
 });

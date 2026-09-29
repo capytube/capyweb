@@ -27,6 +27,7 @@ sam deploy --template-file .aws-sam/build/template.yaml \
   --capabilities CAPABILITY_IAM \
   --tags Project=capyweb Stage=dev \
   --parameter-overrides Stage=dev AllowedOrigins=https://dev.capytube.xyz,http://127.0.0.1:8791,http://localhost:8791 \
+      PlaybackKeyPairId=KD0MHU27L6GFD \
   --no-confirm-changeset --no-fail-on-empty-changeset
 ```
 
@@ -100,6 +101,29 @@ The API is called directly (CORS), so the dev backend is deployed with
 `AllowedOrigins=https://dev.capytube.xyz,http://127.0.0.1:8791,http://localhost:8791`; add it to
 `--parameter-overrides` on every dev backend deploy, or the dev site loses the API. **The way back:**
 `git archive main demo | tar -x -C /tmp && infra/site/upload-content.sh dev /tmp/demo`.
+
+### Video on dev (W6, recorded mode, 2026-09-29)
+
+`docs/VIDEO_DESIGN.md` section 8. The site stack now also has `MediaBucket`, `/media/*`, `/paid/*`
+(signed cookies), `/api/*` (the HTTP API, same-origin) and two CloudFront Functions (the `/api`
+prefix and the SPA fallback). Update it on its own, **not** with `deploy.sh`, which would also run
+the certificate and DNS steps:
+
+```sh
+aws cloudformation create-change-set --stack-name capyapp-capyweb-site-dev --change-set-name <name> \
+  --template-body file://infra/site/template.yaml \
+  --parameters ParameterKey=Stage,UsePreviousValue=true ParameterKey=DomainName,UsePreviousValue=true \
+    ParameterKey=CertArn,UsePreviousValue=true \
+    ParameterKey=PlaybackKeyGroupId,ParameterValue=fa62f0aa-b698-4a69-9c9d-baa777362153 \
+    ParameterKey=ApiDomain,ParameterValue=geqi0or5tl.execute-api.ap-southeast-1.amazonaws.com \
+    ParameterKey=ApiOriginPath,ParameterValue=/dev \
+  --tags Key=Project,Value=capyweb Key=Stage,Value=dev Key=capy-scope,Value=capyapp
+# read it (the distribution must say Replacement False), then execute-change-set
+```
+
+The key group and its public key are made by an admin, not by any stack; the private key is only in
+SSM. The recordings: `infra/media/make-recordings.sh <capytube-stream.mp4> <dir>` (about 11 min on
+this Mac), then `infra/media/upload-media.sh <dir>`.
 
 ### Stacks and first deploy
 
