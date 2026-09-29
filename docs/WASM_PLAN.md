@@ -1,6 +1,6 @@
 # CapyTube front end in Rust/WebAssembly: plan
 
-Status: **draft, reviewed once (Cursor, rv-1790656808-53577; findings applied). Plan only: nothing deployed,
+Status: **draft, reviewed twice (Cursor rv-1790656808-53577, findings applied; Kimi rv-1790657924-75648, PASS). Plan only: nothing deployed,
 no AWS calls.**
 Author: capyweb-wasm-lead (Claude), 2026-09-29, on mac-pro-japan-16.
 Asked by nic on 2026-09-29: "i want the web rewritten as webassembly." herdr-master scoped it to a plan
@@ -293,8 +293,9 @@ confirm; no tool output contains a playback locator or token. Then nic says yes.
 - **Checks as local hooks, no GitHub Actions.** `scripts/guard.sh` needs to learn these rules, each with
   a case in `scripts/guard-selftest.sh` that proves it fires:
   1. `web/` changed → `cargo fmt --check`, `cargo clippy -- -D warnings` and `cargo test` in pre-push.
-  2. **Size budget:** release WASM + all first-load JS (glue and snippets) ≤ **300 KB brotli**, measured on
-     `web/dist` in pre-push (the prototype is 125 KB).
+  2. **Size budget:** release WASM + all first-load JS (glue and snippets) ≤ **300,000 bytes brotli**
+     (`brotli -q 11`), measured on `web/dist` in pre-push. The prototype is 125,284 bytes. "KB" in this
+     document means 1,000 bytes.
   3. **Scan `web/`.** Today neither content scan reads it, so adding extensions alone would leave the
      crate unscanned.
      - The S3-URL scan reads `.ts/.tsx/.js/.html/.css` under `backend/src src demo amplify`.
@@ -325,7 +326,7 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
 
 | What | Evidence | Recoverable here? |
 |---|---|---|
-| **The beads database** | Here `.beads/` holds an embedded Dolt DB with **0 issues**. `bd create` fails with "issue_prefix config is missing". `git ls-remote origin` shows **no `refs/dolt/data`**, and no commit ever contained `.beads/issues.jsonl` | **Partly.** 25 ids are known:<br>• 23 named in tracked files: `083 0c8 0v3 19a 1iz 1nh 1td 1w5 2gx 2pj 3ge 7hj 962 c24 eh4 py9 qu7 s6d umh w26 x7w xfp zlb`<br>• `sz5`, only in a commit message ("Closes capyweb-sz5.", 113796b)<br>• `0m7`, only in the brief<br>Each has a line of context. Descriptions, status, dependencies and comments are lost until the Mac returns |
+| **The beads database** | Here `.beads/` holds an embedded Dolt DB with **0 issues**. `bd create` fails with "issue_prefix config is missing". `git ls-remote origin` shows **no `refs/dolt/data`**, and no commit ever contained `.beads/issues.jsonl` | **Partly.** 25 ids are known:<br>• 23 named in tracked files on `feat/serverless-capyapp-backend` (before this plan): `083 0c8 0v3 19a 1iz 1nh 1td 1w5 2gx 2pj 3ge 7hj 962 c24 eh4 py9 qu7 s6d umh w26 x7w xfp zlb`<br>• `sz5`, until this plan only in a commit message ("Closes capyweb-sz5.", 113796b)<br>• `0m7`, only in the brief<br>Each has a line of context. Descriptions, status, dependencies and comments are lost until the Mac returns |
 | capyweb-lead's notes under `~/.cache/herdr-manager/` | This Mac's copy has only this brief and unrelated projects' files | No |
 | AWS profile `capy` (IAM user `capyapp-macbook-pro-14`; key deactivated while lent) | `docs/PLAN.md` §8, `infra/README.md` | Replaced by a new identity (below) |
 | AWS profile `capytube-dns` (assumes `capyapp-capytube-dns` in autonomous-lab) and the admin `al` profile | `docs/PLAN.md` §8 | Needs a trust change (below). `al` is nic's own admin; not needed for this work |
