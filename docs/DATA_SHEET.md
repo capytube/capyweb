@@ -104,12 +104,12 @@ These are the only cookies CapyTube's own servers set.
   code (`web/index.html`, `web/src`, `web/js`).
 - **No third-party scripts.** The video player library is served from the site itself (`web/vendor/hls`,
   `web/index.html`).
-- **Fonts:** this release moves the three fonts onto the site itself (`docs/RELEASE_PLAN.md` 1a item 3).
-  Until that change is deployed, the site loads them from Google Fonts (`web/index.html`), which receives
-  each visitor's IP address.
+- **Fonts:** the three fonts are served from the site itself (`web/assets/fonts`, `web/style/fonts.css`;
+  `docs/RELEASE_PLAN.md` 1a item 3), so no font service sees visitors' IP addresses.
 - **No data goes to anyone but AWS** from the site's code: the app talks only to its own domain (the API
-  is served as `/api`, `docs/RELEASE_PLAN.md` 1a item 6) and to Cognito's sign-in domain (`web/src/oauth.rs`),
-  plus Google Fonts until the font change ships. No payments: play coins only.
+  is served as `/api`, `docs/RELEASE_PLAN.md` 1a item 6) and to Cognito's sign-in domain (`web/src/oauth.rs`).
+  The site's content security policy allows no other origin (`infra/site/headers-prod.json`). No payments:
+  play coins only.
 
 ## Deletion
 
@@ -132,8 +132,6 @@ carry no name and stay. Play coins are not refunded (they have no cash value).
    Terms?
 6. Staff keep an account's `sub` and the deletion date for 35 days after a deletion, only to re-apply the
    deletion if the database is restored from a backup. Is that acceptable, and should it be stated?
-7. Until the fonts are self-hosted, Google receives visitors' IP addresses. Does that need mentioning
-   if the release ships with it?
 
 Still to be supplied by the owner (placeholders left visible on the pages): the dates, the contact
 mailbox, the company address.

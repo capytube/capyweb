@@ -31,10 +31,11 @@ out() { aws cloudformation describe-stacks --stack-name "$1" --query "Stacks[0].
 zone() { local z; z=$(aws route53 list-hosted-zones-by-name --profile capytube-dns --dns-name capytube.xyz \
          --query 'HostedZones[0].Id' --output text); echo "${z##*/}"; }
 
-# An issued us-east-1 certificate whose names cover the stage's (both, for prod).
+# A us-east-1 certificate whose names cover the stage's (both, for prod), in the given status
+# (ISSUED unless named).
 find_cert() {
   local arn
-  for arn in $(aws acm list-certificates --region us-east-1 --certificate-statuses ISSUED \
+  for arn in $(aws acm list-certificates --region us-east-1 --certificate-statuses "${1:-ISSUED}" \
                --query "CertificateSummaryList[?DomainName=='$DOMAIN'].CertificateArn" --output text); do
     [ -z "$WWW" ] && { echo "$arn"; return; }
     aws acm describe-certificate --region us-east-1 --certificate-arn "$arn" \
@@ -121,6 +122,7 @@ case "$CMD" in
 content)
   SRC=${1:?usage: deploy.sh <stage> content <dir> [--web]}; WEB=0; [ "${2:-}" = --web ] && WEB=1
   [ -f "$SRC/index.html" ] || die "$SRC has no index.html"
+  aws cloudformation describe-stacks --stack-name "$SITE" >/dev/null 2>&1 || die "no stack $SITE: run the stack step first"
   BUCKET=$(out "$SITE" Bucket); DIST=$(out "$SITE" DistributionId)
   [ -n "$BUCKET" ] && [ "$BUCKET" != None ] || die "no bucket in $SITE"
   STAGED=$(mktemp -d); trap 'rm -rf "$STAGED"' EXIT
@@ -183,7 +185,10 @@ cert)
   CERT=$(find_cert)
   if [ -z "$CERT" ]; then
     names=("$DOMAIN"); [ -n "$WWW" ] && names+=("$WWW")
-    CERT=$(aws acm request-certificate --region us-east-1 --domain-name "$DOMAIN" \
+    # A request an earlier run left waiting for validation is taken up again, not requested a second
+    # time: its records are written again (UPSERT) and the wait resumes.
+    CERT=$(find_cert PENDING_VALIDATION)
+    [ -n "$CERT" ] || CERT=$(aws acm request-certificate --region us-east-1 --domain-name "$DOMAIN" \
            --subject-alternative-names "${names[@]}" --validation-method DNS \
            --tags Key=capy-scope,Value=capyapp Key=Project,Value=capyweb Key=Stage,Value="$STAGE" \
            --query CertificateArn --output text)
