@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: capyweb cost control for the shared account (docs/PLAN.md section 4, A2 and A4) and the
+  topic its alerts go to (capyweb-m52). One stack per account, named capyapp-capyweb-ops, in
+  ap-southeast-1 (Budgets and Cost Anomaly Detection publish to a topic in any region of the same
+  account; the deploy identity's SNS grant is for ap-southeast-1).
+
+Parameters:
+  MonthlyBudgetUsd:
+    Type: Number
+    Default: 10
+    Description: The capyweb target from docs/PLAN.md section 1a.
+  EnableAnomalyDetection:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    # A4 needs ce:CreateAnomalyMonitor and ce:CreateAnomalySubscription (and their Get, Update,
+    # Delete and tag actions), which the deploy identity does not have yet.
+    Description: Cost Anomaly Detection on the whole account (A4), alerting this topic.
+
+Conditions:
+  Anomaly: !Equals [!Ref EnableAnomalyDetection, 'true']
+
+Resources:
+  # The budget's and cost anomalies' alerts. The alarms have their own topics, in their own regions
+  # (infra/backend/template.yaml, infra/site/alarms-use1.yaml). Who is subscribed is decided outside
+  # the template: an address never goes into the repo.
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: capyapp-capyweb-alerts
+      DisplayName: capyweb alerts
+
+  AlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics: [!Ref AlertTopic]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Budgets
+            Effect: Allow
+            Principal: {Service: budgets.amazonaws.com}
+            Action: SNS:Publish
+            Resource: !Ref AlertTopic
+            Condition:
+              StringEquals: {'aws:SourceAccount': !Ref AWS::AccountId}
+              ArnLike: {'aws:SourceArn': !Sub 'arn:aws:budgets::${AWS::AccountId}:*'}
+          - Sid: CostAnomalyDetection
+            Effect: Allow
+            Principal: {Service: costalerts.amazonaws.com}
+            Action: SNS:Publish
+            Resource: !Ref AlertTopic
+            Condition:
+              StringEquals: {'aws:SourceAccount': !Ref AWS::AccountId}
+
+  # A2: tag-scoped, because the account is shared and an account-wide budget measures other
+  # projects' EC2 (section 1a). Gross cost, credits and refunds left out: today credits offset
+  # every dollar (section 1b), so a net budget would read $0 until the day they run out. The tag
+  # filter counts only once the Project cost-allocation tag is active in Billing (A1).
+  CapywebBudget:
+    Type: AWS::Budgets::Budget
+    DependsOn: AlertTopicPolicy
+    Properties:
+      Budget:
+        BudgetName: capyapp-capyweb-monthly
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit: {Amount: !Ref MonthlyBudgetUsd, Unit: USD}
+        CostFilters:
+          TagKeyValue: ['user:Project$capyweb']
+        CostTypes:
+          IncludeCredit: false
+          IncludeRefund: false
+      NotificationsWithSubscribers:
+        - Notification: {NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 50, ThresholdType: PERCENTAGE}
+          Subscribers: [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
+        - Notification: {NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 80, ThresholdType: PERCENTAGE}
+          Subscribers: [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
+        - Notification: {NotificationType: FORECASTED, ComparisonOperator: GREATER_THAN, Threshold: 100, ThresholdType: PERCENTAGE}
+          Subscribers: [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
+
+  # A4: the whole account, by service, so a stray EC2 in any project is caught (section 3, "the
+  # five ways"). An account has at most one such monitor; if AWS already made one, point the
+  # subscription at it instead of creating this.
+  AccountMonitor:
+    Type: AWS::CE::AnomalyMonitor
+    Condition: Anomaly
+    Properties:
+      MonitorName: capyapp-account-by-service
+      MonitorType: DIMENSIONAL
+      MonitorDimension: SERVICE
+
+  AnomalyAlerts:
+    Type: AWS::CE::AnomalySubscription
+    Condition: Anomaly
+    DependsOn: AlertTopicPolicy
+    Properties:
+      SubscriptionName: capyapp-capyweb-anomalies
+      Frequency: IMMEDIATE # SNS subscribers must be immediate
+      MonitorArnList: [!Ref AccountMonitor]
+      Subscribers: [{Type: SNS, Address: !Ref AlertTopic}]
+      ThresholdExpression: '{"Dimensions":{"Key":"ANOMALY_TOTAL_IMPACT_ABSOLUTE","MatchOptions":["GREATER_THAN_OR_EQUAL"],"Values":["5"]}}'
+
+Outputs:
+  AlertTopicArn: {Value: !Ref AlertTopic}
+  BudgetName: {Value: capyapp-capyweb-monthly}

@@ -543,7 +543,7 @@ everything else can start now.
 | W11 | Cognito sign-in: managed login + PKCE, callback, token store, refresh, sign-out, auth seam | 8% | `capyweb-w26` grant |
 | W12 | Release: `/api/*` behaviour + CloudFront Function, CSP headers policy, `deploy.sh` web mode (immutable hashed files, wasm content type, keep the previous release) | 5% | new deploy identity (Q3) |
 | W13 | Guards and tests: the 8 new guard rules + self-tests, pre-push cargo checks, size budget, a headless browser smoke test | 5% | — |
-| W14 | Accessibility and performance pass, parity check against `demo/` and React, QA of dev by Instinct | 5% | W12 |
+| W14 | Accessibility and performance pass, parity check against `demo/` and React, and QA of dev by a headless helper (not Instinct, capyweb-manager 2026-09-29 21:30): every route at phone and desktop widths, signed out and signed in; vote, bid, chat, react and the profile name; the free and paid cameras with a fresh test user (the old one deleted); then one reviewer pass over the QA results | 5% | W12 |
 | W15 | Carry-over: rebuild beads here, private Dolt remote, backend `npm ci`, record `ApiUrl`, lent-Mac clean-up when it returns | 3% | identity (Q3); the Mac |
 | W16 | Retire React after cutover: remove `src/`, `vite.config.ts`, `amplify/`, `amplify.yml` and the npm dependencies; update the guard baseline | 1% | W14 |
 | | **Total** | **100%** | |
@@ -591,6 +591,19 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
     (Leptos lazy routes with `wasm-split`; Trunk has no support, so this may need cargo-leptos for the
     release build), or raise the budget with a reason. The guard fails the push first, so this cannot
     drift unseen. W14 owns the decision.
+
+### Before real money (accepted for play coins; revisit before any real payment)
+
+Each is fine while coins are play coins that are not money (capyweb-manager, 2026-09-29), and each
+must be fixed or decided again before real payments:
+1. **Paid footage is public elsewhere** (`capyweb-c8m`): wall-cam's minutes are in the public
+   `magnus-video-public/capytube-stream.mp4`. `docs/VIDEO_DESIGN.md` section 8, "Not exclusive yet".
+2. **VOD cookies open the whole recording** while valid (up to 90 s), not only the minute paid for.
+   `docs/VIDEO_DESIGN.md` section 8, "Weak spot, accepted for a mock".
+3. **An access token keeps working for up to 15 minutes after sign-out.** The API's JWT authorizer
+   does not check revocation; sign-out revokes the refresh token, and the web app holds tokens only
+   in memory and clears them. Kept at 15 minutes (capyweb-manager, 2026-09-29 21:30). With real
+   money: a shorter access-token life, or a revocation check on the spending routes.
 
 ### Open questions (decided by capyweb-manager on 2026-09-29; see "Decisions" at the top)
 

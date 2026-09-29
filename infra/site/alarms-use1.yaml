@@ -36,8 +36,17 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       # No egress reported is genuinely fine - it means nobody visited.
       TreatMissingData: notBreaching
-      # No AlarmActions: the deploy identity has no sns:* grant and CloudWatch can only
-      # notify through SNS. See capyweb-19a.
+      AlarmActions: [!Ref AlarmTopic]
+
+  # An alarm can only notify a topic in its own region, and CloudFront's metrics are only here
+  # (capyweb-19a). Who is subscribed is decided outside the template: an address never goes into
+  # the repo.
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub capyapp-capyweb-${Stage}-egress-alarm
+      DisplayName: !Sub capyweb ${Stage} CloudFront egress
 
 Outputs:
   AlarmName: {Value: !Ref EgressAlarm}
+  AlarmTopicArn: {Value: !Ref AlarmTopic}

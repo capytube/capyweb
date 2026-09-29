@@ -409,9 +409,17 @@ Resources:
       Tags:
         - {Key: Project, Value: capyweb}
 
-  # NOTE: these alarms have no AlarmActions. The deploy identity has no sns:* grant, and a
-  # CloudWatch alarm can only notify through SNS, so they change state and show in the console
-  # but nobody is paged. Tracked as capyweb-19a.
+  # The alarms below notify this topic (capyweb-19a). Alarms can only publish to a topic in their
+  # own region, so it is not the us-east-1 capyapp-capyweb-alerts topic of infra/ops/template.yaml.
+  # Who is subscribed is decided outside the template: an address never goes into the repo.
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub capyapp-capyweb-${Stage}-alarms
+      DisplayName: !Sub capyweb ${Stage} alarms
+      Tags:
+        - {Key: Project, Value: capyweb}
+
   ApiDownAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -426,6 +434,7 @@ Resources:
       Threshold: 1
       ComparisonOperator: LessThanThreshold
       TreatMissingData: breaching
+      AlarmActions: [!Ref AlarmTopic]
 
   SiteDownAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -441,6 +450,7 @@ Resources:
       Threshold: 1
       ComparisonOperator: LessThanThreshold
       TreatMissingData: breaching
+      AlarmActions: [!Ref AlarmTopic]
 
   # The table has a hard OnDemandThroughput ceiling, so a burst throttles rather than bills.
   # That is the intended behaviour, but it should never be silent.
@@ -458,6 +468,7 @@ Resources:
       Threshold: 10
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
 
   # Single table. On-demand with a hard ceiling: past it, requests throttle instead of billing.
   # PK/SK plus two overloaded GSIs cover the 11 former Amplify models and the robot/slot types.

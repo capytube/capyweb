@@ -54,6 +54,30 @@ Do **not** pass `--role-arn`: this identity deploys as itself. Artifacts can go 
 SAM bucket's `capyapp-*` prefix, as above, or into any bucket you create named `capyapp-*`
 (`aws s3 mb s3://capyapp-...` works).
 
+## Alerts and the budget (capyweb-19a, capyweb-m52)
+
+Every alert goes to an SNS topic with **no subscriber in the template**: who receives them is decided
+outside the repo (an address never goes into a commit). Alarms can only notify a topic in their own
+region, so there is one topic per place:
+
+| Topic | Region | Stack | What notifies it | State (2026-09-29) |
+|---|---|---|---|---|
+| `capyapp-capyweb-<stage>-alarms` | ap-southeast-1 | backend | api-down, site-down, table-throttled | dev: deployed, no subscriber |
+| `capyapp-capyweb-<stage>-egress-alarm` | us-east-1 | `capyapp-capyweb-alarms-<stage>` (`site/alarms-use1.yaml`) | CloudFront egress over ~800 GB/month | waits for `sns:*` on `capyapp-*` in us-east-1 |
+| `capyapp-capyweb-alerts` | ap-southeast-1 | `capyapp-capyweb-ops` (`ops/template.yaml`, one per account) | the tag-scoped monthly budget (A2) and, when enabled, Cost Anomaly Detection (A4) | waits for the Budgets delete and tag grants |
+
+The ops stack, once the grants are there (change set first, as always):
+
+```sh
+aws cloudformation create-change-set --region ap-southeast-1 --stack-name capyapp-capyweb-ops \
+  --change-set-name <name> --change-set-type CREATE --template-body file://infra/ops/template.yaml \
+  --tags Key=Project,Value=capyweb Key=Stage,Value=ops Key=capy-scope,Value=capyapp
+# EnableAnomalyDetection=true only once the ce:*Anomaly* grants exist
+```
+
+The budget measures **gross** cost (credits and refunds left out, `docs/PLAN.md` section 1b) of resources
+tagged `Project=capyweb`, which counts only once that cost-allocation tag is active in Billing (A1).
+
 ## Ledger integration tests (DynamoDB Local)
 
 The unit suite (`cd backend/src && npm test`) needs no network. The ledger and write-API suite,
