@@ -19,6 +19,8 @@
     <link data-trunk rel="tailwind-css" href="input.css" />
     <link data-trunk rel="copy-dir" href="assets" />
     <link data-trunk rel="copy-dir" href="fixtures" />
+    <!-- Loaded on demand by js/player.js, never at first load. -->
+    <link data-trunk rel="copy-dir" href="vendor" />
     <link data-trunk rel="rust" data-bin="capyweb-web" data-wasm-opt="z"
       data-wasm-opt-params="--enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue" />
   </head>

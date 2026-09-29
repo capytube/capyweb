@@ -1,0 +1,28 @@
+/* The video player (components/player.rs) and the watch room's first cut (W6). */
+
+.player video,
+.player-offline {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--ink);
+  border-radius: 12px;
+}
+.player video { object-fit: contain; }
+.player-offline { position: relative; overflow: hidden; }
+.player-offline img { width: 100%; height: 100%; object-fit: cover; opacity: 0.45; }
+.player-offline p {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  font-weight: 600;
+}
+.player-note { margin-top: 0.5rem; font-size: 0.9rem; min-height: 1.35em; }
+.watch-cams { display: grid; gap: 1rem; }
+.watch-cams > * { min-width: 0; }
+.watch-cam h2 { margin-bottom: 0.75rem; }
+.locked-cam p { margin-top: 0.5rem; }
+@media (min-width: 760px) {
+  .watch-cams { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
+}

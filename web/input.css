@@ -7,4 +7,5 @@
 @import "./style/home.css";
 @import "./style/shop.css";
 @import "./style/pages.css";
+@import "./style/player.css";
 @import "tailwindcss/utilities";
