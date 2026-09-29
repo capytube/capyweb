@@ -361,7 +361,8 @@ fn refusal(e: &CodedError, per_minute: u32, have: Option<u64>) -> String {
 }
 
 /// One viewing: buy, play, and buy the next minute when the server says so, while the tab is
-/// visible and the picture has played (`played`, set by the player) since its player started. It
+/// visible and the picture is moving (`moving`, set by the player: not before it first plays, nor
+/// while it is stalled for want of data; the viewer's pause keeps it, as a paused tab does). It
 /// ends when `gen` moves on (Stop, leaving the camera), on a refusal, or when the picture will not
 /// play even after one fresh start (`broken`, set by the player). Each purchase has its own
 /// Idempotency-Key, reused only to ask again after a lost answer.
@@ -375,7 +376,7 @@ async fn watch_loop(
     state: RwSignal<Paid>,
     note: RwSignal<String>,
     broken: RwSignal<bool>,
-    played: RwSignal<bool>,
+    moving: RwSignal<bool>,
     per_minute: u32,
 ) {
     let current = move || gen.try_get_value() == Some(my);
@@ -434,21 +435,21 @@ async fn watch_loop(
         }
         if state.with_untracked(|s| *s != Paid::Watching(src.clone(), epoch)) {
             broken.set(false);
-            played.set(false);
+            moving.set(false);
             state.set(Paid::Watching(src, epoch));
         }
         first = false;
         // Wait for the next minute a second at a time, so a picture that will not play is noticed
         // at once instead of being paid for again. Once it is due, buy it only while the tab is
-        // visible and after the picture has played since this player started. A picture that
-        // never comes is failed by the player within 15 s of visible time, and one that waits for
-        // a tap on play (autoplay refused) costs nothing more until it gets one.
+        // visible and the picture is moving. A picture that never comes, or stalls and does not
+        // come back, is failed by the player after 15 s of visible time with no media arriving;
+        // one that waits for a tap on play (autoplay refused) costs nothing more until it gets one.
         let (mut waited, mut away) = (0, 0);
         while current() && !broken.get_untracked() {
             if waited >= pass.renew_after_s {
                 if page_hidden() {
                     away += 1;
-                } else if played.get_untracked() {
+                } else if moving.get_untracked() {
                     break;
                 }
             }
@@ -496,7 +497,7 @@ fn PaidCam(stream: LiveStream) -> impl IntoView {
     let state = RwSignal::new(Paid::Idle);
     let note = RwSignal::new(String::new());
     let broken = RwSignal::new(false);
-    let played = RwSignal::new(false);
+    let moving = RwSignal::new(false);
     let stop_button = NodeRef::<html::Button>::new();
     // Start unmounts the button that had focus: hand it to Stop, unless the viewer has moved on.
     Effect::new(move |_| {
@@ -540,7 +541,7 @@ fn PaidCam(stream: LiveStream) -> impl IntoView {
             state,
             note,
             broken,
-            played,
+            moving,
             p,
         ));
     };
@@ -581,7 +582,7 @@ fn PaidCam(stream: LiveStream) -> impl IntoView {
                 Paid::Watching(src, _) => view! {
                     <VideoPlayer src=Signal::stored(Some(src)) poster=poster label=title.clone()
                         recorded=recorded resume_key=id.get_value()
-                        on_offline=move |_| broken.set(true) on_playing=move |_| played.set(true)/>
+                        on_offline=move |_| broken.set(true) on_moving=move |m| moving.set(m)/>
                     <p>"Taken each minute while you watch. Nothing is taken while the tab is hidden."</p>
                     <button type="button" class="btn btn-ghost" data-testid="paid-stop" node_ref=stop_button
                         on:click=stop>

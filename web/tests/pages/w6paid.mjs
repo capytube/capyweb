@@ -24,7 +24,7 @@ async function until(cond, what, ms = 15000) {
   }
 }
 
-async function fakeApi(context, cognito) {
+export async function fakeApi(context, cognito) {
   const api = { balance: 42, posts: [], seen: new Map(), loseNext: false, refuse: null, src: '/paid/wall-cam/index.m3u8' };
   const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   await context.route('**/fixtures/me.json', cognito.guarded((route) => {

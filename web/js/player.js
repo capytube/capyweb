@@ -5,7 +5,8 @@ const HLS_URL = '/vendor/hls/1.7.3/hls.light.min.mjs';
 const POS = 'capyweb:pos:';
 // Wanting to play, visible, and no picture for this long is a failure too. A server that takes
 // the request and never answers raises no error (hls.js retries for a minute or more), and a
-// paid camera must not keep buying for a picture that does not come.
+// paid camera must not keep buying for a picture that does not come. A slow server that is still
+// answering (a playlist or a segment arrived) gets another 15 s; a hung one sends nothing.
 const STUCK_MS = 15000;
 let hlsModule = null; // Promise of the Hls class, shared by every player
 
@@ -31,7 +32,7 @@ function nativeHls(video) {
     && (!window.MediaSource || 'webkitShowPlaybackTargetPicker' in video);
 }
 
-export function attach(video, src, live, resumeKey, onFatal, onPlaying) {
+export function attach(video, src, live, resumeKey, onFatal, onMoving) {
   const key = POS + resumeKey + ' ' + src;
   let hls = null;
   let gone = false;
@@ -91,8 +92,12 @@ export function attach(video, src, live, resumeKey, onFatal, onPlaying) {
   video.loop = !live; // a reel never ends on a dead frame
   video.autoplay = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   video.addEventListener('error', fail);
-  const moving = () => { rest(); if (onPlaying) onPlaying(); };
-  const WATCH = { play: watch, waiting: watch, playing: moving, pause: rest };
+  // Media arrived while the watchdog runs: slow, not hung, so its clock starts again.
+  const arrived = () => { if (dog) watch(); };
+  const moving = () => { rest(); if (onMoving) onMoving(true); };
+  // Stopped for want of data while playing (not the viewer's pause): the picture is not moving.
+  const stalled = () => { watch(); if (onMoving && !video.paused) onMoving(false); };
+  const WATCH = { play: watch, waiting: stalled, playing: moving, pause: rest, progress: arrived };
   for (const [ev, f] of Object.entries(WATCH)) video.addEventListener(ev, f);
   // An explicit play, so the watchdog starts from the request and not from the first data (the
   // autoplay attribute alone fires play only once data has come). Refused autoplay is not an error.
@@ -121,6 +126,9 @@ export function attach(video, src, live, resumeKey, onFatal, onPlaying) {
         maxBufferLength: 20,
       });
       hls.on(Hls.Events.ERROR, (_event, data) => { if (data.fatal) fail(); });
+      for (const ev of [Hls.Events.MANIFEST_LOADED, Hls.Events.LEVEL_LOADED, Hls.Events.FRAG_LOADED]) {
+        hls.on(ev, arrived);
+      }
       hls.loadSource(src);
       hls.attachMedia(video);
       start();

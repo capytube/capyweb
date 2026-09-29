@@ -8,7 +8,8 @@
 //! player (listeners, timers, the hls.js instance). Design: docs/VIDEO_DESIGN.md.
 //!
 //! A source that never shows a picture fails too: wanting to play, visible, and no picture for
-//! 15 s (a server that takes the request and never answers raises no error).
+//! 15 s (a server that takes the request and never answers raises no error). Media still arriving
+//! (a slow server) starts those 15 s again.
 //!
 //! It never decides that a camera may be watched: callers pass a source only for a public camera
 //! (`api::camera_src`) or a paid one the viewer has just paid for (`api::paid_src`).
@@ -19,7 +20,7 @@
 use leptos::{html, prelude::*};
 use wasm_bindgen::prelude::*;
 
-// `attach(video, src, live, resumeKey, onFatal, onPlaying)` in js/player.js:
+// `attach(video, src, live, resumeKey, onFatal, onMoving)` in js/player.js:
 // - an .mp4 plays natively; an .m3u8 plays natively in WebKit (Safari, every iOS browser) and
 //   through hls.js elsewhere. Chrome now answers canPlayType "maybe" for HLS too, so that answer
 //   alone no longer means Safari: the shim also looks for WebKit's AirPlay picker.
@@ -27,8 +28,10 @@ use wasm_bindgen::prelude::*;
 // - `resumeKey`: a non-live source saves its position in sessionStorage under this key and the
 //   source, every few seconds and on pause, hide and destroy, and restores it on the next attach.
 // - `onFatal()`: called once, asynchronously (never inside a call from Rust), when the source
-//   cannot play: an error, or 15 s of visible time wanting to play with no picture.
-// - `onPlaying()` (or null): called on each `playing` event, when the picture starts or resumes.
+//   cannot play: an error, or 15 s of visible time wanting to play with no picture and no media
+//   arriving.
+// - `onMoving(moving)` (or null): true on each `playing` event (the picture starts or resumes),
+//   false on each `waiting` event that is not the viewer's pause (it stalled for want of data).
 // `destroy()` removes every listener and timer and frees the hls.js instance.
 #[wasm_bindgen(module = "/js/player.js")]
 extern "C" {
@@ -41,7 +44,7 @@ extern "C" {
         live: bool,
         resume_key: &str,
         on_fatal: &JsValue,
-        on_playing: &JsValue,
+        on_moving: &JsValue,
     ) -> Handle;
 
     #[wasm_bindgen(method)]
@@ -87,10 +90,11 @@ pub fn VideoPlayer(
     /// paid camera stops buying on it: nobody pays for a picture that does not come.
     #[prop(optional, into)]
     on_offline: Option<Callback<()>>,
-    /// Called each time the picture starts or resumes moving. A paid camera buys the next minute
-    /// only once this has happened since its player started.
+    /// Called with `true` each time the picture starts or resumes moving, and `false` when it
+    /// stalls while wanting to play (not on the viewer's pause). A paid camera buys the next
+    /// minute only while the picture is moving.
     #[prop(optional, into)]
-    on_playing: Option<Callback<()>>,
+    on_moving: Option<Callback<bool>>,
 ) -> impl IntoView {
     let failed = RwSignal::new(Vec::<String>::new());
     let current = Memo::new(move |_| {
@@ -99,7 +103,8 @@ pub fn VideoPlayer(
     let playing = Memo::new(move |_| current.with(Option::is_some));
     let video = NodeRef::<html::Video>::new();
     type Js = Closure<dyn FnMut()>;
-    let handle = StoredValue::new_local(None::<(Handle, Js, Option<Js>)>);
+    type JsBool = Closure<dyn FnMut(bool)>;
+    let handle = StoredValue::new_local(None::<(Handle, Js, Option<JsBool>)>);
     let stop = move || {
         if let Some((h, ..)) = handle.try_update_value(Option::take).flatten() {
             h.destroy();
@@ -113,7 +118,7 @@ pub fn VideoPlayer(
         if let (Some((src, live)), Some(el)) = (cur, el) {
             let bad = src.clone();
             let on_fatal = Js::new(move || failed.update(|f| f.push(bad.clone())));
-            let moving = on_playing.map(|cb| Js::new(move || cb.run(())));
+            let moving = on_moving.map(|cb| JsBool::new(move |m| cb.run(m)));
             let none = JsValue::NULL;
             let moving_js = moving.as_ref().map_or(&none, |c| c.as_ref());
             let h = attach_js(&el, &src, live, &resume_key, on_fatal.as_ref(), moving_js);

@@ -238,9 +238,14 @@ This is what the front end relies on. W6 built the front-end half.
 - A fatal error moves to the reel. If the reel fails too, the player shows the poster and an
   offline message.
 - A picture that never comes is a fatal error too. The trigger is 15 s of visible time with the video
-  wanting to play (a play request or a stall) and no `playing` event. A server that takes the request
-  and never answers raises no error of its own, and hls.js retries for a minute or more. Refused
-  autoplay (iOS Low Power Mode) and reduced motion arm nothing until the viewer presses play.
+  wanting to play (a play request or a stall), no `playing` event and no media arriving. A server that
+  takes the request and never answers raises no error of its own, and hls.js retries for a minute or
+  more. Media that does arrive (a playlist, the init segment or a segment loaded by hls.js, or a
+  native `progress` event) starts the 15 s again: a slow server is not a hung one (W14; with 6 s on
+  every request the first picture comes after about 24 s and nothing fails). Refused autoplay (iOS
+  Low Power Mode) and reduced motion arm nothing until the viewer presses play.
+- The player tells its owner whether the picture is moving: yes on each `playing` event, no on each
+  `waiting` event that is not the viewer's pause.
 - Unmounting removes every listener and timer and destroys hls.js.
 
 **CSP** for W12's response-headers policy:
@@ -388,16 +393,25 @@ free tiers (about one call a minute per paying viewer).
   have N play coins.") with Start watching and Cancel. Without sign-in configured: no button.
 - Start buys through `POST /api/playback/<id>` (same-origin, one Idempotency-Key per purchase;
   a lost answer is asked again twice with the same key), then plays the checked source. It buys
-  again after `renew_after_s`, but only while the tab is visible and only once the picture has
-  played since its player started. After 40 s or more hidden it starts the player again once the
+  again after `renew_after_s`, but only while the tab is visible and the picture is moving: not
+  before it first plays, and not while it is stalled for want of data (W14, from review
+  rv-1790683988-53300: a mid-play stall used to let renewals land until the watchdog fired). The
+  viewer's own pause keeps it moving, so a paused, visible tab still pays, as before. After 40 s or more hidden it starts the player again once the
   next minute is paid, in case the cookies ran out. Stop, leaving the camera or a refusal ends it;
   after a refusal the minute already paid still plays.
 - A picture that fails or never comes (the player's 15 s rule) gets one fresh start. It is
   usually free: the server charges only when fewer than 30 s are paid. If it fails again before
   it has played, nothing more is bought, and the note says "The recording would not play, so
   nothing more will be charged." A hang therefore costs the first minute and no more.
+- The fresh start resumes at the saved position, which is where the picture stopped. A hang that
+  clears is rescued there. Media that is broken at that spot fails again and gives up, even though
+  the earlier segments still load (the review took this for an hls.js re-attach quirk; `w6media.mjs`
+  shows the fresh player never plays from the start).
 - Tests: `web/tests/pages/w6.mjs` (recordings, the live path on a stubbed camera, the reel, the
   paid camera signed out) and `w6paid.mjs` (sign-in, confirm, buy, renew with a new key, a lost
   answer retried with the same key, nothing bought while hidden, Stop, a double Start, media
   refused (403) and media that never answers (one fresh start, then nothing), no renewal before
-  play under reduced motion, a refusal, a foreign source refused, leaving).
+  play under reduced motion, a refusal, a foreign source refused, leaving), and `w6media.mjs` (W14:
+  no renewal during a mid-play stall, then one fresh start at the stall point and a give-up; a hang
+  rescued by the fresh start; a slow server not failed; autoplay refused with `NotAllowedError`,
+  costing nothing more until play). Against the player before W14, the stall and slow cases fail.
