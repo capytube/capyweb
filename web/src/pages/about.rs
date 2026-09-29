@@ -9,7 +9,7 @@ pub fn About() -> impl IntoView {
         <article class="static-page">
             <PageHead title="About CapyTube"/>
             <section>
-                <h4>" Your Gateway to CapyTube "</h4>
+                <h2 class="about-title">" Your Gateway to CapyTube "</h2>
                 <p>
                     " Welcome to "
                     <strong>"CapyTube"</strong>
@@ -37,7 +37,7 @@ pub fn About() -> impl IntoView {
                 </div>
             </section>
             <section>
-                <h4>" The Story of Magnus "</h4>
+                <h2 class="about-title">" The Story of Magnus "</h2>
                 <p>
                     " Magnus is no ordinary capybara. Born in the north of Thailand, he’s the second-generation capybara in his lineage, with a rich history of travel and adventure. From Thailand to various countries around the world, Magnus has become a symbol of peace, relaxation, and joy for everyone he meets. "
                 </p>

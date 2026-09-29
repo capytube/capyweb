@@ -9,7 +9,8 @@
 }
 .static-page p { margin-block: 1rem; }
 .static-page h2, .static-page h4 { margin: 2rem 0 0.75rem; }
-.static-page h4 {
+/* About's section titles are h2 for a correct outline, styled as the React page's h4. */
+.static-page h4, .static-page h2.about-title {
   font-family: var(--font-ui);
   font-size: 1.5rem;
   color: var(--choco-brown);

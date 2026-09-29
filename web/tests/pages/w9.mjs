@@ -46,4 +46,21 @@ export async function check({ open, browser, settle, BASE }) {
   assert.deepEqual(media, [], 'no media request before pressing play');
   assert.equal(await video.evaluate(el => el.networkState), 1, 'video stays idle');
   await page.close();
+
+  // At phone width, scrolling the video into view leaves its controls above the fixed tab bar.
+  const { page: phone } = await open('/robot', { width: 390, height: 844 });
+  const clip = await phone.locator('main video').evaluate(el => {
+    el.scrollIntoView({ block: 'end', behavior: 'instant' }); // the site scrolls smoothly
+    return { videoBottom: el.getBoundingClientRect().bottom, barTop: document.querySelector('.tabbar').getBoundingClientRect().top };
+  });
+  assert.ok(clip.videoBottom <= clip.barTop, `video controls under the tab bar: ${JSON.stringify(clip)}`);
+  await phone.close();
+
+  // About: the decided wording (play coins are not money), and headings in order.
+  const { page: about } = await open('/about-us', { width: 1280, height: 800 });
+  const text = await about.locator('main').innerText();
+  assert.match(text, /Play coins are not money/);
+  assert.doesNotMatch(text, /currency|tip Magnus/i, 'no money wording on About');
+  assert.deepEqual(await about.locator('main :is(h1,h2,h3,h4,h5,h6)').evaluateAll(hs => hs.map(h => h.tagName)), ['H1', 'H2', 'H2']);
+  await about.close();
 }

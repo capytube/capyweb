@@ -280,6 +280,12 @@ dialog.modal::backdrop {
     padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
   }
 
+  /* Scrolling something into view (focus, scrollIntoView, anchors) stops above the tab bar,
+     so a video's controls or a focused field are never left under it. */
+  html {
+    scroll-padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
   /* The tab bar has "Me"; the top-bar account button would say the same thing twice. */
   .account-link {
     display: none;

@@ -35,7 +35,6 @@ struct DemoSlot {
     id: &'static str,
     robot_id: &'static str,
     starts_at: &'static str,
-    ends_at: &'static str,
     label: &'static str,
     status: &'static str,
     bid_count: u32,
@@ -48,7 +47,6 @@ const SLOTS: [DemoSlot; 3] = [
         id: "slot-demo-1",
         robot_id: "prototype-1",
         starts_at: "2026-09-26T10:00:00+07:00",
-        ends_at: "2026-09-26T11:00:00+07:00",
         label: "Sat, Sep 26, 2026 · 10:00–11:00",
         status: "Auction scaffold open",
         bid_count: 0,
@@ -57,7 +55,6 @@ const SLOTS: [DemoSlot; 3] = [
         id: "slot-demo-2",
         robot_id: "prototype-2",
         starts_at: "2026-09-26T12:00:00+07:00",
-        ends_at: "2026-09-26T13:00:00+07:00",
         label: "Sat, Sep 26, 2026 · 12:00–13:00",
         status: "Schedule preview",
         bid_count: 0,
@@ -66,7 +63,6 @@ const SLOTS: [DemoSlot; 3] = [
         id: "slot-demo-3",
         robot_id: "prototype-3",
         starts_at: "2026-09-27T15:00:00+07:00",
-        ends_at: "2026-09-27T16:00:00+07:00",
         label: "Sun, Sep 27, 2026 · 15:00–16:00",
         status: "Schedule preview",
         bid_count: 0,
@@ -118,7 +114,6 @@ pub fn Robot() -> impl IntoView {
                                 <p>{robot.model}</p>
                                 <p class="text-leafGreen">"Hardware bridge not connected"</p>
                                 <p><time datetime=slot.starts_at>{slot.label}</time></p>
-                                <p class="sr-only">"Ends "<time datetime=slot.ends_at>{slot.ends_at}</time></p>
                                 <p>{slot.status}</p>
                                 <p>{format!("{} bids · price TBD", slot.bid_count)}</p>
                             </li>
