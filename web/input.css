@@ -1,0 +1,22 @@
+/* Same palette and fonts as src/index.css, so Tailwind classes carry over unchanged. */
+@import url('https://fonts.googleapis.com/css2?family=Commissioner:wght@100..900&family=DynaPuff:wght@400..700&family=Hanalei+Fill&display=swap');
+
+:root {
+  --grass-green: #d0e591;
+  --dark-green: #488029;
+  --choco-brown: #7a3f3e;
+  --babycorn-yellow: #fffcc8;
+  --dark-orange: #ca5000;
+  --site-green: #60a571;
+  --custard: #ffe3a2;
+  --cream: #ffeee2;
+  --persimmon: #ffb26f;
+  --tomato-red: #f23434;
+  --avacado-green: #d7e7c3;
+  --button-disabled: #b1b1b1;
+  --button-disabled-shadow: #909090;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

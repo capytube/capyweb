@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CapyTube, live capy stream</title>
+    <meta name="description" content="Watch the capybaras live, then pick their snack." />
+    <link data-trunk rel="tailwind-css" href="input.css" />
+    <link data-trunk rel="copy-dir" href="fixtures" />
+    <link data-trunk rel="rust" data-bin="capyweb-web" data-wasm-opt="z"
+      data-wasm-opt-params="--enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue" />
+  </head>
+  <body class="bg-babyCronYellow text-chocoBrown font-commissioner">
+    <noscript>CapyTube needs JavaScript and WebAssembly to run.</noscript>
+  </body>
+</html>

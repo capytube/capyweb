@@ -66,3 +66,16 @@ Read this before each work session on capyweb. Add a line whenever something fai
 - **It found 8, where hand-searching found 4**: six AppSync API keys (all dead — the APIs are deleted, every endpoint NXDOMAIN) and both Livepeer keys (live and unrotated, `capyweb-962`, across three files).
 - Known findings live in `scripts/history-secrets-known.txt` as REDACTED identifiers with rotation status. Never put a full secret there. A new, unrecorded finding fails the push.
 - The name-vs-secret heuristic is shared with `guard.sh`: a literal of only `[A-Za-z0-9_]` that contains an underscore is an identifier (`GOOGLE_CLIENT_SECRET`), not a secret; real keys are hex, base64 or hyphenated UUIDs.
+
+## WebAssembly front end (2026-09-29, docs/WASM_PLAN.md)
+- Trunk 0.21's default binaryen (`version_123`) rejects Rust 1.98 output: "memory.copy operations require bulk memory". Pin `wasm_opt = "version_133"` in `web/Trunk.toml` and pass `--enable-bulk-memory --enable-nontrapping-float-to-int …` in `data-wasm-opt-params`. Without wasm-opt the build fails outright in release mode.
+- Homebrew's `rust` has no wasm32 std. Use `brew install rustup trunk`, then `rustup target add wasm32-unknown-unknown` (`web/rust-toolchain.toml` pins 1.98.1).
+- Port 8787 on mac-pro-japan-16 is taken by another local service, so the prototype serves on 127.0.0.1:8791.
+- The API's CORS list (template default) is `capytube.xyz`, `www` and `localhost:5173`. It does NOT include `dev.capytube.xyz`, and the site distribution has no `/api/*` behaviour, so no front end on dev can call the API from a browser yet. Nobody noticed because dev serves `demo/`, which makes no API calls.
+- WebMCP moved: the CG draft of 2026-09-28 is `document.modelContext.registerTool(tool, {signal})`, not `navigator.modelContext`. `web/js/webmcp.js` handles both.
+- Measured: React entry bundle 777 KB brotli (4.46 MB raw); Leptos prototype 116 KB brotli WASM + 7 KB JS.
+
+## Moving machines (2026-09-29)
+- A fresh clone has NO active hooks: `core.hooksPath` is per-clone config, not in git. Run `git config core.hooksPath .beads/hooks` (the tracked hooks already contain both the beads and guard blocks), then `scripts/guard.sh`.
+- The beads DB never left the lent MacBook Pro: origin has no `refs/dolt/data` and no `issues.jsonl` was ever committed. The repo is public, so do not push Dolt data to it; use a private remote.
+- `backend/src/node_modules` is needed for the pre-push backend tests and the behavioural playback-locator guard; both skip silently without it (`npm ci --ignore-scripts` there).

@@ -1,0 +1,18 @@
+# Local dev and release build for the WASM front end. docs/WASM_PLAN.md section 5.
+[build]
+target = "index.html"
+dist = "dist"
+filehash = true
+
+# Loopback only: nothing on nic's machines listens on 0.0.0.0 (global rule).
+[serve]
+addresses = ["127.0.0.1"]
+port = 8791
+open = false
+
+[tools]
+tailwindcss = "3.4.17"
+# Rust >= 1.87 emits bulk-memory and non-trapping float-to-int by default; binaryen 123 (Trunk's
+# default) rejects that module as invalid. Pin a newer one, and enable the features explicitly
+# in index.html (data-wasm-opt-params) so an older binaryen cannot silently strip them.
+wasm_opt = "version_133"

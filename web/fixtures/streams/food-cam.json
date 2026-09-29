@@ -1,0 +1,22 @@
+{
+  "entity": "LiveStream",
+  "createdAt": "2026-09-26T08:00:00.000Z",
+  "updatedAt": "2026-09-26T08:00:00.000Z",
+  "id": "food-cam",
+  "title": "Food cam",
+  "access_type": "public",
+  "is_live": false,
+  "start_time": "2026-09-26T09:00:00.000Z",
+  "capybara_ids": [
+    "einstein"
+  ],
+  "fallback_reel": "capytube-stream.mp4",
+  "viewer_count": 0,
+  "ratingCounts": {
+    "capylove": 0,
+    "capylike": 0,
+    "capywow": 0,
+    "capyangry": 0,
+    "capyfire": 0
+  }
+}
