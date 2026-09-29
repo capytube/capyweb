@@ -52,6 +52,8 @@ colima start --cpu 2 --memory 2
 export DOCKER_HOST=unix://$HOME/.colima/default/docker.sock
 docker run -d --name capyweb-ddb-local -p 127.0.0.1:8010:8000 \
   amazon/dynamodb-local -jar DynamoDBLocal.jar -inMemory -sharedDb
+# The suite also waits up to 30 s for the container, but a manual run is clearer with this:
+until curl -s -o /dev/null http://127.0.0.1:8010; do sleep 1; done
 
 cd backend/src
 env -u AWS_PROFILE AWS_CONFIG_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/null \

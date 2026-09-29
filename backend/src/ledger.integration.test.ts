@@ -102,6 +102,17 @@ before(async () => {
   };
   // Same key schema as MainTable in infra/backend/template.yaml.
   const client = new M.sdk.DynamoDBClient({});
+  // A container that has just started resets connections for a few seconds; wait until it answers
+  // rather than failing every test on a startup race.
+  for (let tries = 1; ; tries++) {
+    try {
+      await client.send(new M.sdk.ListTablesCommand({ Limit: 1 }));
+      break;
+    } catch (e) {
+      if (tries >= 30) throw e;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
   const S = "S" as const;
   await client.send(new M.sdk.CreateTableCommand({
     TableName: M.ddb.TABLE,
