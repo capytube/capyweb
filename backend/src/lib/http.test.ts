@@ -99,3 +99,45 @@ test("pathSegments strips the API Gateway stage prefix", () => {
     ["dev", "x"],
   );
 });
+
+test("callerId reads only the verified sub claim and fails closed", async () => {
+  const { callerId, HttpError } = await import("./http.ts");
+  const withSub = (sub: unknown, token_use: unknown = "access") =>
+    ({ requestContext: { authorizer: { jwt: { claims: { sub, token_use } } } } });
+  assert.equal(callerId(withSub("0b6e2f7a-1c3d-4e5f-8a9b-0c1d2e3f4a5b")), "0b6e2f7a-1c3d-4e5f-8a9b-0c1d2e3f4a5b");
+  for (const bad of [undefined, "", 42, "USER#x", "a/b", "x".repeat(129)]) {
+    assert.throws(() => callerId(withSub(bad)), HttpError, String(bad));
+  }
+  assert.throws(() => callerId({}), HttpError, "no authorizer context at all");
+  // A valid ID token passes the authorizer (aud = client id) but is not a grant to call the API.
+  const id = "0b6e2f7a-1c3d-4e5f-8a9b-0c1d2e3f4a5b";
+  for (const tu of ["id", null, "ACCESS", "refresh"]) {
+    assert.throws(() => callerId(withSub(id, tu)), HttpError, `token_use ${String(tu)}`);
+  }
+  assert.throws(() => callerId({ requestContext: { authorizer: { jwt: { claims: { sub: id } } } } }), HttpError, "no token_use");
+});
+
+test("jsonBody accepts only a small JSON object; onlyFields names what is not allowed", async () => {
+  const { jsonBody, onlyFields, MAX_BODY_BYTES } = await import("./http.ts");
+  assert.deepEqual(jsonBody({}), {});
+  assert.deepEqual(jsonBody({ body: "" }), {});
+  assert.deepEqual(jsonBody({ body: '{"a":1}' }), { a: 1 });
+  assert.deepEqual(jsonBody({ body: Buffer.from('{"a":1}').toString("base64"), isBase64Encoded: true }), { a: 1 });
+  for (const bad of ["nope", "[]", "null", "3", '"s"', `{"a":"${"x".repeat(MAX_BODY_BYTES)}"}`]) {
+    assert.throws(() => jsonBody({ body: bad }), BadInput, bad.slice(0, 20));
+  }
+  onlyFields({ a: 1 }, ["a", "b"]);
+  assert.throws(() => onlyFields({ a: 1, balance: 5 }, ["a"]), /balance/);
+});
+
+test("HttpError keeps its status and code; authenticated responses are never cacheable", async () => {
+  const { HttpError, okPrivate, created } = await import("./http.ts");
+  const r = await guard(async () => {
+    throw new HttpError(409, "not enough coins", "insufficient_coins");
+  })({});
+  assert.equal(r.statusCode, 409);
+  assert.deepEqual(JSON.parse(r.body), { error: "not enough coins", code: "insufficient_coins" });
+  assert.equal(okPrivate({}).headers["cache-control"], NO_STORE);
+  assert.equal(created({}).statusCode, 201);
+  assert.equal(created({}).headers["cache-control"], NO_STORE);
+});

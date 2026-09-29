@@ -64,6 +64,13 @@ export const sk = {
   session: (id: string) => `SESSION#${id}`,
   sessionEvent: (sessionId: string, at: string) => `SESSION#${sessionId}#EV#${at}`,
   audit: (at: string, id: string) => `${at}#${id}`,
+  /**
+   * Idempotency marker, in the caller's own USER# partition so it can sit in the same
+   * transaction as the balance update. Expires by TTL (see lib/ledger.ts).
+   */
+  idem: (key: string) => `IDEM#${key}`,
+  /** One reaction-counter item per stream, beside the chat. No index, so 1 write unit per reaction. */
+  reactions: () => "REACTIONS",
 } as const;
 
 /** begins_with() prefixes for range queries within a partition. */
@@ -78,6 +85,7 @@ export const prefix = {
   slot: () => "SLOT#",
   entitlement: () => "ENT#",
   nftOwned: () => "NFT#",
+  idem: () => "IDEM#",
 } as const;
 
 // -- GSI1 ---------------------------------------------------------------------

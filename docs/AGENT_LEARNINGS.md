@@ -89,3 +89,9 @@ Read this before each work session on capyweb. Add a line whenever something fai
 - Cognito callback URLs accept plain http for `localhost`, `127.0.0.1` and `[::1]`, so `trunk serve` on 127.0.0.1 works as a registered callback.
 - `sam build` offline needs `esbuild` on PATH; none was installed on mac-pro-japan-16. `npm i --prefix <scratch> --ignore-scripts esbuild@0.21` and putting its `.bin` first on PATH was enough (with the lane's credential cut-off).
 - Size: each new Leptos signal or stored-value *type* costs code; one `StoredValue<Inner, LocalStorage>` for all non-rendered auth state, `serde_json::Value` instead of `derive(Deserialize)`, and small JS helpers for fetch/storage/crypto kept sign-in at +14.7 KB brotli (first draft: +20.5 KB).
+
+## Ledger and write API (2026-09-29, lane 4, capyweb-3ge / capyweb-7hj)
+- Point the AWS SDK at DynamoDB Local with `AWS_ENDPOINT_URL_DYNAMODB` (SDK v3 reads it), set in the test process BEFORE `lib/ddb.ts` is imported: it builds its client at import time. Pin `AWS_ACCESS_KEY_ID=local`, `AWS_CONFIG_FILE=/dev/null` and `AWS_SHARED_CREDENTIALS_FILE=/dev/null` too, or the SDK's credential chain reads `~/.aws`.
+- DynamoDB Local serialises transactions: 20 concurrent debits on one balance gave 10 successes and 10 `ConditionalCheckFailed`, never a `TransactionConflict`. Real DynamoDB does return conflicts; that retry path is only unit-tested.
+- `node --experimental-strip-types` refuses TypeScript parameter properties (`constructor(readonly x)`); declare the field instead.
+- Colima's socket is not the default docker socket: `export DOCKER_HOST=unix://$HOME/.colima/default/docker.sock`.
