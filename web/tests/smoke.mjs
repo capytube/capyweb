@@ -100,7 +100,7 @@ try {
   assert.match(bad, /unknown page/);
 
   // -- deep links and 404 ------------------------------------------------------------
-  for (const [path, title] of [['/watch', 'Watch'], ['/stream/magnus', 'Watch room'], ['/terms-of-service', 'Terms of service']]) {
+  for (const [path, title] of [['/watch', 'Watch'], ['/stream/magnus', 'Watch room'], ['/terms-of-service', 'Terms of Service']]) {
     const { page: p } = await open(path);
     assert.equal(await p.innerText('main h1'), title, path);
     await p.close();

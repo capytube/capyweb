@@ -10,6 +10,9 @@ use crate::components::chrome::{Footer, Header, TabBar, ToastHost};
 use crate::pages::coming::ComingSoon;
 use crate::pages::home::Home;
 use crate::pages::not_found::NotFound;
+use crate::pages::{
+    about::About, deletion::Deletion, privacy::Privacy, robot::Robot, terms::Terms,
+};
 use crate::routes::Page;
 use crate::state::{use_toasts, Session, Toasts};
 use crate::webmcp;
@@ -39,21 +42,11 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/profile") view=|| view! {
                         <ComingSoon title="Your account" blurb="Sign-in is on its way. Until then you can watch without an account."/>
                     }/>
-                    <Route path=path!("/robot") view=|| view! {
-                        <ComingSoon title="Robot" blurb="Drive the capy-cam robot. This page is being rebuilt."/>
-                    }/>
-                    <Route path=path!("/about-us") view=|| view! {
-                        <ComingSoon title="About us" blurb="The story of Magnus and CapyTube. This page is being rebuilt."/>
-                    }/>
-                    <Route path=path!("/privacy-policy") view=|| view! {
-                        <ComingSoon title="Privacy policy" blurb="This page is being rebuilt."/>
-                    }/>
-                    <Route path=path!("/terms-of-service") view=|| view! {
-                        <ComingSoon title="Terms of service" blurb="This page is being rebuilt."/>
-                    }/>
-                    <Route path=path!("/deletion") view=|| view! {
-                        <ComingSoon title="Delete my data" blurb="This page is being rebuilt."/>
-                    }/>
+                    <Route path=path!("/robot") view=Robot/>
+                    <Route path=path!("/about-us") view=About/>
+                    <Route path=path!("/privacy-policy") view=Privacy/>
+                    <Route path=path!("/terms-of-service") view=Terms/>
+                    <Route path=path!("/deletion") view=Deletion/>
                 </Routes>
             </main>
             <Footer/>
