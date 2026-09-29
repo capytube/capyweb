@@ -248,17 +248,30 @@ write) and an SES sandbox-exit request. For dev, the free prefix domain
 
 ## 4. WebMCP from WASM
 
-**The spec has moved.** The WebMCP Community Group draft of **28 September 2026** exposes
-`document.modelContext`. It provides `registerTool(tool, { signal, exposedTo })`, which returns a Promise;
+**The spec has moved.** The WebMCP Community Group report (a living draft, dated **29 September 2026**)
+exposes `document.modelContext`. Its `registerTool(tool, { signal, exposedTo })` returns a Promise, and
 a tool is unregistered by aborting the signal. Tools carry `annotations { readOnlyHint,
-untrustedContentHint, consequentialHint }`. Earlier drafts and Chrome's early preview used
-`navigator.modelContext`, as in the brief. The explainer says no browser ships it by default.
-`web/js/webmcp.js` supports both shapes and does nothing where neither exists.
+untrustedContentHint, consequentialHint, debugging }`. Earlier drafts and Chrome's early preview used
+`navigator.modelContext`, as in the brief; Chrome deprecated that name in 150.
+
+It is on for no site by default:
+- Chrome runs an origin trial (149 to 156) and has a local testing flag;
+- Edge runs a trial;
+- Firefox is neutral and Safari opposed.
+
+`web/js/webmcp.js` prefers `document`, falls back to `navigator`, and does nothing where neither exists.
+
+Two details matter for W10:
+- **Signals:** aborting the registration signal removes a tool but does not cancel a call already
+  running, which has its own signal.
+- **`consequentialHint`:** it is only a hint, and no browser has to ask the user.
+
+Research and sources: `docs/WEBMCP_NOTES.md`.
 
 **How tools are registered.** Rust builds each tool (name, description, JSON Schema, annotations) and
 passes it with a `Closure` to `registerTool` in the JS shim. The closure returns a Promise made with
 `wasm_bindgen_futures::future_to_promise` that calls **the same Rust function the button calls**. It
-passes the draft's `signal` on to `fetch`, so a cancelled tool call cancels its request. There is no
+passes the `signal` the draft gives `execute` on to `fetch`, so a cancelled tool call cancels its request. There is no
 tool-only API route, so nothing new becomes public. A tool counts as registered only once the browser's
 `registerTool` promise fulfils; a refusal is not counted. Tools that need sign-in are registered when the
 user signs in and unregistered (`AbortController.abort()`) when they sign out. The server checks the JWT
@@ -267,7 +280,7 @@ on every call either way. This is the "same login and permissions as the UI" rul
 The prototype proves the mechanism:
 - the tools registered;
 - `list_streams` returned the catalog;
-- `open_stream` navigated the SPA;
+- `open_stream` navigated the SPA (W1 replaced it with `open_page`, since the prototype's `/streams/:id` route is gone);
 - an id like `../admin` was rejected;
 - a browser that refuses registration leaves 0 tools counted.
 
@@ -277,7 +290,7 @@ navigation tool is not read-only. `consequentialHint` marks actions that spend c
 | Tool | Sign-in | Annotations | What it does |
 |---|---|---|---|
 | `list_streams` | no | readOnly | Stream id, title, live or not, public/private, price. **Built in the prototype** |
-| `open_stream` / `open_page` | no | none (changes the page, not the server) | Navigate the SPA to a stream or a named page (fixed list). `open_stream` is built |
+| `open_stream` / `open_page` | no | none (changes the page, not the server) | Navigate the SPA to a stream or a named page (fixed list). `open_page` is built |
 | `list_capybaras`, `get_capybara` | no | readOnly | Cast, bios, and when each capybara is usually awake |
 | `get_interactions` | no | readOnly | Today's snack vote and bid: options, costs, current bid, rules |
 | `list_passes` | no | readOnly | Shop passes and prices |
@@ -290,7 +303,8 @@ navigation tool is not read-only. `consequentialHint` marks actions that spend c
 No admin tools, and no tool that the UI does not already offer.
 
 **Review before it ships:** the tools sit behind a build-time `webmcp` feature, off in production until a
-reviewer has checked the list above against the running app. The checks: each tool's server route
+reviewer has checked the list above against the running app. W10 adds that feature; today `app.rs` always
+mounts the tools, and only a browser without WebMCP keeps them off. The checks: each tool's server route
 enforces the same permission as the button; consequential tools cannot resolve without the on-page
 confirm; no tool output contains a playback locator or token. Then nic says yes.
 
@@ -521,8 +535,9 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
    exist).
 4. **Private playback depends on the backend.** There is no playback route until W6. The front end can
    avoid requesting private playback, but only the server can enforce payment (`capyweb-0m7`).
-5. **WebMCP is a moving draft.** It has already moved from `navigator` to `document`, and no browser
-   ships it. *Mitigation:* the shim handles both; a feature flag keeps it off until reviewed.
+5. **WebMCP is a moving draft.** It has already moved from `navigator` to `document`. No browser
+   turns it on by default: Chrome and Edge run origin trials. *Mitigation:* the shim handles both
+   names, and a feature flag (W10) keeps it off until reviewed.
 6. **Stale-asset crash after a deploy.** A deleted hashed `.wasm` comes back as HTML. *Mitigation:*
    section 5 item 3.
 7. **Video.** The video source and the player are chosen in W6 (options in `docs/VIDEO_OPTIONS.md`). If

@@ -73,7 +73,7 @@ Read this before each work session on capyweb. Add a line whenever something fai
 - Trunk 0.21.14 dies with "invalid value '1' for '--no-color'" when `NO_COLOR=1` is set (some agent shells set it). Unset it or use `NO_COLOR=true`.
 - Port 8787 on mac-pro-japan-16 is taken by another local service, so the prototype serves on 127.0.0.1:8791.
 - The API's CORS list (template default) is `capytube.xyz`, `www` and `localhost:5173`. It does NOT include `dev.capytube.xyz`, and the site distribution has no `/api/*` behaviour, so no front end on dev can call the API from a browser yet. Nobody noticed because dev serves `demo/`, which makes no API calls.
-- WebMCP moved: the CG draft of 2026-09-28 is `document.modelContext.registerTool(tool, {signal})`, not `navigator.modelContext`. `web/js/webmcp.js` handles both.
+- WebMCP moved: the CG report (living draft, 2026-09-29) is `document.modelContext.registerTool(tool, {signal})`, not `navigator.modelContext` (deprecated in Chromium 150). `web/js/webmcp.js` handles both. The registration signal removes a tool but does not cancel a running call, and `consequentialHint` never blocks a call. See `docs/WEBMCP_NOTES.md`.
 - Measured: React entry bundle 777 KB brotli (4.46 MB raw); Leptos prototype 116 KB brotli WASM + 7 KB JS.
 
 ## Moving machines (2026-09-29)
