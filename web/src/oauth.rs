@@ -584,7 +584,15 @@ mod tests {
 
     #[test]
     fn return_paths_stay_on_this_site() {
-        for good in ["/", "/play?capy=magnus", "/shop/capy-1234"] {
+        // Percent-encoded slashes are path data, not an authority: a browser resolves
+        // "/%2F%2Fevil.example" to a path on this origin, so it is kept (the page may 404).
+        for good in [
+            "/",
+            "/play?capy=magnus",
+            "/shop/capy-1234",
+            "/%2F%2Fevil.example",
+            "/%5Cevil.example",
+        ] {
             assert_eq!(safe_return_path(good), good);
         }
         for bad in [
