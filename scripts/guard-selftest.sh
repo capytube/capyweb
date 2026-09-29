@@ -233,6 +233,14 @@ expect_fail "rule 3: secret in web/*.rs" "no hardcoded secrets" \
   "echo 'pub const API_KEY: &str = \"abcdef0123456789abcdef0123456789\";' > web/src/oops.rs"
 expect_fail "rule 3: secret in web/*.toml" "no hardcoded secrets" \
   "echo 'api_key = \"abcdef0123456789abcdef0123456789\"' >> web/Trunk.toml"
+# ES-module tooling (web/tests/*.mjs, tailwind.config.cjs) is authored code too; review
+# rv-1790663637-53030 put an S3 URL and a key id in an .mjs and every scan passed.
+expect_fail "rule 3: S3 URL in web/*.mjs" "no direct S3 URLs" \
+  "echo 'export const V = \"https://bucket.s3.ap-southeast-1.amazonaws.com/x.mp4\";' > web/tests/leak.mjs"
+expect_fail "rule 3: secret in web/*.cjs" "no hardcoded secrets" \
+  "echo 'module.exports = { apiKey: \"abcdef0123456789abcdef0123456789\" };' > web/oops.cjs"
+expect_fail "rule 3: AWS key id in an .mjs" "no hardcoded secrets" \
+  "printf 'const k = \"%s%s\";\\n' AKIA IOSFODNN7EXAMPL1 > web/tests/k.mjs"  # split: history scan
 expect_pass "rule 3: web/target and web/dist are not scanned" "no direct S3 URLs" \
   "mkdir -p web/target/x web/dist && echo 'const V = \"https://b.s3.ap-southeast-1.amazonaws.com/x.mp4\"; const API_KEY = \"abcdef0123456789abcdef0123456789\";' | tee web/target/x/gen.rs > web/dist/app.js"
 
@@ -245,6 +253,16 @@ expect_fail "rule 4: serde rename" "no playback-locator field" \
   "add_rust 'pub struct Leak {' '    #[serde(rename = \"playbackId\")]' '    pub source: String,' '}'"
 expect_fail "rule 4: enum struct variant" "no playback-locator field" \
   "add_rust 'pub enum Leak {' '    Hls { video_src: String },' '}'"
+# A const or static named like a locator would bake one into the public .wasm (review
+# rv-1790663637-53030 found these, and type aliases, passing).
+expect_fail "rule 4: const" "no playback-locator field" \
+  "add_rust 'pub const PLAYBACK_URL: &str = \"x\";'"
+expect_fail "rule 4: static" "no playback-locator field" \
+  "add_rust 'pub static HLS_SRC: &str = \"x\";'"
+expect_fail "rule 4: type alias (camelCase)" "no playback-locator field" \
+  "add_rust 'pub type VideoAddress = String;'"
+expect_fail "rule 4: fn" "no playback-locator field" \
+  "add_rust 'pub fn stream_url() -> String { String::new() }'"
 # The pattern is read from ddb.ts, not copied: a term added there is enforced here at once...
 expect_fail "rule 4: follows ddb.ts (no drifting copy)" "no playback-locator field" \
   "sed -i.bak 's/(playback|hls/(playback|capyleak|hls/' backend/src/lib/ddb.ts && add_rust 'pub struct S {' '    pub capyleak: String,' '}'"
@@ -252,7 +270,7 @@ expect_fail "rule 4: follows ddb.ts (no drifting copy)" "no playback-locator fie
 expect_fail "rule 4: ddb.ts pattern unreadable" "could not read 'const PLAYBACK_NAME" \
   "sed -i.bak 's/const PLAYBACK_NAME =/const PLAYBACK_PATTERN =/' backend/src/lib/ddb.ts"
 expect_pass "rule 4: honest fields and comments pass" "no playback-locator field" \
-  "add_rust '/// never a playback_url or stream_url here' 'pub struct Fine {' '    pub stream_count: u32,' '    pub title: String,' '}'"
+  "add_rust '/// never a playback_url or stream_url here' 'pub struct Fine {' '    pub stream_count: u32,' '    pub title: String,' '}' 'pub const MAX_STREAMS: usize = 3;' 'pub fn stream_title() -> String { String::new() }'"
 
 echo "WASM front end: rule 5 (dev servers on loopback only)"
 expect_fail "rule 5: vite host: true" "dev servers bind loopback only" \

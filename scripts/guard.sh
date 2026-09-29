@@ -112,8 +112,8 @@ fi
 # guard on another branch's half-finished work.
 BUILD_OUT_DIRS="--exclude-dir=node_modules --exclude-dir=.aws-sam --exclude-dir=dist --exclude-dir=target --exclude-dir=worktrees"
 s3_hits=$(grep -rnE '["'"'"'`][^"'"'"'`]*\.s3[.-][a-z0-9-]*\.amazonaws\.com' \
-  --include='*.ts' --include='*.tsx' --include='*.js' --include='*.html' --include='*.css' \
-  --include='*.rs' --include='*.toml' $BUILD_OUT_DIRS \
+  --include='*.ts' --include='*.tsx' --include='*.js' --include='*.mjs' --include='*.cjs' \
+  --include='*.html' --include='*.css' --include='*.rs' --include='*.toml' $BUILD_OUT_DIRS \
   backend/src src demo amplify web 2>/dev/null \
   | grep -v '\.test\.ts:' | grep -v 'scripts/guard-selftest.sh' | filter_baseline s3-url)
 if [ -n "$s3_hits" ]; then
@@ -161,9 +161,11 @@ fi
 # scripts and JSON were all unscanned, and the first two leaked Livepeer keys lived in
 # amplify/. The `=` and `.` are in the value charset so padded base64 is not a free pass.
 # web/ with *.rs and *.toml joined in the WASM rewrite: a key pasted into the crate would ship
-# inside the public .wasm (docs/WASM_PLAN.md section 5, rule 3).
+# inside the public .wasm (docs/WASM_PLAN.md section 5, rule 3). *.mjs and *.cjs too: the
+# crate's tests and tooling are ES modules (web/tests/*.mjs), and a review found a key id and an
+# S3 URL in one passed every scan.
 SECRET_SCAN_DIRS="backend infra src demo amplify docs scripts web"
-SECRET_FILES="--include=*.ts --include=*.tsx --include=*.js --include=*.json --include=*.yaml --include=*.yml --include=*.sh --include=*.html --include=*.md --include=*.rs --include=*.toml"
+SECRET_FILES="--include=*.ts --include=*.tsx --include=*.js --include=*.mjs --include=*.cjs --include=*.json --include=*.yaml --include=*.yml --include=*.sh --include=*.html --include=*.md --include=*.rs --include=*.toml"
 # Exclude only a direct env read, not any line that merely mentions process.env - the
 # `process.env.X || "<literal fallback>"` idiom was slipping through.
 # Excluded: obvious placeholders, CloudFormation intrinsics, and REFERENCES to a secret
@@ -192,9 +194,10 @@ fi
 # which is the exact leak clean() in ddb.ts exists to stop. (docs/WASM_PLAN.md section 5, rule 4)
 # The pattern is READ from ddb.ts rather than copied, so the two cannot drift: if the
 # declaration moves or changes shape, this rule fails instead of checking a stale copy.
-# Checked: every field name inside a struct or enum body (camelCase normalised to snake_case,
-# as ddb.ts's normaliseName does, so playbackId and streamUrl are caught) and every string in
-# a #[serde(...)] attribute (rename = "...", alias = "..."). Comments are ignored.
+# Checked: every const, static, type and fn name, every field name inside a struct or enum body
+# (camelCase normalised to snake_case, as ddb.ts's normaliseName does, so playbackId and
+# streamUrl are caught) and every string in a #[serde(...)] attribute (rename = "...",
+# alias = "..."). Comments are ignored.
 PLAYBACK_RS_FILES="web/src/domain.rs"
 playback_re=$(perl -0777 -ne 'print $1 if m{\bconst\s+PLAYBACK_NAME\s*=\s*/(.+?)/i\s*;}s' \
   backend/src/lib/ddb.ts 2>/dev/null)
@@ -213,6 +216,9 @@ else
       my @names;
       # serde attribute strings anywhere: rename, alias, rename(serialize/deserialize)
       while ($src =~ m~#\[serde\((.*?)\)\]~gs) { my $a = $1; push @names, $1 while $a =~ m~"([^"]*)"~g; }
+      # item names: a const or static named like a locator would bake one into the public .wasm;
+      # a type alias or fn named like one means something is handling one
+      push @names, $1 while $src =~ m~\b(?:const|static|type|fn)\s+(?:mut\s+)?(?:r#)?([A-Za-z_]\w*)~g;
       # field names: identifiers followed by a single ":" inside a struct/enum body
       while ($src =~ m~\b(?:struct|enum)\s+\w+[^;{]*\{~g) {
         my ($start, $depth, $i) = (pos($src), 1, pos($src));
