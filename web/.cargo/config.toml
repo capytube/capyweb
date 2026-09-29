@@ -1,0 +1,3 @@
+# Leptos type-erases component views for the WASM build: less monomorphised view code.
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", "erase_components"]

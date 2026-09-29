@@ -393,6 +393,12 @@ Each tool's server route enforces the same permission as its button.
        the tools, was 292,124.
      - The check measures the dev build, so it is the upper bound. Users get the production build.
        W14's trims apply to both.
+     - **W14 trim, 2026-09-29: `--cfg erase_components`** for the wasm32 target
+       (`web/.cargo/config.toml`), which type-erases Leptos component views. Measured on the same
+       source (the W14 player fixes): production 293,268 → **261,413** bytes (−31,855); the dev
+       build with the WebMCP tools 284,821. The full checks and every page test pass with it. The
+       earlier "~3 KB" (risk 10) was measured when the app had a few pages; the saving grows with
+       the number of components.
   3. **Scan `web/`.** Today neither content scan reads it, so adding extensions alone would leave the
      crate unscanned.
      - The S3-URL scan reads `.ts/.tsx/.js/.html/.css` under `backend/src src demo amplify`.
@@ -577,7 +583,8 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
     ~20 KB brotli for the Shop list and ~17 KB for pass details. The W1 shell plus W2 was 145,552 bytes;
     with W7 it is 178,926 of the 300,000-byte budget. At ~15–25 KB for each page still to build (Home,
     the watch room, Play, Profile, the Robot and static pages, sign-in, the WebMCP tools), the total
-    lands at about 300–330 KB. Leptos's `erase_components` saves only ~3 KB.
+    lands at about 300–330 KB. Leptos's `erase_components` saves only ~3 KB. *(Wrong by W14: on
+    the full app it saves ~32 KB, and it is on; see section 5, rule 2.)*
     *Mitigation:* keep pages lean. Branch views end in `.into_any()`. Avoid pulling in Unicode tables
     (`to_ascii_lowercase` saved ~4 KB in W7). Share components rather than repeat markup, and put long
     static text in plain data rendered by one component. If that is not enough, split the routes
