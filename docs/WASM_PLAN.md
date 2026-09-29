@@ -501,6 +501,18 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
    refresh-token rotation, short-lived access tokens kept in memory.
 9. **Lent Mac.** If it does not come back, the beads history and capyweb-lead's notes are gone. The ids
    and context in the repo are the floor.
+10. **The size budget, measured per page (W7, 2026-09-29).** Each Leptos page costs more than the
+    prototype suggested. The typed views compile to their own code, so the release `.wasm` grows by
+    ~20 KB brotli for the Shop list and ~17 KB for pass details. The W1 shell plus W2 was 145,552 bytes;
+    with W7 it is 178,926 of the 300,000-byte budget. At ~15–25 KB for each page still to build (Home,
+    the watch room, Play, Profile, the Robot and static pages, sign-in, the WebMCP tools), the total
+    lands at about 300–330 KB. Leptos's `erase_components` saves only ~3 KB.
+    *Mitigation:* keep pages lean. Branch views end in `.into_any()`. Avoid pulling in Unicode tables
+    (`to_ascii_lowercase` saved ~4 KB in W7). Share components rather than repeat markup, and put long
+    static text in plain data rendered by one component. If that is not enough, split the routes
+    (Leptos lazy routes with `wasm-split`; Trunk has no support, so this may need cargo-leptos for the
+    release build), or raise the budget with a reason. The guard fails the push first, so this cannot
+    drift unseen. W14 owns the decision.
 
 ### Open questions (decided by capyweb-manager on 2026-09-29; see "Decisions" at the top)
 
