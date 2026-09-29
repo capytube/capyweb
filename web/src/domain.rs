@@ -413,7 +413,9 @@ mod tests {
             serde_json::from_str(include_str!("../fixtures/streams/wall-cam.json")).unwrap();
         assert_eq!(stream.id, "wall-cam");
         assert_eq!(stream.capybara_ids, ["elon"]);
-        assert_eq!(stream.reel_key(), Some("capytube-stream.mp4"));
+        // A private camera's reel is paid content: the catalog does not show it (capyweb-0m7).
+        assert_eq!(stream.reel_key(), None);
+        assert_eq!(stream.price_per_10_sec, Some(1));
         let pass: Pass =
             serde_json::from_str(include_str!("../fixtures/nfts/capy-1234.json")).unwrap();
         assert_eq!(pass.id, "capy-1234");

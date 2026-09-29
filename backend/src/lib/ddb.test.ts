@@ -122,6 +122,25 @@ test("playback locators never reach an unauthenticated client", () => {
   });
 });
 
+test("a camera that is not explicitly public shows only its title, price and links", () => {
+  const row = {
+    PK: "STREAM#wall-cam", SK: "#META", entity: "LiveStream", id: "wall-cam", title: "Climbing wall cam",
+    access_type: "private", price_per_10_sec: 1, capybara_ids: ["elon"], fallback_reel: "wall-reel.mp4",
+    is_live: true, viewer_count: 4, start_time: "2026-09-26T10:00:00.000Z", ratingCounts: { capylove: 2 },
+    description: "Elon on the top rope", createdAt: "2026-09-26T13:48:10.304Z",
+  };
+  const expected = { id: "wall-cam", title: "Climbing wall cam", access_type: "private", price_per_10_sec: 1, capybara_ids: ["elon"] };
+  assert.deepEqual(clean(row), expected, "the paid camera's reel, schedule and anything added later stay private");
+  const { access_type: _, ...unset } = row;
+  assert.deepEqual(clean(unset), { id: "wall-cam", title: "Climbing wall cam", price_per_10_sec: 1, capybara_ids: ["elon"] },
+    "no access type is not public");
+  const pub = clean({ ...row, id: "main-cam", access_type: "public" })!;
+  assert.equal(pub.fallback_reel, "wall-reel.mp4", "a public camera keeps its reel");
+  assert.equal(pub.viewer_count, 4);
+  const chatLine = { PK: "STREAM#wall-cam", SK: "CHAT#1", text: "hi" };
+  assert.deepEqual(clean(chatLine), { text: "hi" }, "only the stream's own item is treated as a stream");
+});
+
 test("public streams are stripped too - the catalog never serves playback", () => {
   const out = clean({ id: "main-cam", access_type: "public", streaming_address: "pb-xyz" })!;
   assert.ok(!("streaming_address" in out));

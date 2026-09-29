@@ -54,11 +54,26 @@ const isHidden = (name: string): boolean => {
 
 export type Item = Record<string, unknown>;
 
+/**
+ * A camera that is not explicitly public shows only what a visitor needs to see that it exists
+ * and what it costs (capyweb-0m7): an allow-list, so a field added later (a recording, a
+ * schedule, a description of what is on screen) stays private until someone decides otherwise.
+ * Its recorded reel is paid content too.
+ */
+const PRIVATE_STREAM_FIELDS = new Set(["id", "title", "access_type", "price_per_10_sec", "capybara_ids"]);
+
+const isStream = (item: Item): boolean =>
+  item.entity === "LiveStream" || (String(item.PK ?? "").startsWith("STREAM#") && item.SK === "#META");
+
 /** Strip key plumbing so responses expose the domain shape, not the table design. */
 export function clean<T extends Item>(item: T | undefined): Item | undefined {
   if (!item) return undefined;
+  const locked = isStream(item) && item.access_type !== "public";
   const out: Item = {};
-  for (const [k, v] of Object.entries(item)) if (!isHidden(k)) out[k] = v;
+  for (const [k, v] of Object.entries(item)) {
+    if (isHidden(k) || (locked && !PRIVATE_STREAM_FIELDS.has(k))) continue;
+    out[k] = v;
+  }
   return out;
 }
 
