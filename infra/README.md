@@ -91,7 +91,7 @@ drops Content-Type, which breaks module scripts (`capyweb-b6e.12`).
 
 ```sh
 cd web && CAPYWEB_API_BASE=https://geqi0or5tl.execute-api.ap-southeast-1.amazonaws.com/dev \
-  trunk build --release --dist /tmp/capyweb-dev-dist && rm -rf /tmp/capyweb-dev-dist/fixtures
+  trunk build --release --features webmcp --dist /tmp/capyweb-dev-dist && rm -rf /tmp/capyweb-dev-dist/fixtures
 printf '{"auth": {"domain": "https://capyapp-capyweb-dev.auth.ap-southeast-1.amazoncognito.com", "client_id": "4hp9maame83ah6op5leebnturc"}}\n' \
   > /tmp/capyweb-dev-dist/config.json
 cd .. && infra/site/upload-content.sh dev /tmp/capyweb-dev-dist

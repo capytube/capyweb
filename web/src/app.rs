@@ -3,8 +3,7 @@
 
 use leptos::prelude::*;
 use leptos_router::components::{Route, Router, Routes};
-use leptos_router::hooks::use_navigate;
-use leptos_router::{path, NavigateOptions};
+use leptos_router::path;
 
 use crate::auth::{Auth, AuthCallback};
 use crate::components::chrome::{Footer, Header, TabBar, ToastHost};
@@ -14,9 +13,7 @@ use crate::pages::{
     about::About, deletion::Deletion, play::Play, privacy::Privacy, profile::Profile, robot::Robot,
     terms::Terms,
 };
-use crate::routes::Page;
-use crate::state::{use_toasts, Session, Toasts};
-use crate::webmcp;
+use crate::state::{Session, Toasts};
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -55,8 +52,16 @@ pub fn App() -> impl IntoView {
 
 /// Registers the WebMCP tools once, inside the router so a tool can navigate. When an assistant
 /// moves the page, a toast says so: the person watching should never wonder why it changed.
+/// Only in builds with the `webmcp` feature (dev); a production build registers nothing.
+#[cfg(feature = "webmcp")]
 #[component]
 fn Tools() -> impl IntoView {
+    use crate::routes::Page;
+    use crate::state::use_toasts;
+    use crate::webmcp;
+    use leptos_router::hooks::use_navigate;
+    use leptos_router::NavigateOptions;
+
     let navigate = use_navigate();
     let toasts = use_toasts();
     leptos::task::spawn_local(async move {
@@ -68,3 +73,7 @@ fn Tools() -> impl IntoView {
         leptos::logging::log!("webmcp: {count} tool(s) registered");
     });
 }
+
+#[cfg(not(feature = "webmcp"))]
+#[component]
+fn Tools() -> impl IntoView {}

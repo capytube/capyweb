@@ -10,6 +10,7 @@ pub mod oauth;
 pub mod pages;
 pub mod routes;
 pub mod state;
+#[cfg(feature = "webmcp")]
 pub mod webmcp;
 
 /// Set the tab title. Pages call this through `PageHead`.

@@ -302,11 +302,25 @@ navigation tool is not read-only. `consequentialHint` marks actions that spend c
 
 No admin tools, and no tool that the UI does not already offer.
 
-**Review before it ships:** the tools sit behind a build-time `webmcp` feature, off in production until a
-reviewer has checked the list above against the running app. W10 adds that feature; today `app.rs` always
-mounts the tools, and only a browser without WebMCP keeps them off. The checks: each tool's server route
-enforces the same permission as the button; consequential tools cannot resolve without the on-page
-confirm; no tool output contains a playback locator or token. Then nic says yes.
+**The build switch.** The tools sit behind the cargo feature `webmcp`. It is off unless asked for, so a
+production build that forgets a flag exposes nothing. Without it the module, the JS shim and `<Tools/>` are
+not compiled at all.
+- Dev builds pass `--features webmcp` (`infra/README.md`, `scripts/web-checks.sh`).
+- Production builds leave it off until W12's go, which comes from the master, not nic ("decide
+  yourselves"). The WebMCP plan review (hm-auue, capyweb-manager, 2026-09-29) set this rule.
+
+**Conditions from that review:**
+1. The switch comes first.
+2. Recordings are reported as recorded, never as live.
+3. No tool buys paid-camera time. That stays in the page; a tool for it would be consequential,
+   with the on-page confirm.
+4. `react` goes without a confirm only if the server rate-limits reactions per user, as it does chat.
+5. No tool output carries another user's id, a playback locator, a token or a cookie.
+6. No origin-trial token in v1.
+7. The review runs against the dev app: an agent calls every tool signed out and signed in, and the
+   check proves that `cast_vote`, `place_bid`, `send_chat` and `claim_pass` wait for a human click.
+
+Each tool's server route enforces the same permission as its button.
 
 ---
 

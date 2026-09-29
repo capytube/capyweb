@@ -146,11 +146,15 @@ run() {
 # --- Rule 1: formatting, lints for both targets, tests ----------------------------------------
 # Both clippy runs, because the crate is two programs: wasm32 is what ships, and the host
 # target is what `cargo test` compiles. Code behind cfg(target_arch) is only linted by one.
+# The wasm32 lint also runs without `webmcp`: that is the production build (off until W12's go).
+# Everything else, the build and the smoke test included, has the WebMCP tools on, as dev does.
 wants fmt && run "cargo fmt --check" cargo fmt --check
-wants clippy-wasm && run "cargo clippy (wasm32) -D warnings" \
+wants clippy-wasm && run "cargo clippy (wasm32, webmcp) -D warnings" \
+  cargo clippy --all-targets --target wasm32-unknown-unknown --features webmcp -- -D warnings
+wants clippy-wasm && run "cargo clippy (wasm32, production: no webmcp) -D warnings" \
   cargo clippy --all-targets --target wasm32-unknown-unknown -- -D warnings
-wants clippy && run "cargo clippy (host) -D warnings" cargo clippy --all-targets -- -D warnings
-wants test && run "cargo test" cargo test
+wants clippy && run "cargo clippy (host) -D warnings" cargo clippy --all-targets --features webmcp -- -D warnings
+wants test && run "cargo test" cargo test --features webmcp
 
 # --- Fixtures: the app's offline data still matches what the backend would serve -------------
 # web/fixtures is generated from the backend's seed through the real clean(); --check names any
@@ -168,7 +172,7 @@ if wants fixtures; then
 fi
 
 # --- Rule 2: release build and size budget ----------------------------------------------------
-wants build && run "trunk build --release" trunk build --release
+wants build && run "trunk build --release --features webmcp" trunk build --release --features webmcp
 
 if wants size; then
   [ -d "$DIST" ] || fail "size budget" "no $DIST - run the build step first (scripts/web-checks.sh --steps build,size)"

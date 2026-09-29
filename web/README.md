@@ -1,7 +1,8 @@
 # CapyTube front end (Rust/WebAssembly)
 
 Leptos 0.8, client-side only, built with Trunk. The plan and its reasons are in
-`docs/WASM_PLAN.md`. Local dev: `cd web && trunk serve` (127.0.0.1:8791, fixtures by default).
+`docs/WASM_PLAN.md`. Local dev: `cd web && trunk serve --features webmcp` (127.0.0.1:8791, fixtures by
+default). The `webmcp` feature turns the WebMCP tools on; production builds leave it off until W12.
 Set `NO_COLOR` to anything but `1`, or unset it: Trunk 0.21.14 rejects `NO_COLOR=1`.
 
 ## Checks

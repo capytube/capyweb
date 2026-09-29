@@ -13,6 +13,13 @@ path = "src/lib.rs"
 name = "capyweb-web"
 path = "src/main.rs"
 
+# WebMCP tools (docs/WASM_PLAN.md section 4). Off unless asked for, so a production build that
+# forgets a flag exposes nothing. Dev builds and scripts/web-checks.sh pass `--features webmcp`.
+# Production builds leave it off until W12's go, which comes from the master (capyweb-manager,
+# 2026-09-29).
+[features]
+webmcp = []
+
 [dependencies]
 leptos = { version = "0.8", features = ["csr"] }
 leptos_router = "0.8"
