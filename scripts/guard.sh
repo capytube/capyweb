@@ -107,8 +107,10 @@ fi
 # BUILD_OUT_DIRS skips build output in every content scan. grep's --exclude-dir matches a
 # directory's base name, so this also covers web/target/ and web/dist/: a release build copies
 # fixtures and compiled code there, and each hit would be reported twice (or, in target/, in
-# generated code nobody can fix).
-BUILD_OUT_DIRS="--exclude-dir=node_modules --exclude-dir=.aws-sam --exclude-dir=dist --exclude-dir=target"
+# generated code nobody can fix). worktrees/ is .claude/worktrees/: whole temporary checkouts
+# for helper agents (gitignored), which made every hit appear once per checkout and failed the
+# guard on another branch's half-finished work.
+BUILD_OUT_DIRS="--exclude-dir=node_modules --exclude-dir=.aws-sam --exclude-dir=dist --exclude-dir=target --exclude-dir=worktrees"
 s3_hits=$(grep -rnE '["'"'"'`][^"'"'"'`]*\.s3[.-][a-z0-9-]*\.amazonaws\.com' \
   --include='*.ts' --include='*.tsx' --include='*.js' --include='*.html' --include='*.css' \
   --include='*.rs' --include='*.toml' $BUILD_OUT_DIRS \

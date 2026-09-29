@@ -507,129 +507,18 @@ mod tests {
         assert_eq!(pass.labels, None);
     }
 
-    fn forbidden_name(name: &str) -> bool {
-        let name = name.to_ascii_lowercase();
-        [
-            "playback",
-            "hls",
-            "m3u8",
-            "manifest",
-            "streaming_address",
-            "s3_video",
-        ]
-        .iter()
-        .any(|part| name.contains(part))
-            || ["stream", "streaming", "video", "media"]
-                .iter()
-                .any(|prefix| {
-                    ["url", "uri", "address", "src"].iter().any(|suffix| {
-                        name.contains(&format!("{prefix}{suffix}"))
-                            || name.contains(&format!("{prefix}_{suffix}"))
-                    })
-                })
-    }
-
-    // Tokenize names and quoted values, ignoring comments. This catches multiline fields and
-    // serde renames without mistaking documentation or test examples for declarations.
-    fn wire_names(source: &str) -> Vec<String> {
-        let bytes = source.as_bytes();
-        let mut tokens = Vec::<String>::new();
-        let mut i = 0;
-        while i < bytes.len() {
-            if bytes[i..].starts_with(b"//") {
-                while i < bytes.len() && bytes[i] != b'\n' {
-                    i += 1;
-                }
-            } else if bytes[i..].starts_with(b"/*") {
-                i += 2;
-                let mut depth = 1;
-                while i < bytes.len() && depth > 0 {
-                    if bytes[i..].starts_with(b"/*") {
-                        depth += 1;
-                        i += 2;
-                    } else if bytes[i..].starts_with(b"*/") {
-                        depth -= 1;
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-            } else if bytes[i] == b'"' {
-                let start = i;
-                i += 1;
-                while i < bytes.len() {
-                    if bytes[i] == b'\\' {
-                        i = (i + 2).min(bytes.len());
-                    } else if bytes[i] == b'"' {
-                        i += 1;
-                        break;
-                    } else {
-                        i += 1;
-                    }
-                }
-                tokens.push(source[start..i].into());
-            } else if bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' {
-                let start = i;
-                while i < bytes.len() && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_') {
-                    i += 1;
-                }
-                tokens.push(source[start..i].into());
-            } else {
-                if !bytes[i].is_ascii_whitespace() {
-                    tokens.push((bytes[i] as char).to_string());
-                }
-                i += 1;
-            }
-        }
-        let mut names = Vec::new();
-        for (i, token) in tokens.iter().enumerate() {
-            if token == ":"
-                && i > 0
-                && tokens.get(i + 1).is_some_and(|t| t != ":")
-                && tokens[i - 1]
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b == b'_')
-            {
-                names.push(tokens[i - 1].clone());
-            }
-            if token == "rename" && tokens.get(i + 1).is_some_and(|t| t == "=") {
-                if let Some(value) = tokens.get(i + 2) {
-                    names.push(value.trim_matches('"').into());
-                }
-            }
-        }
-        names
-    }
-
+    /// If a response ever carried a playback locator, the app's types would drop it: there is
+    /// no field to hold it (scripts/guard.sh rule 4 keeps it that way).
     #[test]
-    fn domain_has_no_locator_fields_or_wire_renames() {
-        // Test examples deliberately contain rejected names; scan the domain declarations.
-        let source = include_str!("domain.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .unwrap();
-        for name in wire_names(source) {
-            assert!(!forbidden_name(&name), "forbidden domain name: {name}");
-        }
-        for bad in [
-            "playbackId",
-            "HLS",
-            "m3u8",
-            "manifest",
-            "streaming_address",
-            "s3_video",
-            "videoUrl",
-            "media_uri",
-            "streamingSrc",
-            "stream_address",
-        ] {
-            assert!(forbidden_name(bad), "{bad}");
-        }
-        assert!(!forbidden_name("image_url"));
-        assert_eq!(wire_names("pub video_url : Option<String>"), ["video_url"]);
-        assert_eq!(
-            wire_names("#[serde(\n rename = \"playbackId\"\n)]"),
-            ["playbackId"]
+    fn a_leaked_locator_does_not_survive_parsing() {
+        let s: LiveStream = serde_json::from_str(
+            r#"{"id":"s","title":"t","access_type":"private","playbackId":"abc","streaming_address":"x"}"#,
+        )
+        .unwrap();
+        let back = serde_json::to_string(&s).unwrap();
+        assert!(
+            !back.contains("abc") && !back.contains("streaming_address"),
+            "{back}"
         );
     }
 }

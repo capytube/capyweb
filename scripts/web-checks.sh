@@ -12,7 +12,7 @@
 #   scripts/web-checks.sh --steps fmt,size     run only these steps, in the usual order
 #   scripts/web-checks.sh --dist DIR           measure / serve DIR instead of web/dist
 #
-# Steps: fmt clippy-wasm clippy test build size smoke. Stops at the first failure.
+# Steps: fmt clippy-wasm clippy test fixtures build size smoke. Stops at the first failure.
 # About 20 s after a source change, 2.5 minutes from cold on this Mac (see web/README.md).
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -23,7 +23,7 @@ ROOT=$(pwd)
 # docs/WASM_PLAN.md section 5, rule 2. The W1 shell measured ~145,000 bytes against it.
 SIZE_BUDGET_BYTES=300000
 
-ALL_STEPS="fmt clippy-wasm clippy test build size smoke"
+ALL_STEPS="fmt clippy-wasm clippy test fixtures build size smoke"
 STEPS=$ALL_STEPS
 MODE=now
 REMOTE=origin
@@ -64,6 +64,8 @@ fail() {
 # Checks run when any pushed ref changes a file under web/. A new branch (remote sha all zeros)
 # counts as changed, and so does a remote tip this clone has never fetched: without it there is
 # nothing to diff against, and a gate that guesses "unchanged" is a gate with a hole in it.
+# The fixtures are generated from these backend files, so a change there re-checks them too.
+WATCH_PATHS="web/ backend/src/scripts/seed-data.ts backend/src/lib/ddb.ts backend/src/lib/keys.ts"
 push_touches_web() {
   local lref lsha rref rsha seen=0
   while read -r lref lsha rref rsha; do
@@ -74,8 +76,8 @@ push_touches_web() {
     if ! git cat-file -e "$rsha^{commit}" 2>/dev/null; then
       REASON="remote tip of $rref is not in this clone"; return 0
     fi
-    if [ -n "$(git diff --name-only "$rsha" "$lsha" -- web/)" ]; then
-      REASON="$rref changes web/"; return 0
+    if [ -n "$(git diff --name-only "$rsha" "$lsha" -- $WATCH_PATHS)" ]; then
+      REASON="$rref changes web/ or the fixture sources"; return 0
     fi
   done
   [ "$seen" -eq 1 ] && return 1
@@ -85,15 +87,15 @@ push_touches_web() {
   branch=$(git symbolic-ref --short -q HEAD) || { REASON="no ref lines and a detached HEAD"; return 0; }
   tip=$(git rev-parse --verify -q "refs/remotes/$REMOTE/$branch") \
     || { REASON="no ref lines and no $REMOTE/$branch yet (new branch)"; return 0; }
-  if [ -n "$(git diff --name-only "$tip" HEAD -- web/)" ]; then
-    REASON="no ref lines; HEAD changes web/ against $REMOTE/$branch"; return 0
+  if [ -n "$(git diff --name-only "$tip" HEAD -- $WATCH_PATHS)" ]; then
+    REASON="no ref lines; HEAD changes web/ or the fixture sources against $REMOTE/$branch"; return 0
   fi
   return 1
 }
 
 if [ "$MODE" = pre-push ]; then
   if ! push_touches_web; then
-    skip "web checks (this push does not change web/)"
+    skip "web checks (this push does not change web/ or the fixture sources)"
     exit 0
   fi
   printf '\n\033[1mWASM front end (%s)\033[0m\n' "$REASON"
@@ -148,6 +150,21 @@ wants clippy-wasm && run "cargo clippy (wasm32) -D warnings" \
   cargo clippy --all-targets --target wasm32-unknown-unknown -- -D warnings
 wants clippy && run "cargo clippy (host) -D warnings" cargo clippy --all-targets -- -D warnings
 wants test && run "cargo test" cargo test
+
+# --- Fixtures: the app's offline data still matches what the backend would serve -------------
+# web/fixtures is generated from the backend's seed through the real clean(); --check names any
+# file that drifted. ddb.ts imports the AWS SDK (it never sends a command here), so this needs
+# backend/src/node_modules (cd backend/src && npm ci).
+if wants fixtures; then
+  if [ ! -d backend/src/node_modules ]; then
+    skip "fixtures check: no backend/src/node_modules (cd backend/src && npm ci)"
+  elif node --experimental-strip-types --no-warnings web/tests/fixtures.mjs --check >"$TMP/fixtures.log" 2>&1; then
+    pass "fixtures match the backend seed ($(sed -n 's/^Checked \([0-9]*\).*/\1/p' "$TMP/fixtures.log") files)"
+  else
+    cat "$TMP/fixtures.log"
+    fail "fixtures" "regenerate with: node --experimental-strip-types web/tests/fixtures.mjs"
+  fi
+fi
 
 # --- Rule 2: release build and size budget ----------------------------------------------------
 wants build && run "trunk build --release" trunk build --release

@@ -191,6 +191,13 @@ expect_fail "rule 1: cargo test" "cargo test" \
 expect_pass "rule 1: the clean crate passes all four" "cargo test" "" \
   "$WC --steps fmt,clippy-wasm,clippy,test"
 
+echo "WASM front end: fixtures generated from the backend seed"
+expect_fail "fixtures: a hand-edited fixture" "web/fixtures/capybaras.json" \
+  "sed -i '' 's/\"Magnus\"/\"Magnos\"/' web/fixtures/capybaras.json" "$WC --steps fixtures"
+expect_fail "fixtures: a seed change without regenerating" "web/fixtures/nfts/capy-1234.json" \
+  "sed -i '' 's/price: 5, is_for_sale: 1/price: 9, is_for_sale: 1/' backend/src/scripts/seed-data.ts" "$WC --steps fixtures"
+expect_pass "fixtures: the committed fixtures match" "fixtures match the backend seed" "" "$WC --steps fixtures"
+
 echo "WASM front end: rule 2 (size budget, brotli -q 11)"
 expect_fail "rule 2: .wasm over 300,000 bytes" "over the 300000-byte" "fake_dist 310000" "$WC --steps size --dist big"
 expect_fail "rule 2: root .js counts" "over the 300000-byte" "fake_dist 290000 20000" "$WC --steps size --dist big"
@@ -199,13 +206,16 @@ expect_fail "rule 2: output of two builds mixed" "expected one .wasm" \
   "fake_dist 1000 && cp big/app_bg.wasm big/old_bg.wasm" "$WC --steps size --dist big"
 expect_pass "rule 2: under budget" "size budget: " "fake_dist 1000" "$WC --steps size --dist big"
 
-echo "WASM front end: pre-push runs rules 1-2 only when the push changes web/"
+echo "WASM front end: pre-push runs rules 1-2 only when the push changes web/ or the fixture sources"
 # An oversized fake dist makes "the checks ran" visible as a size failure, without a build.
 expect_pass "pre-push: push without web/ changes skips" "skipped: web checks" \
   'commit_all base && echo x >> docs/WASM_PLAN.md && commit_all docs && fake_dist 310000' \
   "$PUSH_LINE \"\$(git rev-parse HEAD~1)\" | $WC --pre-push origin --steps size --dist big"
 expect_fail "pre-push: push with web/ changes runs" "over the 300000-byte" \
   'commit_all base && echo x >> web/tests/smoke.mjs && commit_all web && fake_dist 310000' \
+  "$PUSH_LINE \"\$(git rev-parse HEAD~1)\" | $WC --pre-push origin --steps size --dist big"
+expect_fail "pre-push: push changing only the fixture sources runs" "over the 300000-byte" \
+  'commit_all base && echo "// x" >> backend/src/scripts/seed-data.ts && commit_all seed && fake_dist 310000' \
   "$PUSH_LINE \"\$(git rev-parse HEAD~1)\" | $WC --pre-push origin --steps size --dist big"
 expect_fail "pre-push: new branch runs" "over the 300000-byte" \
   'commit_all base && fake_dist 310000' \
