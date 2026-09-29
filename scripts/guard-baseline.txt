@@ -17,5 +17,6 @@ s3-url demo/index.html:170 capyweb-c24 direct S3 video URL
 s3-url demo/app.js:2 capyweb-c24 direct S3 video URL
 
 # A build webhook of the Amplify app capyweb-admin (webhook 78ec49c3-613d-4bd5-8393-98f69f40c561),
-# in the React-era build file; the admin removes the webhook, and the file goes with W16.
+# in the React-era build file. The admin deleted the webhook on 2026-09-30, so the value is dead; the
+# file goes with W16.
 secret amplify.yml:13 capyweb-b6e.16 Amplify build webhook
