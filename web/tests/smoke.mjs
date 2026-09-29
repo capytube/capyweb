@@ -9,6 +9,7 @@
 // loads, so the tools registered from Rust can be called. Exits non-zero on the first failure.
 // Set SHOTS=<dir> to save screenshots.
 import { createRequire } from 'node:module';
+import { readdir } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const require = createRequire(import.meta.url);
@@ -160,8 +161,17 @@ try {
   await plain.waitForSelector('[data-testid=stream-list] li');
   assert.equal(await plain.evaluate(() => 'modelContext' in document), false);
 
+  // -- per-page checks: tests/pages/*.mjs, one file per page, so page tasks built in parallel
+  // never edit this file. Each exports `check(ctx)` and throws on failure.
+  const pagesDir = new URL('./pages/', import.meta.url);
+  const pageFiles = (await readdir(pagesDir).catch(() => [])).filter((f) => f.endsWith('.mjs')).sort();
+  for (const f of pageFiles) {
+    const { check } = await import(new URL(f, pagesDir));
+    await check({ open, browser, settle, BASE, SHOTS, FAKE_WEBMCP });
+  }
+
   assert.deepEqual(errors, [], 'no page or console errors');
-  console.log('smoke: ok');
+  console.log(`smoke: ok (${pageFiles.length} page file(s))`);
 } finally {
   await browser.close();
 }

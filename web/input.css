@@ -4,4 +4,7 @@
 @import "./style/base.css";
 @import "tailwindcss/components";
 @import "./style/chrome.css";
+@import "./style/home.css";
+@import "./style/shop.css";
+@import "./style/pages.css";
 @import "tailwindcss/utilities";
