@@ -112,21 +112,21 @@ expect_fail "base64-padded secret" "no hardcoded secrets" \
   "echo 'const secret = \"wJalrXUtnFEMI/K7MDENG/bPxRfiCYzzzzzzzzzz=\";' > backend/src/oops.ts"
 expect_fail "camelCase secret name" "no hardcoded secrets" \
   "echo 'const clientSecret = \"abcdef0123456789abcdef0123456789\";' > backend/src/oops.ts"
-expect_fail "secret outside backend/ (demo, amplify, shell)" "no hardcoded secrets" \
+expect_fail "secret outside backend/ (demo, shell)" "no hardcoded secrets" \
   "echo 'const apiKey = \"abcdef0123456789abcdef0123456789\";' > demo/oops.js"
 # Root-level files, and a credential in a URL's query string (2026-09-30). A hit shows where,
 # never the value: each check exits 0 (a MISS) if the value reaches the output.
 NOSHOW='out=$(./scripts/guard.sh 2>&1); rc=$?; echo "$out" | grep -q Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2 && { echo VALUE PRINTED; exit 0; }; echo "$out"; exit $rc'
 expect_fail "secret in a root-level config file" "(value not shown)" \
-  "echo 'export const apiKey = \"Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2Jh1Gf0\";' >> vite.config.ts" "$NOSHOW"
+  "echo 'export const apiKey = \"Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2Jh1Gf0\";' > tool.config.ts" "$NOSHOW"
 expect_fail "token in a URL query, root-level file" "no hardcoded secrets" \
   "echo 'curl \"https://hooks.example.test/x?id=1&token=Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2\"' > deploy-hook.sh" "$NOSHOW"
 expect_fail "token after an HTML-escaped &amp;, under demo/" "no hardcoded secrets" \
   "echo '<a href=\"https://h.example.test/x?a=1&amp;token=Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2\">x</a>' > demo/oops.html" "$NOSHOW"
 expect_fail "signature in a URL query, under docs/" "no hardcoded secrets" \
   "echo 'see https://b.example.test/o?X-Amz-Signature=Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2' > docs/oops.md" "$NOSHOW"
-expect_fail "the baselined webhook fires without its baseline entry" "amplify.yml:" \
-  "sed -i '' '/^secret amplify.yml:/d' scripts/guard-baseline.txt"
+expect_fail "a secret baseline entry covers only its own line" "hook.sh:2:" \
+  "printf '#!/bin/sh\\ncurl \"https://h.example.test/x?token=Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2\"\\n' > hook.sh; echo 'secret hook.sh:1 capyweb-test line 1 only' >> scripts/guard-baseline.txt"
 expect_fail "GitHub Actions" "no GitHub Actions workflows" \
   "mkdir -p .github/workflows && echo 'name: ci' > .github/workflows/ci.yml"
 expect_fail "unpinned npx" "npx must use --no-install" \
@@ -150,14 +150,15 @@ expect_fail "beads config with a quoted, flow-style sync remote" "sync-remote-se
 expect_fail "an issue export with an upper-case extension" "jsonl:web/issues.JSONL" \
   "echo '{\"id\":\"x-1\"}' > web/issues.JSONL && git add web/issues.JSONL"
 
-# B4: an unanchored baseline entry for :66 used to swallow a real violation at :660.
+# B4: an unanchored baseline entry for :66 used to swallow a real violation at :660. Since W16
+# the baseline has no s3-url entry of its own, so the case makes one.
 expect_fail "baseline must not swallow a nearby line" "no direct S3 URLs" \
   "python3 -c \"
-lines = open('src/utils/mockData.ts').read().split(chr(10))
-while len(lines) < 665: lines.append('')
+lines = [''] * 665
+lines[65] = 'const known = \\\"https://known.s3.ap-southeast-1.amazonaws.com/v.mp4\\\";'
 lines[659] = 'const leak = \\\"https://other.s3.ap-southeast-1.amazonaws.com/v.mp4\\\";'
-open('src/utils/mockData.ts','w').write(chr(10).join(lines))
-\""
+open('demo/b4.js','w').write(chr(10).join(lines))
+\"; echo 's3-url demo/b4.js:66 capyweb-test the known line' >> scripts/guard-baseline.txt"
 
 # --- WASM front end (docs/WASM_PLAN.md section 5, "Checks as local hooks", rules 1-8) --------
 # Setup helpers. The setups are eval'd in a subshell inside the sandbox, so these run there.
@@ -300,10 +301,11 @@ expect_pass "rule 4: honest fields and comments pass" "no playback-locator field
   "add_rust '/// never a playback_url or stream_url here' 'pub struct Fine {' '    pub stream_count: u32,' '    pub title: String,' '}' 'pub const MAX_STREAMS: usize = 3;' 'pub fn stream_title() -> String { String::new() }'"
 
 echo "WASM front end: rule 5 (dev servers on loopback only)"
+# Vite went with W16; the check stays, in case a root dev server comes back.
 expect_fail "rule 5: vite host: true" "dev servers bind loopback only" \
-  "sed -i.bak \"s/host: '127.0.0.1'/host: true/\" vite.config.ts"
+  "printf 'export default { server: { host: true } };\\n' > vite.config.ts"
 expect_fail "rule 5: vite --host with no address" "dev servers bind loopback only" \
-  "sed -i.bak 's/\"dev\": \"vite\"/\"dev\": \"vite --host\"/' package.json"
+  "printf '{\"scripts\": {\"dev\": \"vite --host\"}}\\n' > package.json"
 expect_fail "rule 5: Trunk on 0.0.0.0" "dev servers bind loopback only" "set_trunk_addresses '[\"0.0.0.0\"]'"
 expect_fail "rule 5: Trunk on the IPv6 wildcard" "dev servers bind loopback only" "set_trunk_addresses '[\"::\"]'"
 expect_fail "rule 5: Trunk addresses unset" "dev servers bind loopback only" "sed -i.bak '/^addresses = /d' web/Trunk.toml"
