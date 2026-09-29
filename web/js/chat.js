@@ -62,6 +62,8 @@ export function attach(root, id, base, exchange, signIn) {
   live.setAttribute('aria-live', 'polite');
   live.dataset.testid = 'chat-announce';
   const reacts = el('div', 'reacts');
+  // A label on a plain div is ignored; as a group it names the reaction buttons.
+  reacts.setAttribute('role', 'group');
   reacts.setAttribute('aria-label', 'Reactions');
   const signBtn = el('button', 'btn btn-small');
   signBtn.type = 'button';
@@ -69,6 +71,8 @@ export function attach(root, id, base, exchange, signIn) {
   signBtn.textContent = 'Sign in to react and chat';
   signBtn.onclick = () => signIn();
   const note = el('p');
+  // "Could not send that." and the slow-mode note appear after Send: say them.
+  note.setAttribute('role', 'status');
   note.dataset.testid = 'chat-notice';
   note.hidden = true;
   const empty = el('p');

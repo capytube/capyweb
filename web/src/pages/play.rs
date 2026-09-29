@@ -441,6 +441,10 @@ fn InteractionCard(interaction: Interaction, spend: Spend) -> impl IntoView {
     };
     let ready = move || auth.ready();
     let name = id.clone();
+    // The card's error names what to fix; the fields and the button point at it, so a screen
+    // reader reads it again on the way back to them.
+    let err_id = "err-".to_string() + &id;
+    let (idea_err, count_err, button_err) = (err_id.clone(), err_id.clone(), err_id.clone());
 
     view! {
         <article class="card play-card" data-testid=if is_vote { "vote-card" } else { "bid-card" }>
@@ -463,6 +467,7 @@ fn InteractionCard(interaction: Interaction, spend: Spend) -> impl IntoView {
                                 </label>
                                 {custom.then(|| view! {
                                     <input class="play-input play-idea" type="text" maxlength="60" aria-label="Your snack idea"
+                                        aria-describedby=idea_err.clone()
                                         on:input=move |ev| card.update_untracked(|c| c.custom = event_target_value(&ev))/>
                                 })}
                             </li>
@@ -474,18 +479,18 @@ fn InteractionCard(interaction: Interaction, spend: Spend) -> impl IntoView {
                 <label class="play-field">
                     {if is_vote { "Votes" } else { "Your bid" }}
                     <input class="play-input" type="number" inputmode="numeric" min="1"
-                        max=if is_vote { MAX_VOTES } else { MAX_BID } value=first
+                        max=if is_vote { MAX_VOTES } else { MAX_BID } value=first aria-describedby=count_err
                         on:input=move |ev| card.update_untracked(|c| c.count = event_target_value(&ev))/>
                 </label>
                 {move || ready().then(|| view! {
                     <button type="button" class="btn" data-testid=if is_vote { "vote" } else { "bid" }
-                        on:click=press>{if is_vote { "Vote" } else { "Bid" }}</button>
+                        aria-describedby=button_err.clone() on:click=press>{if is_vote { "Vote" } else { "Bid" }}</button>
                 })}
             </div>
             <p class="play-hint">
                 {move || if ready() && !auth.signed_in() { "You'll sign in first, then confirm." } else { "" }}
             </p>
-            <p class="play-err" role="alert">{move || card.with(|c| c.err.clone())}</p>
+            <p class="play-err" role="alert" id=err_id>{move || card.with(|c| c.err.clone())}</p>
             <p class="notice play-thanks" role="status" data-testid="thanks">
                 {move || spend.dlg.with(|d| {
                     d.thanks.as_ref().filter(|(i, _)| *i == id).map(|(_, t)| t.clone()).unwrap_or_default()
@@ -811,7 +816,6 @@ pub fn Play() -> impl IntoView {
                             <h2 id="play-capy-picker">"Choose your capybara"</h2>
                             <div class="play-picker" role="group" aria-label="Choose a capybara">
                                 {cast.into_iter().map(|capy| {
-                                    let active_id = capy.id.clone();
                                     let pressed_id = capy.id.clone();
                                     let nav_id = capy.id;
                                     let go = navigate.clone();
@@ -819,8 +823,10 @@ pub fn Play() -> impl IntoView {
                                         <button
                                             type="button"
                                             class="play-picker-btn"
-                                            class:active=move || selected_capy.get().as_deref() == Some(active_id.as_str())
-                                            aria-pressed=move || selected_capy.get().as_deref() == Some(pressed_id.as_str())
+                                            // A bool attribute renders as "" or nothing, which reads as
+                                            // neither pressed nor not: aria-pressed needs the words. It
+                                            // also styles the chosen one (play-profile.css).
+                                            aria-pressed=move || if selected_capy.get().as_deref() == Some(pressed_id.as_str()) { "true" } else { "false" }
                                             on:click=move |_| {
                                                 let next = "/play?capy=".to_string() + &nav_id;
                                                 go(&next, NavigateOptions { replace: true, ..Default::default() })

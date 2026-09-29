@@ -20,6 +20,9 @@
   width: min(1120px, calc(100% - 2rem));
   margin: 0 auto;
   padding: 1.5rem 0 4rem;
+  /* The footer starts below the fold, so a page's data arriving pushes nothing visible down
+     (it was most of the mobile layout shift, CLS 0.08 to 0.2, in Lighthouse). */
+  min-height: 100vh;
 }
 
 .eyebrow {
@@ -298,6 +301,8 @@ dialog.modal::backdrop {
     right: 0;
     bottom: 0;
     justify-content: space-around;
+    /* Enlarged text wraps to a second row instead of pushing "Me" off the screen. */
+    flex-wrap: wrap;
     background: var(--choco-brown);
     padding: 0.45rem 0.4rem calc(0.45rem + env(safe-area-inset-bottom));
     z-index: 5;
@@ -305,7 +310,12 @@ dialog.modal::backdrop {
 
   .tabbar a {
     color: var(--cream);
-    padding: 0.35rem 0.6rem;
+    padding: 0.35rem 0.5rem;
+  }
+
+  /* The dark-green ring is 1.7:1 on the brown bar; custard is 6.4:1. */
+  .tabbar a:focus-visible {
+    outline-color: var(--custard);
   }
 
   .tabbar a[aria-current="page"] {

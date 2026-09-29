@@ -48,7 +48,9 @@ pub fn Modal(
             <div class="mb-4">{children()}</div>
             <form method="dialog" class="actions justify-end">
                 {actions.map(|a| a())}
-                <button class="btn btn-small" type="submit">{close_label}</button>
+                // Focus starts on the safe way out, not on an action such as Confirm: a held
+                // Enter from the button that opened the dialog must not spend anything.
+                <button class="btn btn-small" type="submit" autofocus>{close_label}</button>
             </form>
         </dialog>
     }

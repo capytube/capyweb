@@ -33,6 +33,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* Focus and anchor scrolling stop below the sticky top bar (68-78px tall), so Shift+Tab never
+     leaves a field hidden under it (WCAG 2.4.11). */
+  scroll-padding-top: 6rem;
 }
 
 body {

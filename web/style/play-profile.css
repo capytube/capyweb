@@ -15,7 +15,7 @@
   padding: 0.45rem 1rem;
 }
 
-.play-picker-btn.active {
+.play-picker-btn[aria-pressed="true"] {
   background: var(--persimmon);
 }
 
