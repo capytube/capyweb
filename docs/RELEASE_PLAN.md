@@ -1,0 +1,383 @@
+# CapyTube production release plan (W12)
+
+Status: **draft for capyweb-manager**, to take to herdr-master as one package. Written 2026-09-29 by
+capyweb-lead on mac-pro-japan-16. **This is a document only.** Nothing in it has been run against
+production, the DNS account or the apex. Where it says "checked", the fact was read on 2026-09-29 from
+the repo, from public DNS or HTTP, or with a test browser against dev. No AWS call was made for it.
+
+Read with: `docs/WASM_PLAN.md` (the W12 row, sections 4 and 5), `docs/PLAN.md` (sections 2, 3 and 8),
+`docs/VIDEO_DESIGN.md` section 8, `docs/CRAWLERS_NOTES.md` and `infra/README.md`. Beads: W12 is
+`capyweb-b6e.12`; going public is `capyweb-xqg`.
+
+## Summary
+
+- **Three gos, not one:**
+  - **G1 (manager):** the W12 code on dev.
+  - **G2 (master):** the production stacks, built "dark". They carry the apex name, but no DNS record
+    points at them.
+  - **G3 (master):** the apex switch, a single DNS stack.
+
+  G2 lets every production resource be tested at its real name before the public can reach it (section 5).
+- **The apex serves nothing today (checked).** `capytube.xyz` and `www.capytube.xyz` have no A, AAAA or
+  CNAME record in the zone. There is no React site on the apex to put back. Rolling back means taking
+  the two names off again, which is quick (section 4).
+- **Still blocking going public:**
+  - `bpk` (the legal pages), which is wider than its title: the pages also have contact and address
+    placeholders, and the deletion page describes a button that does not exist;
+  - `kbq` (sign-up abuse);
+  - a test on a real phone.
+
+  For `c6e` I recommend launching with password sign-in, as dev runs, and moving to email codes after the
+  launch (section 3).
+- **Found while writing this plan (each is fixed in W12's code):**
+  - The production health check would probe `prod.capytube.xyz`, and it shares its metric with dev.
+  - A canonical tag in the shell would point every page at the home page.
+  - Trunk's inline boot script is blocked by a strict CSP.
+  - `PriceClass_100` serves Asia from Europe. This Mac is served from Marseille.
+- **Cost:**
+  - Production is about **$1.32 to $2.92 a month**.
+  - Dev and production together are about **$1.40 to $4.60**, against the $10 budget.
+  - `docs/PLAN.md`'s "~$14 at 2 TB" of CloudFront is wrong. It is about $87 (section 6).
+
+## 1. What changes, in order
+
+### 1a. Code on the branch (W12; no AWS)
+
+Each item is a commit on `feat/wasm-frontend`, reviewed, then proven on dev (section 5, stage 1).
+
+1. **Health check (bug, found here).** `infra/backend/template.yaml` gives the site target as
+   `https://${Stage}.capytube.xyz/`, so production would probe `prod.capytube.xyz`, a name that does not
+   exist. Its `Healthy` and `LatencyMs` metrics carry only a `Target` dimension, so dev's and
+   production's probes would land in the same series and each stage's alarms would read the other's.
+   - **Fix:** take the site from the `StageSite` mapping (the apex for prod).
+   - Add a `Stage` dimension in `backend/src/healthcheck.ts` and in the alarms.
+   - Dev's alarms move to the new series in the same deploy.
+2. **Site stack (`infra/site/template.yaml`):**
+   - `www.capytube.xyz` as a second alias, redirected with a 301 to the apex by `SpaFunction`. The
+     Cognito callback names only the apex, so a sign-in started on `www` would fail without the redirect.
+   - A **response headers policy** `capyapp-capyweb-<stage>-headers`, in place of the managed
+     SecurityHeadersPolicy. It keeps that policy's headers and adds the CSP (item 3).
+     - HSTS stays `max-age=31536000`, as today.
+     - It has no `includeSubDomains` and no `preload`: preload is close to irreversible (section 4).
+   - A `PriceClass` parameter. `PriceClass_100` covers North America and Europe only; this Mac is served
+     from Marseille (`x-amz-cf-pop: MRS53-P1`, 0.26 s to connect). `PriceClass_200` adds Asia (Singapore,
+     Japan, Thailand and others) at no cost inside the free 1 TB. Past the 1 TB, it costs $0.120/GB
+     instead of $0.085 for viewers in Asia. **Decision for the manager** (my recommendation: 200 for
+     production). The same-origin API makes this matter more, because every API call also goes through
+     the edge (item 6).
+3. **CSP.** Enforced, after a report-only run on dev:
+   ```
+   default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self';
+   img-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:;
+   connect-src 'self' https://capyapp-capyweb-<stage>.auth.ap-southeast-1.amazoncognito.com;
+   object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+   ```
+   It needs three changes to the app first:
+   - **Trunk writes an inline `<script type="module">`** to start the app (checked in `web/dist/index.html`).
+     `script-src 'self'` blocks it. A post-build step moves it into a hashed file, so the policy never
+     changes per release. The alternative, a per-build hash in the headers policy, would mean a stack
+     update on every release.
+   - **Self-host the three fonts** (Commissioner, DynaPuff, Hanalei Fill; the `b6e.12` note). This drops
+     the Google Fonts origins from the policy.
+   - **The report-only run** shows whether the app needs `style-src 'unsafe-inline'` or any other
+     exception. Guard rule 8 then stops printing `skipped` and checks `'wasm-unsafe-eval'`.
+4. **`infra/site/deploy.sh`:**
+   - **The Content-Type bug.** The S3-to-S3 re-stamp (`--metadata-directive REPLACE` without
+     `--content-type`) resets every object to `binary/octet-stream`, and browsers then refuse the module
+     scripts. Every object is written from the local file with its type, as
+     `infra/site/upload-content.sh` already does, and the re-stamp is removed.
+   - **`--web` mode:**
+     - hashed files (`*-<16 hex>.wasm|js|css`, `snippets/`) get `public,max-age=31536000,immutable`;
+     - `index.html` gets `no-cache,must-revalidate`, and everything else `max-age=300`;
+     - hashed files are never deleted in the same run, so the previous release stays loadable.
+     - Pruning releases older than the last three is a separate command, reviewed by a person
+       (WASM_PLAN rule 6). Guard rule 6 then stops printing `skipped`.
+   - **Stage to domain.** Production is `capytube.xyz` with `www` as a second name on the certificate,
+     not `prod.capytube.xyz`.
+   - **DNS only when asked.** The certificate and DNS steps run only with `--dns`, so a content deploy
+     can never touch the other account.
+   - **`unset NO_COLOR`** before Trunk (Trunk 0.21.14 refuses `NO_COLOR=1`).
+5. **The production build and its WebMCP guard.**
+   - Build with `rm -rf web/target/wasm-bindgen`, then `trunk build --release` **without**
+     `--features webmcp`.
+   - The release fails if:
+     - the dist has `webmcp.js` anywhere;
+     - the glue imports it;
+     - the wasm contains a tool name (`cast_vote`, `list_streams`, `get_my_account`).
+   - The switch stays off in production until the master says otherwise, and no origin-trial token is
+     added (the hm-auue conditions).
+6. **Same-origin API.** Both stages build with `CAPYWEB_API_BASE=/api`, so the app calls the API
+   through the site's `/api/*` behaviour. That behaviour is already on dev, and the playback route
+   already uses it.
+   - No CORS, and `connect-src 'self'`.
+   - The same wasm serves dev and production, and `/config.json` carries only the stage's
+     managed-login domain and client id.
+   - Dev switches first (stage 1).
+7. **Sitemap, canonical and `og:` tags.**
+   - `web/sitemap.xml`: the static routes, the capybara rooms and the passes, with absolute apex URLs.
+   - A `Sitemap: https://capytube.xyz/sitemap.xml` line in `web/robots.txt`.
+   - `og:image`: a 1200×630 capybara picture under `/assets`, with an absolute URL in the shell.
+   - **Correction to CRAWLERS_NOTES (e):** no canonical and no `og:url` in the shell. The shell is served
+     for every route, so a root canonical there would tell search engines that every page is a copy of
+     the home page. The client sets a self-referencing canonical per route instead, the way it already
+     sets `noindex` on the not-found view.
+8. **robots.txt**, as the manager's policy already built (`web/robots.txt`). Production keeps the file as
+   built. Dev keeps `Disallow: /`, written by the upload script.
+9. **Scripts with `STAGE=dev` hard-coded.** `infra/media/upload-media.sh`,
+   `infra/media/upload-pass-images.sh` and `infra/site/upload-content.sh` each take the stage as an
+   argument. Production is refused unless `CAPYWEB_PROD_GO=1` is set, as a written reminder of the go.
+10. **Alarm recipients.** A small script subscribes the address `capyweb-monthly-20` already uses to the
+    two production topics. It reads the address the way `infra/ops/deploy.sh` does, without printing it.
+    **SNS email needs the recipient to click a confirmation link**, unlike the budget's direct email.
+11. **Sign-up cap (`kbq`, if the manager chooses it; section 3).** A Cognito pre-sign-up Lambda that
+    refuses new sign-ups past a daily and an hourly cap, with a counter item in the main table and a TTL.
+    An alarm on the refusals goes to the stage's alarm topic.
+
+### 1b. The capy account (619071347239), profile `capy`, after G2
+
+| # | Step | Region | Notes |
+|---|---|---|---|
+| P1 | Production signing key | ap-southeast-1 | I make the key pair here and put the private half only in SSM `/capyapp/capyweb/prod/playback-signing-key` (SecureString), then shred the local copy. The public PEM goes to the manager, who makes public key `capyapp-capyweb-prod-media-1` and key group `capyapp-capyweb-prod-media` with the admin profile (as for dev). Separate from dev's, so a dev key can never open production's paid files. |
+| P2 | Backend stack `capyapp-capyweb-backend-prod` | ap-southeast-1 | Change set first, read before it runs. Parameters: `Stage=prod`, `AllowedOrigins=https://capytube.xyz`, and `PlaybackKeyPairId=<P1 key id>`. SES stays empty (password sign-in, section 3). It creates: table `capyapp-capyweb-prod-main` (PITR on, the same read and write ceilings); pool `capyapp-capyweb-prod-users` with domain `capyapp-capyweb-prod` and its client; the functions and the HTTP API; topic `capyapp-capyweb-prod-alarms` with its three alarms; and the health check. |
+| P3 | Pin the Cognito grant | — | The manager pins `cognito-idp:*` to the new pool id, as for dev (policy v4). |
+| P4 | Catalog seed | ap-southeast-1 | `seed-dev.ts` with `TABLE_MAIN=capyapp-capyweb-prod-main`: the capybaras, cameras and passes only. No users and no coins. |
+| P5 | Certificate for `capytube.xyz` and `www.capytube.xyz` | us-east-1 | ACM request in this account. Its two validation CNAMEs are written in the DNS account (D1). |
+| P6 | Site stack `capyapp-capyweb-site-prod` | ap-southeast-1 (CloudFront is global) | Change set first. Parameters: `DomainName=capytube.xyz` plus `www`, the P5 certificate, the key group from P1, and `ApiDomain=<prod API>.execute-api.ap-southeast-1.amazonaws.com` with `ApiOriginPath=/prod`. **The aliases are claimed here, before any DNS change.** If the stale Amplify `capyweb` app still holds `capytube.xyz` (`docs/PLAN.md` section 8), this is where it fails (`CNAMEAlreadyExists`), with no public effect. A first distribution took about 5.5 minutes on 24 Sep. |
+| P7 | Media | ap-southeast-1 | The recordings (1.19 GB) and the pass pictures go to the production media bucket (item 9). |
+| P8 | Content | ap-southeast-1 | `deploy.sh prod <dist> --web`. The dist is the production-mode build from item 5, with production's `config.json`. |
+| P9 | Egress alarm stack `capyapp-capyweb-alarms-prod` | us-east-1 | Topic `capyapp-capyweb-prod-egress-alarm` and the 800 GB alarm. |
+| P10 | Alarm subscriptions | both | After the dark alarms have gone to ALARM (the site probe fails until the switch), so the recipient's first email is a real alarm. The recipient confirms each one. |
+| P11 | The dark test | — | Section 5, stage 2. |
+
+### 1c. The DNS account (autonomous-lab), profile `capytube-dns`
+
+| # | Step | Visible to the public? |
+|---|---|---|
+| D0 | **Before P6, done by an admin (profile `al`, not on this Mac):** check whether the Amplify `capyweb` app still has a domain association for `capytube.xyz`, and remove it if it does. | No: the apex has no records today |
+| D1 | With P5: the two ACM validation CNAMEs (`_<token>.capytube.xyz` and `_<token>.www.capytube.xyz`). | No |
+| D2 | **The apex switch (G3):** stack `capyapp-capyweb-dns-prod`, with A and AAAA alias records for `capytube.xyz` and `www.capytube.xyz` pointing at the production distribution. `infra/site/dns.yaml` takes one name today; it gets a second. | **Yes.** This is the only public step |
+
+The zone's other records do not change: the NS and SOA, and the Google site-verification TXT, which the
+role cannot change anyway.
+
+### 1d. After the switch
+
+- Smoke test from outside, by public DNS: the section 5 checklist in short, and the alarms watched for
+  an hour.
+- W16 (`b6e.16`): retire React. That unblocks `c24` and `c8m` (making the public source video private),
+  both through the manager.
+- `c6e` (email codes) as its own change with its own go, rehearsed on dev (section 3).
+- `pus` (code-split routes), P3.
+
+## 2. Permissions and gos
+
+### The three gos
+
+| Go | Who | Covers | Public effect |
+|---|---|---|---|
+| G1 | capyweb-manager | Section 1a on dev: the headers policy on the dev distribution, the dev app on `/api`, `deploy.sh --web` on dev, and the health-check fix on the dev backend | None (dev is `Disallow: /`) |
+| G2 | herdr-master | P1 to P11 and D0, D1: the production stacks, dark | None: no record names them |
+| G3 | herdr-master, after xqg's blockers close | D2 | The site goes public |
+
+### Each permission, with its action and resource
+
+"Covered" means an existing grant already matches, from the grants recorded in `docs/WASM_PLAN.md`
+section 6, the manager's messages and today's dev deploys. I have not probed anything for this document.
+A simulator check of each row at the go is the manager's call.
+
+| # | Action | Resource | For | State |
+|---|---|---|---|---|
+| 1 | `cognito-idp:CreateUserPool` (one time, removed after P2), then `cognito-idp:*` pinned | `arn:aws:cognito-idp:ap-southeast-1:619071347239:userpool/*` for the create (the 13 other projects' pools stay denied), then `userpool/<prod pool id>` | P2, P3 | **Needed.** Policy v4 allows only the dev pool |
+| 2 | `cloudfront:CreatePublicKey`, `cloudfront:CreateKeyGroup` | `*` (these actions have no resource type) | P1 | **Done by the admin**, as for dev; not granted to the deploy user |
+| 3 | `ssm:PutParameter`, `ssm:GetParameter` | `arn:aws:ssm:ap-southeast-1:619071347239:parameter/capyapp/capyweb/prod/playback-signing-key` | P1, the playback Lambda | Covered (`/capyapp/*`) |
+| 4 | `cloudfront:CreateResponseHeadersPolicy`, `UpdateResponseHeadersPolicy`, `DeleteResponseHeadersPolicy`, `GetResponseHeadersPolicy` | `arn:aws:cloudfront::619071347239:response-headers-policy/*` (AWS makes the id, so a name cannot scope it) | Item 2, **dev first** (G1) | **Unknown**; not probed. If refused, the fallback needs no grant: `NotFoundFunction` (already allowed) sets the CSP on the HTML responses |
+| 5 | `cloudfront:CreateDistribution`, `CreateDistributionWithTags`, `UpdateDistribution`, `TagResource`, `CreateInvalidation` | `arn:aws:cloudfront::619071347239:distribution/*`, tagged `capy-scope=capyapp` | P6, P8 | Expected covered: the same group made the dev distribution on 24 Sep. The production one gets the same tags |
+| 6 | `cloudfront:CreateFunction`; `Update`, `Publish`, `DeleteFunction` | `*`; `function/capyapp-*` | P6 (`capyapp-capyweb-prod-*` functions) | Covered (`capyapp-deploy-edge` v5) |
+| 7 | `acm:RequestCertificate`, `DescribeCertificate`, `AddTagsToCertificate` | us-east-1, for `capytube.xyz` and `www.capytube.xyz` | P5 | Covered per `docs/PLAN.md` section 8 ("certs for capytube.xyz and *.capytube.xyz are allowed in capy"). Check that the condition allows the apex name itself |
+| 8 | `sts:AssumeRole`, and this Mac's user in the role's trust policy | role `capyapp-capytube-dns` in autonomous-lab; principal `arn:aws:iam::619071347239:user/capyapp-mac-pro-japan-16` | D1, D2 | **Needed, unless it was already done.** The profile is configured on this Mac; whether the trust names this user is unchecked. First step at G2: `aws sts get-caller-identity --profile capytube-dns` |
+| 9 | The role's own rights: `route53:ChangeResourceRecordSets` (apex A and AAAA; CNAME on subdomains) and CloudFormation on `capyapp-capyweb-dns-*` | zone `capytube.xyz` | D1, D2 | Covered: the dev DNS stack was made this way on 24 Sep |
+| 10 | `amplify:ListDomainAssociations`, `amplify:DeleteDomainAssociation` | the Amplify `capyweb` app in autonomous-lab | D0 | **Admin only** (profile `al`) |
+| 11 | `sns:*` (topics and subscriptions) | `capyapp-*` topics in ap-southeast-1 and us-east-1 | P2, P9, P10 | Covered (v5). Reading the recipient uses budgets read, which is account-wide |
+| 12 | Lambda, DynamoDB, API Gateway, Logs, the EventBridge rule, IAM roles with `capyapp-lambda-boundary`, and CloudWatch alarms | `capyapp-capyweb-prod-*` | P2 | Covered. **The IAM policy does not tell dev from prod.** The master's "dev stack only" is a rule, not a policy limit; only Cognito (row 1) is pinned |
+| 13 | Only with `c6e`: `ses:CreateEmailIdentity`, `GetEmailIdentity`, `PutEmailIdentityDkimAttributes`; `iam:CreateServiceLinkedRole` for `email.cognito-idp.amazonaws.com`; three DKIM CNAMEs and a `_dmarc` TXT in the zone; **SES production access for the account in ap-southeast-1** | `arn:aws:ses:ap-southeast-1:619071347239:identity/capytube.xyz`; the role in the zone | c6e | Needed then. The production-access request covers the whole shared account, so it is the master's decision |
+| 14 | Only with the sign-up cap: `cognito-idp:UpdateUserPool` (the trigger), `lambda:AddPermission` | the production pool; `capyapp-*` functions | kbq | Covered once row 1 is pinned |
+
+## 3. What blocks going public (`capyweb-xqg`)
+
+| Blocker | State | What it needs | From whom | My recommendation |
+|---|---|---|---|---|
+| `0m7` private streams | **Closed** | — | — | — |
+| `bpk` legal pages | Open, and **wider than its title** (checked in `web/src/pages/`) | Terms and Privacy have **four** `[Insert Date]` placeholders. There are also **four** `[insert contact email]` (Terms, Privacy twice, Deletion) and **one** `[insert company address]` (Privacy). The **Deletion page describes a "Delete My Account" button in "Account Settings", with a confirmation email, and none of it exists.** Then a legal read against what the site collects: email, display name, chat messages, the play-coin ledger, the paid-camera cookies, Cognito, and AWS in Singapore. | The dates, address, contact mailbox and legal reader: nic or whoever he names, through the manager. The wording: me. | For launch, **rewrite the Deletion page to the real process** ("write to the contact address from your account's email; we delete the account and its data within N days"), backed by a written admin runbook: `AdminDeleteUser` on the production pool, plus the user's items. Self-service deletion (`DELETE /me`) comes later as its own spec, with the manager's yes. I can write a one-page data sheet for the legal reader from `docs/DATA_MODEL.md`. |
+| `c6e` email codes (SES) | Open | See permission row 13: the domain identity, DKIM records in the other account, SES production access for the shared account (AWS reviews a written use case), IAM, and a dev test. | The master (the account-wide SES change), then me | **Launch with password sign-in on Cognito's default sender, as dev runs, and do `c6e` right after the launch as its own change.** Reasons: it is tested end to end on dev; it keeps three outside dependencies (AWS's review, a new account-wide SES setting, new DNS records) off the launch path; and the later switch is in place (`EmailConfiguration` and the sign-in policy update the pool without replacing it, and existing users keep their passwords). The cost of waiting: the default sender allows 50 emails a day per account, shared with any other project's pool on it, and its sender address lands in spam more often. **Exception:** if the launch will be announced to an audience that could bring more than about 40 sign-ups in a day, do `c6e` first. |
+| `kbq` sign-up abuse | Open | Open sign-up, each account gets 50 play coins, and the default sender caps email at 50 a day, so a script can use up the sign-up emails for everyone. The grant already needs a confirmed email (Cognito issues no tokens before confirmation), and chat is rate-limited per user, but many accounts get around both. | The manager decides the option; I build it | **Minimum before the switch:** the pre-sign-up cap (1a item 11), for example 40 a day and 10 an hour, below what the sender can deliver, with an alarm when it refuses. It costs $0. **Not now:** Cognito Plus ($0.020 per MAU with no free tier; its threat protection targets risky sign-ins and leaked passwords more than bot sign-ups) and AWS WAF with CAPTCHA ($5 a month per web ACL, $1 per rule and $0.40 per 1,000 CAPTCHA attempts, over 60% of the budget before any traffic). Revisit if the cap's alarm fires. |
+| Real phones | Not done | WASM_PLAN risk mitigation: "test on a real iPhone and Android phone before cutover". The W14 QA ran headless Chromium only; iOS Safari uses the native HLS path. | A person with the phones: the manager decides who. I first run Playwright's WebKit on dev myself, which catches most Safari issues but is not iOS. | One real iPhone and one Android phone, 15 minutes each, on the dark production stack if the tester can map the name; otherwise on dev. |
+| Chat moderation | No tool | Public chat on a public site, and the admin beads (`2pj`, `x7w`, `zlb`, `jji`) wait until after cutover. Today a message can be removed only by an admin in DynamoDB. | The manager: is a runbook enough for launch? | A written runbook for launch: remove a chat item, and disable a user with `AdminDisableUser`. A moderation route follows with the admin beads, spec first. |
+| The Amplify domain association | Unknown | D0 | An admin in autonomous-lab | Check it before G2 |
+| Alarm recipients | Not subscribed | P10, and a click on each confirmation email | The recipient | At G2 |
+
+Not blockers for play coins, and already on the "Before real money" list in `docs/WASM_PLAN.md`:
+- `c8m`: the paid footage is public elsewhere;
+- the VOD-cookie note;
+- the 15-minute access token after sign-out.
+
+## 4. Rollback
+
+**What the apex serves today (checked 2026-09-29 22:5x, asking the zone's own name server,
+`ns-1093.awsdns-08.org`):** no A, AAAA or CNAME for `capytube.xyz` or `www.capytube.xyz`. The only
+apex record besides NS and SOA is the Google site-verification TXT. So there is **no React site on the
+apex to put back**. The React app is not served by any of our stacks: dev served `demo/` until the WASM
+build.
+
+| Level | What | How | How fast |
+|---|---|---|---|
+| R1 | Content: back to the previous release | `deploy.sh --web` keeps the previous release's hashed files. Upload that release's `index.html` and invalidate. | Minutes (dev's invalidations today finished within a few minutes) |
+| R2 | Stack settings, such as the headers policy | A change set from the previous template | Minutes, plus 5 to 15 minutes for CloudFront to spread the change |
+| R3 | **Take the apex off (back to today)** | Delete `capyapp-capyweb-dns-prod`, or update it with no records | Route 53 applies it in about a minute. Resolvers keep the alias answer for its 60 s TTL, so most visitors see it gone within about 2 minutes |
+| R4 | A React fallback on the apex | Not recommended. The React app needs the Amplify backend, whose data API is open to anyone with its public key (`docs/PLAN.md` 1e). The static `demo/` prototype could be uploaded to the production bucket in minutes (`upload-content.sh prod demo`), but it has no sign-in. | — |
+
+The switch itself shows up slowly: the SOA's negative-caching TTL is 900 s. A resolver that asked for
+the apex shortly before the switch keeps "no such record" for up to **15 minutes**.
+
+**What cannot go back:**
+- **Accounts and their data stay.** The production pool and table are kept with `Retain` and deletion
+  protection, so a rollback deletes nothing. Deleting users after an abandoned launch would be its own
+  deliberate step, under whatever the Deletion page promised.
+- **Sign-up emails** that were sent.
+- **Public chat lines** that were seen, and **pages search engines indexed.** Those drop out over days to
+  weeks once the names stop answering.
+- **HSTS:** browsers that visited insist on HTTPS for `capytube.xyz` for a year. That is harmless while
+  anything later on the apex is HTTPS. This is why the policy has no `includeSubDomains` and no
+  `preload`: preload takes months to undo.
+- **The Amplify domain association,** once removed (D0), needs Amplify's own domain verification to come
+  back. Whoever owns that app would have to redo it.
+
+## 5. Dress rehearsal
+
+### Stage 1: dev (G1; nothing in production)
+
+Every code item of section 1a, deployed to dev and proven there:
+- **CSP:** report-only first, then enforced. The full page-test suite and the dev end-to-end scripts
+  (sign-in, name prompt, vote, bid, chat, react, free and paid cameras, sign-out) run while every
+  `securitypolicyviolation` event is collected. It passes with zero violations.
+- **`deploy.sh --web` replaces `upload-content.sh` on dev:**
+  - `curl -I` shows the right Content-Type per file type, `immutable` on hashed files and `no-cache` on
+    `index.html`;
+  - the previous release's files are still there after a deploy.
+- **The same-origin API (`/api`)** on dev, with the end-to-end run repeated.
+- **The production-mode build** (no `webmcp`), put through the guard; the dist scan fails a planted
+  `webmcp.js`. That build is uploaded to dev for one end-to-end run, then the dev build goes back.
+- **The health-check fix:** dev's alarms read the new `Stage=dev` series and stay OK.
+- **A rollback drill:** R1 on dev, back and forward, timed.
+- **Sitemap, robots and `og:`:** file contents checked, and the `og:` card checked with a preview
+  validator on the dev URL.
+
+### Stage 2: production, dark (G2; no public DNS change)
+
+Build P1 to P10. The distribution holds `capytube.xyz` and `www`, and no record points at it. The test
+browser reaches it with a **resolver rule instead of DNS**:
+- Chromium: `--host-resolver-rules="MAP capytube.xyz <d….cloudfront.net>, MAP www.capytube.xyz <d….cloudfront.net>"`.
+- curl: `--connect-to capytube.xyz:443:<d….cloudfront.net>:443`.
+
+TLS and the Host header keep the real name, so the certificate, the aliases, the Cognito callbacks, the
+cookies on the apex, the CSP and the `/api/*` and `/paid/*` behaviours are all exercised as the public
+will meet them.
+
+**Checked on dev today:** the rule works. Chromium, mapped to one of dev's edge addresses, loaded
+`https://dev.capytube.xyz/about-us` (200, h1 "About CapyTube"). A name the distribution does not carry
+failed TLS (`ERR_SSL_VERSION_OR_CIPHER_MISMATCH`), which is why the dark distribution must already hold
+the apex alias and certificate.
+
+The checklist:
+- every route at phone and desktop widths;
+- one fresh test user (it counts against the 50 emails a day), with the 50-coin grant;
+- a vote, a bid, one chat line, one reaction and the name prompt;
+- the free camera, and the paid camera for one minute;
+- sign-out;
+- the `www` to apex redirect, the edge 404s, `robots.txt` and `sitemap.xml`, and every header;
+- a scan of the deployed files for WebMCP.
+
+Afterwards the test user is deleted and its chat line removed, so production opens clean.
+
+What stage 2 proves that dev cannot:
+- **the alias claim** (D0's question), and the production certificate;
+- **the production pool's callbacks** at the apex;
+- **the production key group** on `/paid/*`.
+
+The site-down alarm is in ALARM throughout, as expected, because the probe cannot resolve the name
+until G3.
+
+### Stage 3: the switch (G3)
+
+- D2 only.
+- Then the smoke test by public DNS.
+- The alarms go OK within about 15 minutes, once the probe resolves the name.
+- R3 stays ready.
+
+### Why not a `staging` stage
+
+It would need its own pool, stacks, certificate and name, and the backend template allows only `dev`
+and `prod`. The dark production stack proves the same things on the real resources at the real name,
+and costs nothing extra. A staging stage may be worth adding later, as a place to try changes once
+production has users.
+
+## 6. Cost
+
+**Production**, at `docs/PLAN.md`'s 100 customers: 3,000 sessions and about 500 viewer-hours a month.
+List prices; today AWS credits offset every dollar, and the budget measures gross cost.
+
+| Line | Volume | Per month |
+|---|---|---:|
+| API Gateway HTTP API | ~450k requests | $0.55 |
+| Lambda | ~450k invocations, plus 8,640 health checks | $0.24 |
+| DynamoDB on-demand, PITR | ~600k reads, ~30k writes, under 1 GB | $0.24 |
+| CloudWatch Logs | ~0.45 GB, kept 14 days | $0.26 |
+| S3 | site ~3 MB, recordings 1.19 GB, pass pictures | $0.03 |
+| CloudFront egress | ~400 GB (500 viewer-hours × ~0.8 GB at 720p) | $0.00, inside the account's always-free 1 TB |
+| CloudFront requests and Functions | ~1M requests, ~1.5M function runs | $0.00 (10M and 2M free) |
+| Cognito Essentials | 100 MAU | $0.00 (free to 10,000 MAU per account) |
+| ACM, SSM standard parameters, KMS `aws/ssm`, the budget | — | $0.00 |
+| CloudWatch alarms (4) and custom metrics (4) | — | $0.00 inside the account's free 10 alarms and 10 metrics, which other projects share. Up to ~$1.60 at list. |
+| Route 53 | the zone is in autonomous-lab | not in this account (its $0.50 is paid there already) |
+| **Production** | | **≈ $1.32 to $2.92** |
+
+**Dev** adds its light traffic (cents) and the same alarm and metric question: about **$0.05 to $1.70**.
+**Both together: about $1.40 to $4.60 a month, 14% to 46% of the $10 budget.** The tag-scoped budget
+`capyapp-capyweb-monthly` counts both, since both carry `Project=capyweb`.
+
+Against `docs/PLAN.md`'s $2.30:
+- S3 is lower: 1.19 GB measured, against 20 GB assumed.
+- CloudFront carries more: at the measured 720p bitrate, the same viewing is about 400 GB rather than
+  120 GB. That is still free, but it is 40% of an allowance the whole account shares.
+
+**Where it stops being cheap:**
+- **CloudFront past 1 TB**, at about 1,250 viewer-hours a month across the account (about 250 customers
+  at PLAN's viewing). Past that, $0.085/GB with `PriceClass_100`, about $0.07 per viewer-hour, or
+  $0.120/GB in Asia with `PriceClass_200`. **2 TB a month costs about $87 more, not the "~$14 at 2 TB"
+  in `docs/PLAN.md` section 3,** which is about six times too low. The 800 GB egress alarm is the warning.
+  If it fires, the first move is to pause `/media/*` or the paid behaviour (a stack change, as in R2)
+  and ask the manager.
+- **A request flood.** The API throttle (10 requests a second, burst 20) limits the rate, not the
+  month's total: a flood at 10 requests a second on one route for a whole month is about 26M requests,
+  about $30 of API Gateway plus Lambda. The budget's forecast alert is the warning.
+- **Launch capacity (not cost).** Chat polls every 5 s per open camera page, so about 50 people with a
+  camera page open at once reach the chat route's 10 requests a second. Past that, the client backs
+  off to 30 s on a 429, so chat slows but nothing breaks. Raising the chat route's limit is cheap when
+  idle, but it raises the flood ceiling above.
+- **Options not taken for `kbq`:**
+  - WAF: $5 a month per web ACL, $1 per rule, $0.60 per million requests and $0.40 per 1,000 CAPTCHA
+    attempts, plus $10 a month for Bot Control;
+  - Cognito Plus: $0.020 per MAU, no free tier.
+
+  (aws.amazon.com/waf/pricing and aws.amazon.com/cognito/pricing, read 2026-09-29.)
+
+## Decisions this plan asks for
+
+1. The three gos as in section 2, G1 now.
+2. `PriceClass_200` for production (my recommendation) or `100`.
+3. `c6e`: launch on password sign-in and switch after (my recommendation), unless the launch will be
+   announced.
+4. `kbq`: the pre-sign-up cap as the launch minimum (my recommendation).
+5. `bpk`: who supplies the dates, contact mailbox and address, and who gives the legal read. Whether the
+   Deletion page may describe the email process for launch (my recommendation).
+6. Who tests on a real iPhone and Android phone.
+7. Whether a chat-moderation runbook is enough for launch.
