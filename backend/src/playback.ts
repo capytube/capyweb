@@ -14,6 +14,7 @@
 // Only this function's role may read the signing key (SSM SecureString). It is read once per cold
 // start, BEFORE any coins move: a caller is never charged for cookies we then cannot sign.
 
+import { createPrivateKey, sign, type KeyObject } from "node:crypto";
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import { doc, TABLE, type Item } from "./lib/ddb.ts";
@@ -79,10 +80,21 @@ let keyLoader: () => Promise<string> = async () => {
   if (!pem) throw new Error("signing key parameter is empty");
   return pem;
 };
-let cachedKey: Promise<string> | undefined;
+let cachedKey: Promise<KeyObject> | undefined;
 
-function signingKey(): Promise<string> {
-  cachedKey ??= keyLoader().catch((err) => {
+/**
+ * The parsed key, proven able to sign the way CloudFront checks (RSA, SHA-1) before it is used.
+ * A parameter that holds something else fails here, before any coin moves, not after the debit.
+ */
+async function loadKey(): Promise<KeyObject> {
+  const key = createPrivateKey(await keyLoader());
+  if (key.asymmetricKeyType !== "rsa") throw new Error("signing key is not RSA");
+  sign("RSA-SHA1", Buffer.from("probe"), key);
+  return key;
+}
+
+function signingKey(): Promise<KeyObject> {
+  cachedKey ??= loadKey().catch((err) => {
     cachedKey = undefined; // try again on the next call rather than failing until the next cold start
     throw err;
   });
@@ -113,9 +125,9 @@ async function buy(e: Event, user: string, streamId: string): Promise<Response> 
   onlyFields(jsonBody(e), []);
   const key = v.idempotencyKey(header(e, "idempotency-key"));
   if (!SITE_ORIGIN || !KEY_PAIR_ID || !KEY_PARAM) throw new HttpError(503, "paid cameras are not open yet", "not_ready");
-  let pem: string;
+  let signer: KeyObject;
   try {
-    pem = await signingKey();
+    signer = await signingKey();
   } catch (err) {
     console.error("signing key unavailable", { err: err instanceof Error ? err.name : String(err) });
     throw new HttpError(503, "paid cameras are not available right now", "not_ready");
@@ -179,7 +191,7 @@ async function buy(e: Event, user: string, streamId: string): Promise<Response> 
   };
   const res = r.charged > 0 && !out.replayed ? created(body) : okPrivate(body);
   if (expires > now) {
-    const cookies = signedCookies(`${SITE_ORIGIN}${paidPrefix(streamId)}*`, expires, KEY_PAIR_ID, pem);
+    const cookies = signedCookies(`${SITE_ORIGIN}${paidPrefix(streamId)}*`, expires, KEY_PAIR_ID, signer);
     res.cookies = setCookieHeaders(cookies, paidPrefix(streamId), expires - now);
   }
   return res;

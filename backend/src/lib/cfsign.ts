@@ -3,7 +3,7 @@
 // The policy is compact JSON (no whitespace), signed with RSA and SHA-1 by the private half of a
 // key in the distribution's trusted key group, and every value uses CloudFront's URL-safe base64.
 
-import { sign } from "node:crypto";
+import { sign, type KeyObject } from "node:crypto";
 
 /** CloudFront's base64: '+' -> '-', '=' -> '_', '/' -> '~'. */
 export const cfBase64 = (b: Buffer): string =>
@@ -21,11 +21,11 @@ export interface SignedCookies {
   "CloudFront-Key-Pair-Id": string;
 }
 
-export function signedCookies(resource: string, expiresEpochS: number, keyPairId: string, privateKeyPem: string): SignedCookies {
+export function signedCookies(resource: string, expiresEpochS: number, keyPairId: string, privateKey: KeyObject | string): SignedCookies {
   const policy = policyFor(resource, expiresEpochS);
   return {
     "CloudFront-Policy": cfBase64(Buffer.from(policy, "utf8")),
-    "CloudFront-Signature": cfBase64(sign("RSA-SHA1", Buffer.from(policy, "utf8"), privateKeyPem)),
+    "CloudFront-Signature": cfBase64(sign("RSA-SHA1", Buffer.from(policy, "utf8"), privateKey)),
     "CloudFront-Key-Pair-Id": keyPairId,
   };
 }

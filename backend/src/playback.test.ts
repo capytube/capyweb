@@ -120,3 +120,17 @@ test("if the signing key cannot be read, the answer is 503 and no coins move", a
   assert.equal(r.body.code, "not_ready");
   assert.equal(r.cookies, undefined);
 });
+
+test("a signing key that cannot sign for CloudFront is refused before any coin moves", async () => {
+  const { useSigningKeyForTests } = await import("./playback.ts");
+  const { generateKeyPairSync } = await import("node:crypto");
+  const ec = generateKeyPairSync("ec", { namedCurve: "P-256" }).privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  // DynamoDB is a closed port here: a 503 not_ready (not a 500) shows the handler stopped first.
+  for (const [what, pem] of [["not a key", "not a key at all"], ["an EC key", ec]]) {
+    useSigningKeyForTests(pem);
+    const r = await call("POST", "/playback/wall-cam");
+    assert.equal(r.status, 503, what);
+    assert.equal(r.body.code, "not_ready", what);
+    assert.equal(r.cookies, undefined, what);
+  }
+});

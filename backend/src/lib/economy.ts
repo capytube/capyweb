@@ -34,7 +34,8 @@ export const REFUND_OUTBID = true;
 
 /**
  * Paid cameras (W6): one purchase opens the camera for this many more seconds, at the camera's
- * own price_per_10_sec (so 6 x that price a minute). Nothing is charged while a whole block is
- * still paid ahead, so a reload or a second tab does not pay twice (backend/src/playback.ts).
+ * own price_per_10_sec (so 6 x that price a minute). Nothing is charged while 30 s or more are
+ * still paid (CHARGE_WHEN_UNDER_SECONDS in backend/src/playback.ts), so a reload or a second tab
+ * does not pay twice.
  */
 export const PLAYBACK_BLOCK_SECONDS = 60;

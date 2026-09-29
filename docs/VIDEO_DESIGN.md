@@ -95,6 +95,15 @@ Behaviours, most specific first:
 
 ## 4. The signed-cookie Lambda (private cameras)
 
+> **As built, the billing differs from this section** (section 8, `backend/src/playback.ts`). This
+> section is the first design, kept for its reasoning. What changed:
+> - A call does not always buy 60 s. Each viewer has a `paid_until` per camera; a call adds 60 s
+>   from where it ends, and only when under 30 s are left. Otherwise it only re-sets the cookies.
+> - The cookies expire at `paid_until` + 30 s, not "now + 90 s".
+> - `renew_after_s` is the time left − 20 s (at least 5), not a fixed 45.
+> - Too few coins is `409 insufficient_coins`, as for votes and bids, not 402.
+> - A recording is always available; the "409 if not live" check applies to live cameras only.
+
 **Route.** `POST /playback/{streamId}` on the existing HTTP API, behind the Cognito JWT
 authorizer. The browser calls it same-origin, as `/api/playback/{streamId}`, through W12's `/api/*`
 behaviour. It must be same-origin: a `Set-Cookie` from the API's own domain would set cookies for
@@ -347,6 +356,14 @@ paying viewer can download every segment of that camera's 26 minutes, not just t
 paid for. A live window (section 2) only ever holds the last few segments. With play coins that
 are not money this is acceptable; with real payments, paid recordings would need per-segment
 URLs signed for a moving window.
+
+**Not exclusive yet** (review rv-1790676703-87081). wall-cam plays minutes 51:42 to 77:34 of
+`capytube-stream.mp4`, and that source file is still readable by anyone at its old S3 URL
+(`magnus-video-public`, the file today's site and `demo/` play; `capyweb-c24`). Seeking it to that
+point shows the paid camera's picture with no cookie and no coins. The gate itself holds; the
+footage is simply public elsewhere. Making the paid camera exclusive needs that object made private,
+which is a production change because the current site plays it, or footage that is not public.
+Waiting on capyweb-manager.
 
 **Cost per month on dev.** Storage 1.19 GB × $0.025 = **$0.03**. The uploads were about 1,600 PUTs
 ($0.008, once). Egress is inside CloudFront's free 1 TB and 10M requests: one viewer-hour at
