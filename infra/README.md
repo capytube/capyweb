@@ -26,7 +26,7 @@ sam deploy --template-file .aws-sam/build/template.yaml \
   --s3-prefix capyapp-capyweb-backend-dev \
   --capabilities CAPABILITY_IAM \
   --tags Project=capyweb Stage=dev \
-  --parameter-overrides Stage=dev \
+  --parameter-overrides Stage=dev AllowedOrigins=https://dev.capytube.xyz,http://127.0.0.1:8791,http://localhost:8791 \
   --no-confirm-changeset --no-fail-on-empty-changeset
 ```
 
@@ -81,6 +81,28 @@ Local serialises transactions, so it never returns `TransactionConflict`; the re
 covered by unit tests (`classify`) only.
 
 ## Site
+
+### The WASM app on dev (content only, 2026-09-29)
+
+`dev.capytube.xyz` serves the WASM build, uploaded with `infra/site/upload-content.sh`: content only,
+profile `capy`, no stack, certificate or DNS step. `deploy.sh` stays for W12, and its S3-to-S3 re-stamp
+drops Content-Type, which breaks module scripts (`capyweb-b6e.12`).
+
+```sh
+cd web && CAPYWEB_API_BASE=https://geqi0or5tl.execute-api.ap-southeast-1.amazonaws.com/dev \
+  trunk build --release --dist /tmp/capyweb-dev-dist && rm -rf /tmp/capyweb-dev-dist/fixtures
+printf '{"auth": {"domain": "https://capyapp-capyweb-dev.auth.ap-southeast-1.amazoncognito.com", "client_id": "4hp9maame83ah6op5leebnturc"}}\n' \
+  > /tmp/capyweb-dev-dist/config.json
+cd .. && infra/site/upload-content.sh dev /tmp/capyweb-dev-dist
+```
+
+The API is called directly (CORS), so the dev backend is deployed with
+`AllowedOrigins=https://dev.capytube.xyz,http://127.0.0.1:8791,http://localhost:8791`; add it to
+`--parameter-overrides` on every dev backend deploy, or the dev site loses the API. **The way back:**
+`git archive main demo | tar -x -C /tmp && infra/site/upload-content.sh dev /tmp/demo`.
+
+### Stacks and first deploy
+
 
 ```sh
 infra/site/deploy.sh dev demo    # stage, source dir; ~5.5 min the first time (cert + CloudFront)
