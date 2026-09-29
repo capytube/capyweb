@@ -9,10 +9,14 @@
 //! In fixture mode filters and paging are ignored: each route's file is its unfiltered first
 //! page, generated from the backend's seed by web/tests/fixtures.mjs (`--check` spots drift).
 //!
-//! Not ported yet: http.ts's `authenticated` flag and token provider. The Cognito task (W11)
-//! adds them here (docs/WASM_PLAN.md section 3).
+//! Signed-in calls go through `request_authed`, which takes the token from the auth seam
+//! (`auth.rs`, W11): it adds `Authorization: Bearer <access token>`, and on a 401 refreshes once
+//! and retries once. The server verifies the token (the `CognitoJwt` authorizer).
 
+use gloo_net::http::Method;
 use serde::de::DeserializeOwned;
+
+use crate::auth::Auth;
 
 use crate::domain::{
     AccessType, ActivityLog, Capybara, Interaction, InteractionType, LiveStream, Offer, Page, Pass,
@@ -84,7 +88,7 @@ pub fn build_url(base: &str, path: &str, query: &[(&str, &str)]) -> String {
 
 /// Percent-encode everything outside RFC 3986's unreserved set. Pure Rust, so it is testable
 /// natively (js_sys would panic outside a browser).
-fn enc(s: &str) -> String {
+pub fn enc(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for b in s.bytes() {
         if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~') {
@@ -129,19 +133,93 @@ pub async fn request<T: DeserializeOwned>(
     signal: Option<&web_sys::AbortSignal>,
 ) -> Result<T, ApiError> {
     let url = build_url(base_url(), path, query);
-    let res = gloo_net::http::Request::get(&url)
-        .header("accept", "application/json")
-        .abort_signal(signal)
-        .send()
-        .await
-        .map_err(|e| ApiError {
-            status: 0,
-            url: url.clone(),
-            message: format!("network error: {e}"),
-        })?;
-    let status = res.status();
-    let body = res.text().await.unwrap_or_default();
+    let (status, body) = send(&url, Method::GET, None, None, signal).await?;
     decode(status, &url, &body)
+}
+
+/// One fetch: status and body text. Every API call goes through here.
+async fn send(
+    url: &str,
+    method: Method,
+    token: Option<&str>,
+    body: Option<&str>,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<(u16, String), ApiError> {
+    let fail = |e: gloo_net::Error| ApiError {
+        status: 0,
+        url: url.to_owned(),
+        message: format!("network error: {e}"),
+    };
+    let mut req = gloo_net::http::RequestBuilder::new(url)
+        .method(method)
+        .header("accept", "application/json")
+        .abort_signal(signal);
+    if let Some(token) = token {
+        req = req.header("authorization", &format!("Bearer {token}"));
+    }
+    let req = match body {
+        Some(b) => req.header("content-type", "application/json").body(b),
+        None => req.build(),
+    }
+    .map_err(fail)?;
+    let res = req.send().await.map_err(fail)?;
+    Ok((res.status(), res.text().await.unwrap_or_default()))
+}
+
+/// A request as the signed-in user. `body` is JSON. Without a session it fails with 401 and
+/// sends nothing. A 401 from the API triggers one refresh and one retry; if the refresh fails the
+/// user is signed out and the 401 is returned.
+pub async fn request_authed<T: DeserializeOwned>(
+    auth: Auth,
+    method: Method,
+    path: &str,
+    body: Option<&str>,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<T, ApiError> {
+    let url = build_url(base_url(), path, &[]);
+    let mut retried = false;
+    loop {
+        let Some(token) = auth.access_token().await else {
+            return Err(ApiError {
+                status: 401,
+                url,
+                message: "sign in first".into(),
+            });
+        };
+        let (status, text) = send(&url, method.clone(), Some(&token), body, signal).await?;
+        if status == 401 && !retried {
+            retried = true;
+            if auth.refresh().await {
+                continue;
+            }
+        }
+        return decode(status, &url, &text);
+    }
+}
+
+/// The signed-in user's own record (`GET /me`, capyweb-7hj: `{id, display_name, balance,
+/// createdAt}`). Only what the header needs; the other fields are ignored.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Me {
+    /// Play-coin balance from the server ledger.
+    pub balance: Option<u64>,
+}
+
+impl Me {
+    pub fn from_value(v: &serde_json::Value) -> Me {
+        Me {
+            balance: v.get("balance").and_then(serde_json::Value::as_u64),
+        }
+    }
+}
+
+/// `Ok(None)` while the route does not exist (404).
+pub async fn get_me(auth: Auth) -> Result<Option<Me>, ApiError> {
+    match request_authed(auth, Method::GET, "/me", None, None).await {
+        Ok(v) => Ok(Some(Me::from_value(&v))),
+        Err(e) if e.is_not_found() => Ok(None),
+        Err(e) => Err(e),
+    }
 }
 
 /// Paging for a single partition. Limits are clamped to the backend's 1–100 range.
@@ -373,6 +451,20 @@ mod tests {
         ] {
             assert_eq!(media_src(key), None, "{key}");
         }
+    }
+
+    #[test]
+    fn me_reads_balance() {
+        let me = |s: &str| Me::from_value(&serde_json::from_str(s).unwrap()).balance;
+        assert_eq!(
+            me(
+                r#"{"id":"u-1","display_name":"Nok","balance":42,"createdAt":"2026-09-29T00:00:00Z"}"#
+            ),
+            Some(42)
+        );
+        assert_eq!(me(r#"{"coins":7}"#), None, "only `balance` is read");
+        assert_eq!(me("{}"), None);
+        assert_eq!(me(r#"{"balance":-1}"#), None);
     }
 
     #[test]

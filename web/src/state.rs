@@ -4,12 +4,9 @@ use std::time::Duration;
 
 use leptos::prelude::*;
 
-/// Sign-in is wired up in W11 (Cognito managed login). Until the build carries a client id, the
-/// app runs signed out and shows no sign-in or spend buttons: write routes do not exist yet.
-pub const AUTH_ENABLED: bool = option_env!("CAPYWEB_COGNITO_CLIENT_ID").is_some();
-
 #[derive(Clone, Copy)]
 pub struct Session {
+    /// A mirror of `auth::use_auth().signed_in()`, written only by `auth.rs`.
     pub signed_in: RwSignal<bool>,
     /// Play-coin balance from the server ledger. `None` until known.
     pub coins: RwSignal<Option<u64>>,

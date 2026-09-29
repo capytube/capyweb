@@ -216,6 +216,34 @@ write) and an SES sandbox-exit request. For dev, the free prefix domain
 (`capyapp-capyweb-dev.auth.ap-southeast-1.amazoncognito.com`) avoids a certificate. For production,
 `auth.capytube.xyz` with an ACM certificate in us-east-1 (already allowed).
 
+### The user pool as written (W11, 2026-09-29; in `infra/backend/template.yaml`, not deployed)
+
+- **Email OTP does need SES.** Cognito's email-settings page lists one-time-password sign-in as
+  "Requires Essentials feature plan or higher and Amazon SES email configuration". The template
+  therefore takes `SesIdentityArn` and `SesFromAddress`. Set, the pool sends through that SES
+  identity and offers `EMAIL_OTP`. Empty (the default), it uses the Cognito default sender (50
+  e-mails a day per account, reset at 09:00 UTC) and offers **password sign-in only**, so the
+  stack still deploys and the flow can be tested. Which one dev runs is an open question
+  (capyweb-lead).
+- `PASSWORD` stays in the allowed first factors in both modes: Cognito rejects a sign-in policy
+  without it. MFA is off, because OTP first factors are refused while MFA is on.
+- Essentials tier (free to 10,000 MAU per account, no 12-month expiry: aws.amazon.com/cognito/pricing,
+  read 2026-09-29), deletion protection, `DeletionPolicy`/`UpdateReplacePolicy: Retain`, email as
+  a case-insensitive username, `PreventUserExistenceErrors`, email changes verified first.
+- Managed login v2 on the prefix domain `capyapp-capyweb-<stage>`, with a branding resource on
+  Cognito's defaults (a client without a style shows no managed login).
+- Public client: code grant only, `openid email`, no secret, `ALLOW_USER_AUTH` only (no
+  `ALLOW_REFRESH_TOKEN_AUTH`, which rotation forbids), refresh-token rotation with a 10 s grace
+  period, revocation on. Access and ID tokens 15 minutes, refresh token 30 days, 10 minutes to
+  finish a sign-in. Callback and sign-out URLs: the stage's site from a `StageSite` mapping
+  (`https://dev.capytube.xyz`; production is the apex `https://capytube.xyz`), plus
+  `http://127.0.0.1:8791` and `http://localhost:8791` in dev only (Cognito accepts plain http
+  for `localhost`, `127.0.0.1` and `[::1]`).
+- An `Admins` group (PLAN B3) with no members and no IAM role. Nothing reads it yet.
+- The HTTP API's `CognitoJwt` authorizer (issuer from the pool, audience the client id, the
+  `Authorization` header). No default authorizer, so every route stays public unless it names it.
+- The web app reads the domain and client id from `/config.json` at run time (`web/README.md`).
+
 ---
 
 ## 4. WebMCP from WASM

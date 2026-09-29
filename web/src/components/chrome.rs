@@ -3,9 +3,10 @@
 use leptos::prelude::*;
 use leptos_router::components::A;
 
+use crate::auth::AccountControl;
 use crate::components::modal::Modal;
 use crate::routes::Page;
-use crate::state::{use_session, use_toasts};
+use crate::state::use_toasts;
 
 fn nav_link(p: Page) -> impl IntoView {
     view! {
@@ -32,7 +33,6 @@ fn skip_to_main(ev: leptos::ev::MouseEvent) {
 
 #[component]
 pub fn Header() -> impl IntoView {
-    let session = use_session();
     view! {
         <a class="skip" href="#main" on:click=skip_to_main>"Skip to content"</a>
         <header class="topbar">
@@ -44,16 +44,7 @@ pub fn Header() -> impl IntoView {
                 {Page::NAV.into_iter().map(nav_link).collect_view()}
             </nav>
             <div class="top-tools">
-                <Show
-                    when=move || session.signed_in.get()
-                    fallback=|| view! { <A href=Page::Profile.path() attr:class="btn btn-ghost btn-small account-link">"Account"</A> }
-                >
-                    <A href=Page::Profile.path() attr:class="coin-pill" attr:title="Play coins. Not real money.">
-                        <img src="/assets/capyCoin.svg" alt=""/>
-                        <span>{move || session.coins.get().map(|c| c.to_string()).unwrap_or_else(|| "…".into())}</span>
-                        <span class="sr-only">" play coins"</span>
-                    </A>
-                </Show>
+                <AccountControl/>
             </div>
         </header>
     }

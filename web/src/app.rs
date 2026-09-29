@@ -6,6 +6,7 @@ use leptos_router::components::{Route, Router, Routes};
 use leptos_router::hooks::use_navigate;
 use leptos_router::{path, NavigateOptions};
 
+use crate::auth::{Auth, AuthCallback};
 use crate::components::chrome::{Footer, Header, TabBar, ToastHost};
 use crate::pages::coming::ComingSoon;
 use crate::pages::home::Home;
@@ -19,8 +20,11 @@ use crate::webmcp;
 
 #[component]
 pub fn App() -> impl IntoView {
-    provide_context(Session::default());
-    provide_context(Toasts::default());
+    let session = Session::default();
+    let toasts = Toasts::default();
+    provide_context(session);
+    provide_context(toasts);
+    Auth::provide(session, toasts);
     view! {
         <Router>
             <Tools/>
@@ -47,6 +51,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/privacy-policy") view=Privacy/>
                     <Route path=path!("/terms-of-service") view=Terms/>
                     <Route path=path!("/deletion") view=Deletion/>
+                    <Route path=path!("/auth/callback") view=AuthCallback/>
                 </Routes>
             </main>
             <Footer/>

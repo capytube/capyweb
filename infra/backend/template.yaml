@@ -14,6 +14,31 @@ Parameters:
   AllowedOrigins:
     Type: CommaDelimitedList
     Default: "https://capytube.xyz,https://www.capytube.xyz,http://localhost:5173"
+  # Sign-in e-mail (capyweb-w26). Passwordless e-mail OTP is only offered when the pool sends
+  # mail through our own Amazon SES identity: Cognito's docs list e-mail OTP as "Requires
+  # Essentials feature plan or higher and Amazon SES email configuration". Until an identity
+  # is verified (and SES is out of its sandbox), leave these empty: the pool then uses the
+  # Cognito default sender (50 e-mails a day per account) and offers password sign-in only.
+  # See docs/WASM_PLAN.md section 3 ("The user pool as written").
+  SesIdentityArn:
+    Type: String
+    Default: ""
+    AllowedPattern: "^(arn:aws:ses:[a-z0-9-]+:[0-9]{12}:identity/.+)?$"
+    Description: Verified SES identity (domain or address) Cognito sends from. Empty = Cognito default sender, no e-mail OTP.
+  SesFromAddress:
+    Type: String
+    Default: ""
+    Description: 'FROM header when SesIdentityArn is set, e.g. "CapyTube <no-reply@capytube.xyz>".'
+
+# The site each stage's sign-in returns to. Production is the apex domain, not "prod.".
+Mappings:
+  StageSite:
+    dev: {Origin: "https://dev.capytube.xyz"}
+    prod: {Origin: "https://capytube.xyz"}
+
+Conditions:
+  IsDev: !Equals [!Ref Stage, dev]
+  UseSes: !Not [!Equals [!Ref SesIdentityArn, ""]]
 
 Globals:
   Function:
@@ -54,8 +79,142 @@ Resources:
       Tags:
         Project: capyweb
         Stage: !Ref Stage
-      # Write routes attach a native Cognito JWT authorizer here - zero Lambda invocations
-      # for auth. Blocked on capyweb-w26: the deploy identity has NO cognito-idp grants.
+      # Native Cognito JWT authorizer: zero Lambda invocations for auth. No default, so every
+      # route stays public unless it names `Auth: {Authorizer: CognitoJwt}`. API Gateway checks
+      # the signature, issuer, expiry and the audience: `aud` on ID tokens, `client_id` on
+      # access tokens (which carry no `aud`). The web app sends the ACCESS token. Handlers read
+      # the caller from event.requestContext.authorizer.jwt.claims.sub.
+      Auth:
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+              audience:
+                - !Ref UserPoolClient
+
+  # ---- Sign-in: Cognito user pool (capyweb-w26, docs/WASM_PLAN.md section 3) -----------------
+  # Essentials tier: free to 10,000 MAU per account with no 12-month expiry (aws.amazon.com/
+  # cognito/pricing, read 2026-09-29), and the lowest tier with choice-based sign-in, e-mail
+  # OTP and the new managed login. Cost at ~100 MAU: $0.
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    # Users are data: a stack delete or a replacing change must never drop them.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      UserPoolName: !Sub capyapp-capyweb-${Stage}-users
+      UserPoolTier: ESSENTIALS
+      DeletionProtection: ACTIVE
+      UsernameAttributes: [email]
+      UsernameConfiguration: {CaseSensitive: false}
+      AutoVerifiedAttributes: [email]
+      # A changed e-mail stays unconfirmed (and the old one keeps working) until the code
+      # sent to the new address is entered.
+      UserAttributeUpdateSettings: {AttributesRequireVerificationBeforeUpdate: [email]}
+      Schema:
+        - {Name: email, AttributeDataType: String, Required: true, Mutable: true}
+      AdminCreateUserConfig: {AllowAdminCreateUserOnly: false}
+      AccountRecoverySetting:
+        RecoveryMechanisms: [{Name: verified_email, Priority: 1}]
+      # One-time-code first factors are refused while MFA is on.
+      MfaConfiguration: "OFF"
+      Policies:
+        # Cognito refuses a sign-in policy without PASSWORD ("Password should be configured as
+        # one of the allowed first auth factors"), so it stays listed; with SES, managed login
+        # offers the e-mail code first and users can sign up without a password.
+        SignInPolicy:
+          AllowedFirstAuthFactors: !If [UseSes, [PASSWORD, EMAIL_OTP], [PASSWORD]]
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: false
+          RequireUppercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+          TemporaryPasswordValidityDays: 1
+      EmailConfiguration: !If
+        - UseSes
+        - {EmailSendingAccount: DEVELOPER, SourceArn: !Ref SesIdentityArn, From: !Ref SesFromAddress}
+        - {EmailSendingAccount: COGNITO_DEFAULT}
+      UserPoolTags:
+        Project: capyweb
+        Stage: !Ref Stage
+
+  # Managed login on a free Cognito prefix domain (no certificate):
+  # capyapp-capyweb-<stage>.auth.<region>.amazoncognito.com. Version 2 = the new managed login,
+  # the only one that offers passwordless sign-in.
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref UserPool
+      Domain: !Sub capyapp-capyweb-${Stage}
+      ManagedLoginVersion: 2
+
+  # The web app: a public client (it runs in the browser, so it cannot keep a secret).
+  # Authorization code + PKCE only, no implicit flow, no SDK password flows.
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub capyapp-capyweb-${Stage}-web
+      GenerateSecret: false
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email]
+      SupportedIdentityProviders: [COGNITO]
+      # ALLOW_USER_AUTH is choice-based sign-in, which managed login uses. No
+      # ALLOW_REFRESH_TOKEN_AUTH: it is incompatible with refresh-token rotation; the app
+      # refreshes at /oauth2/token, which rotates.
+      ExplicitAuthFlows: [ALLOW_USER_AUTH]
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+      # Each refresh returns a new refresh token and retires the old one after 10 s (a grace
+      # period for a retried request). A stolen refresh token is then single-use.
+      RefreshTokenRotation: {Feature: ENABLED, RetryGracePeriodSeconds: 10}
+      # Short-lived access and ID tokens, kept in memory only; the app refreshes a minute
+      # before expiry. 15 minutes bounds what a leaked access token is worth, at the cost of
+      # one token request per signed-in tab every 14 minutes. The refresh token (in
+      # localStorage) lasts 30 days, so a returning visitor stays signed in for a month.
+      AccessTokenValidity: 15
+      IdTokenValidity: 15
+      RefreshTokenValidity: 30
+      TokenValidityUnits: {AccessToken: minutes, IdToken: minutes, RefreshToken: days}
+      # Time to finish a sign-in once started: long enough to fetch a code from the inbox.
+      AuthSessionValidity: 10
+      # The stage's site from the StageSite mapping; loopback URLs only in dev. Cognito accepts plain http for http://localhost,
+      # http://127.0.0.1 and http://[::1] ("for testing purposes only"); `trunk serve` binds
+      # 127.0.0.1:8791 (web/Trunk.toml).
+      CallbackURLs: !If
+        - IsDev
+        - - !Sub ["${Origin}/auth/callback", {Origin: !FindInMap [StageSite, !Ref Stage, Origin]}]
+          - "http://127.0.0.1:8791/auth/callback"
+          - "http://localhost:8791/auth/callback"
+        - - !Sub ["${Origin}/auth/callback", {Origin: !FindInMap [StageSite, !Ref Stage, Origin]}]
+      LogoutURLs: !If
+        - IsDev
+        - - !Sub ["${Origin}/", {Origin: !FindInMap [StageSite, !Ref Stage, Origin]}]
+          - "http://127.0.0.1:8791/"
+          - "http://localhost:8791/"
+        - - !Sub ["${Origin}/", {Origin: !FindInMap [StageSite, !Ref Stage, Origin]}]
+
+  # PLAN B3's staff role group. No members and no IAM role; nothing reads it yet (the admin
+  # console, Epic E, will check the `cognito:groups` claim).
+  AdminsGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref UserPool
+      GroupName: Admins
+      Description: CapyTube staff. No members yet; nothing reads this group yet.
+
+  # Managed login v2 shows nothing for a client without a branding style. Cognito's own
+  # defaults for now; the capybara look can come later in the visual editor.
+  ManagedLoginBranding:
+    Type: AWS::Cognito::ManagedLoginBranding
+    DependsOn: UserPoolDomain
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientId: !Ref UserPoolClient
+      UseCognitoProvidedValues: true
 
   HealthFunction:
     Type: AWS::Serverless::Function
@@ -247,3 +406,15 @@ Outputs:
     Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
   MainTableName:
     Value: !Ref MainTable
+  UserPoolId:
+    Description: Cognito user pool for sign-in.
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: Public web client id (no secret). Goes in the web app's auth config.
+    Value: !Ref UserPoolClient
+  ManagedLoginDomain:
+    Description: Managed login host. The web app's auth config takes it as https://<this>.
+    Value: !Sub ${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com
+  AuthIssuer:
+    Description: JWT issuer the CognitoJwt authorizer trusts.
+    Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
