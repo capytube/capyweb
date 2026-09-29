@@ -80,11 +80,31 @@ async function entries(user: string): Promise<Record<string, unknown>[]> {
 const sum = (xs: Record<string, unknown>[]) => xs.reduce((a, x) => a + (x.amount as number), 0);
 const balance = async (u: string) => (await M.ledger.getAccount(u))?.balance ?? 0;
 
-/** The ledger's core invariant: a user's entries add up to their balance, which is never negative. */
+/**
+ * TEST-ONLY setup: put an account at an exact balance. It creates the account the normal way
+ * (which pays the sign-up grant), then overwrites the balance directly on DynamoDB Local - something
+ * no code path in the API can do. The difference is remembered as the account's opening offset, so
+ * the invariant below still checks that every change AFTER setup has exactly one matching entry.
+ */
+const opening = new Map<string, number>();
+async function startAt(u: string, coins: number) {
+  await M.ledger.ensureAccount(u);
+  const { pk, META } = M.keys;
+  await M.ddb.doc.send(new M.lib.UpdateCommand({
+    TableName: M.ddb.TABLE, Key: { PK: pk.user(u), SK: META },
+    UpdateExpression: "SET balance = :b", ExpressionAttributeValues: { ":b": coins },
+  }));
+  opening.set(u, coins - sum(await entries(u)));
+}
+
+/**
+ * The ledger's core invariant: a user's entries add up to their balance (less any test-only
+ * opening offset from startAt), and the balance is never negative.
+ */
 async function assertBooksBalance(u: string) {
   const b = await balance(u);
   assert.ok(b >= 0, `${u} balance ${b} went negative`);
-  assert.equal(sum(await entries(u)), b, `${u}: entries must add up to the balance`);
+  assert.equal(sum(await entries(u)) + (opening.get(u) ?? 0), b, `${u}: entries must add up to the balance`);
 }
 
 const newUser = () => randomUUID();
@@ -149,25 +169,50 @@ after(async () => {
   await new M.sdk.DynamoDBClient({}).send(new M.sdk.DeleteTableCommand({ TableName: M.ddb.TABLE }));
 });
 
-test("a new account starts at 0 coins and only its display name is writable", { skip }, async () => {
+test("the first GET /me grants 50 coins once, as one signup_grant entry, and only the name is writable", { skip }, async () => {
   const u = newUser();
   const me = await call("GET", "/me", u);
   assert.equal(me.status, 200);
-  assert.deepEqual({ balance: me.body.balance, display_name: me.body.display_name }, { balance: 0, display_name: null });
+  assert.deepEqual({ balance: me.body.balance, display_name: me.body.display_name }, { balance: 50, display_name: null });
+  const grants = (await entries(u)).filter((x) => x.type === "signup_grant");
+  assert.equal(grants.length, 1);
+  assert.equal(grants[0].amount, 50);
+  assert.equal((await entries(u)).length, 1, "the grant is the only entry");
+  // Repeated first calls, and the other routes that create an account, never grant again.
+  for (let i = 0; i < 3; i++) assert.equal((await call("GET", "/me", u)).body.balance, 50);
   assert.equal((await call("PUT", "/me", u, { display_name: "Capy Fan" })).body.display_name, "Capy Fan");
+  await M.ledger.ensureAccount(u);
   assert.equal((await call("PUT", "/me", u, { balance: 999 })).status, 400);
-  assert.equal(await balance(u), 0);
+  assert.equal(await balance(u), 50);
+  assert.equal((await entries(u)).length, 1);
+  await assertBooksBalance(u);
+});
+
+test("concurrent first calls grant exactly once, and later credits still add up", { skip }, async () => {
+  const u = newUser();
+  const race = await Promise.all([
+    ...Array.from({ length: 10 }, () => call("GET", "/me", u)),
+    call("PUT", "/me", u, { display_name: "Racer" }),
+    M.ledger.ensureAccount(u).then((a) => ({ status: 200, body: a })),
+  ]);
+  assert.ok(race.every((r) => r.status === 200), race.map((r) => r.status).join(","));
+  assert.ok(race.every((r) => r.body.balance === 50), "every caller sees the one grant");
+  assert.equal(await balance(u), 50);
+  assert.equal((await entries(u)).filter((x) => x.type === "signup_grant").length, 1);
+  await M.ledger.credit(u, 7, key()); // an admin-style grant on top: a separate entry
+  assert.equal(await balance(u), 57);
+  assert.equal((await entries(u)).length, 2);
   await assertBooksBalance(u);
 });
 
 test("a debit that would overdraw is refused and changes nothing", { skip }, async () => {
   const u = newUser();
-  await M.ledger.credit(u, 3, key());
+  await startAt(u, 3);
   const r = await call("POST", "/interactions/v-open/votes", u, { option_id: "carrots", number_of_votes: 2 }, key()); // 2 x 2 = 4
   assert.equal(r.status, 409);
   assert.equal(r.body.code, "insufficient_coins");
   assert.equal(await balance(u), 3);
-  assert.equal((await entries(u)).length, 1, "only the grant");
+  assert.equal((await entries(u)).filter((x) => x.type === "vote").length, 0, "no entry for the refusal");
   const ok = await call("POST", "/interactions/v-open/votes", u, { option_id: "carrots", number_of_votes: 1 }, key());
   assert.equal(ok.status, 201);
   assert.equal(ok.body.charged, 2, "the price comes from the interaction item");
@@ -183,7 +228,7 @@ test("a user who never signed in to /me cannot be debited", { skip }, async () =
 
 test("20 concurrent debits never overdraw, and the entries add up to the balance change", { skip }, async () => {
   const u = newUser();
-  await M.ledger.credit(u, 10, key());
+  await startAt(u, 10);
   const results = await Promise.all(Array.from({ length: 20 }, () =>
     call("POST", "/interactions/v-cheap/votes", u, { option_id: "pandan" }, key())));
   const codes = results.map((r) => r.status === 201 ? "ok" : r.body.code);
@@ -204,7 +249,7 @@ test("20 concurrent debits never overdraw, and the entries add up to the balance
 
 test("an idempotent retry charges once and replays the first answer", { skip }, async () => {
   const u = newUser();
-  await M.ledger.credit(u, 10, key());
+  await startAt(u, 10);
   const k = key();
   const body = { option_id: "carrots", number_of_votes: 2 };
   const first = await call("POST", "/interactions/v-open/votes", u, body, k);
@@ -225,7 +270,7 @@ test("an idempotent retry charges once and replays the first answer", { skip }, 
   assert.equal(other.body.code, "idempotency_mismatch");
   // Keys are per user: another user's identical key is a separate request.
   const v = newUser();
-  await M.ledger.credit(v, 4, key());
+  await startAt(v, 4);
   assert.equal((await call("POST", "/interactions/v-open/votes", v, body, k)).status, 201);
   await assertBooksBalance(u);
   await assertBooksBalance(v);
@@ -233,7 +278,7 @@ test("an idempotent retry charges once and replays the first answer", { skip }, 
 
 test("closed, decided, expired, unknown and wrong-type interactions are refused without a charge", { skip }, async () => {
   const u = newUser();
-  await M.ledger.credit(u, 10, key());
+  await startAt(u, 10);
   for (const id of ["v-closed", "v-decided", "v-expired"]) {
     const r = await call("POST", `/interactions/${id}/votes`, u, { option_id: "carrots" }, key());
     assert.equal(r.status, 409, id);
@@ -248,7 +293,7 @@ test("closed, decided, expired, unknown and wrong-type interactions are refused 
 
 test("a re-priced interaction charges the stored price, never one the client assumed", { skip }, async () => {
   const u = newUser();
-  await M.ledger.credit(u, 5, key());
+  await startAt(u, 5);
   const { pk, sk } = M.keys;
   await M.ddb.doc.send(new M.lib.UpdateCommand({
     TableName: M.ddb.TABLE, Key: { PK: pk.capy("c1"), SK: sk.interaction("vote", "2026-10-01", "v-cheap") },
@@ -266,7 +311,7 @@ test("a re-priced interaction charges the stored price, never one the client ass
 
 test("custom requests cost votes plus the custom fee and wait for review", { skip }, async () => {
   const u = newUser();
-  await M.ledger.credit(u, 10, key());
+  await startAt(u, 10);
   const r = await call("POST", "/interactions/v-open/votes", u, { custom_request: "Mango please" }, key());
   assert.equal(r.status, 201);
   assert.equal(r.body.charged, 2 + 5);
@@ -280,8 +325,8 @@ test("custom requests cost votes plus the custom fee and wait for review", { ski
 test("bids: charged in full, the outbid bidder is refunded once, raising your own bid pays the difference", { skip }, async () => {
   const a = newUser();
   const b = newUser();
-  await M.ledger.credit(a, 50, key());
-  await M.ledger.credit(b, 50, key());
+  await startAt(a, 50);
+  await startAt(b, 50);
   assert.equal((await call("POST", "/interactions/b-open/bids", a, { amount: 5 }, key())).body.code, "bid_too_low");
   const r1 = await call("POST", "/interactions/b-open/bids", a, { amount: 10 }, key());
   assert.equal(r1.status, 201);
@@ -298,7 +343,7 @@ test("bids: charged in full, the outbid bidder is refunded once, raising your ow
   assert.equal((await call("POST", "/interactions/b-open/bids", a, { amount: 1000 }, key())).body.code, "insufficient_coins");
   // Concurrent bids: exactly one of several equal bids can win; the loser pays nothing.
   const c = newUser();
-  await M.ledger.credit(c, 50, key());
+  await startAt(c, 50);
   const race = await Promise.all([call("POST", "/interactions/b-open/bids", a, { amount: 20 }, key()), call("POST", "/interactions/b-open/bids", c, { amount: 20 }, key())]);
   assert.equal(race.filter((r) => r.status === 201).length, 1, race.map((r) => r.body.code ?? r.status).join(","));
   assert.equal((await balance(a)) + (await balance(b)) + (await balance(c)), 150 - 20, "only the standing high bid is held");
@@ -308,7 +353,7 @@ test("bids: charged in full, the outbid bidder is refunded once, raising your ow
 test("a user cannot read or write another user's items", { skip }, async () => {
   const a = newUser();
   const b = newUser();
-  await M.ledger.credit(a, 5, key());
+  await startAt(a, 5);
   for (let i = 0; i < 3; i++) await call("POST", "/interactions/v-cheap/votes", a, { option_id: "carrots" }, key());
   const ta = await call("GET", "/me/transactions?limit=2", a);
   const page = await call("GET", "/me/transactions", a);
@@ -373,7 +418,7 @@ test("chat: length limits, a display name first, one post per 2 s, newest first,
   const next = await publicGet(`/streams/s1/chat?limit=3&cursor=${encodeURIComponent(list.body.cursor)}`);
   assert.equal(next.body.items[0].text.length, 280);
   assert.equal(next.body.reactions, undefined, "counts ride on the first page only");
-  assert.equal((await entries(u)).length, 0, "chat is free by default: no ledger entries");
+  assert.equal((await entries(u)).filter((x) => x.type === "chat").length, 0, "chat is free: no ledger entries");
 });
 
 test("streams that are not explicitly public refuse chat reads, posts and reactions with 403", { skip }, async () => {
