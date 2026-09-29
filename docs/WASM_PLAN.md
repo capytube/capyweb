@@ -614,9 +614,10 @@ last ~70 px.
 **Performance** (Lighthouse 12.8, local release build served with brotli as the CDN does, single
 runs): mobile scores 80-93 and LCP 3.1-4.6 s; desktop 97-100 and LCP 0.7-1.2 s; CLS 0.045 or less
 (the footer used to jump as data arrived: `min-height` on the view took mobile CLS from 0.085-0.196
-to 0.002 or less). For W12: self-host the three font families (the Google Fonts stylesheet blocks
-rendering, ~850 ms), `Cache-Control: immutable` on hashed files, brotli at the CDN, and recompress
-`/assets/cast/*.jpg` (~261 KiB on /watch) with `srcset`.
+to 0.002 or less). W12 did three of the four fixes this found: the three font families are
+self-hosted (the Google Fonts stylesheet blocked rendering, ~850 ms), hashed files are
+`Cache-Control: immutable`, and CloudFront compresses. The fourth, recompressing `/assets/cast/*.jpg`
+(~261 KiB on /watch) with `srcset`, is bead `capyweb-z14`.
 
 **Size.** With `erase_components` (section 5, rule 2) and everything W14 added, production is
 265,133 bytes brotli, the dev build with the WebMCP tools 288,551 of the 350,000 cap (measured at cdf91bb by the W14 review).

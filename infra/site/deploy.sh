@@ -196,9 +196,12 @@ cert)
     for _ in $(seq 20); do
       RECORDS=$(aws acm describe-certificate --region us-east-1 --certificate-arn "$CERT" \
                 --query 'Certificate.DomainValidationOptions[].ResourceRecord' --output json)
-      [ "$(echo "$RECORDS" | python3 -c 'import json, sys; r = json.load(sys.stdin); print(len([x for x in r if x]))')" = "${#names[@]}" ] && break
+      FILLED=$(echo "$RECORDS" | python3 -c 'import json, sys; r = json.load(sys.stdin); print(len([x for x in r if x]))')
+      [ "$FILLED" = "${#names[@]}" ] && break
       sleep 3
     done
+    [ "$FILLED" = "${#names[@]}" ] ||
+      die "$CERT: ACM gave $FILLED of ${#names[@]} validation records after a minute; run the cert step again"
     BATCH=$(echo "$RECORDS" | python3 -c 'import json, sys
 seen, changes = set(), []
 for r in json.load(sys.stdin):

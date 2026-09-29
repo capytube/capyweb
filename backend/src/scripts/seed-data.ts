@@ -1,7 +1,12 @@
 /** Pure catalog seed shared by the dev writer and offline contract fixtures. */
 import { pk, sk, gsi1, gsi2, META } from "../lib/keys.ts";
 
-export function seedItems(now: string): Record<string, unknown>[] {
+/**
+ * catalogOnly (production, docs/RELEASE_PLAN.md P4): the capybaras, cameras, interactions and passes,
+ * and nothing that stands for a person: no offers or activity from the seed users, and no pass owned
+ * by one. Production opens with no users and no coins.
+ */
+export function seedItems(now: string, { catalogOnly = false }: { catalogOnly?: boolean } = {}): Record<string, unknown>[] {
   const items: Record<string, unknown>[] = [];
 
   // -- capybaras ----------------------------------------------------------------
@@ -56,13 +61,17 @@ export function seedItems(now: string): Record<string, unknown>[] {
     { id: "capy-5687", name: "Capy #5687", rarity: "rare", price: 6, is_for_sale: 1, image_url: "media/pass-cafe.png", labels: ["Capybara", "Cafe"], properties: [{ key: "Chalk powder", value: "+5 bidding bonus" }] },
     { id: "capy-632574", name: "Capy #632574", rarity: "epic", price: 3, is_for_sale: 0, image_url: "media/pass-trail.png", labels: ["Capybara", "Trail"], owner_id: "seed-user-1", properties: [{ key: "Climbing gym", value: "+10 minutes on a call" }] },
   ];
-  for (const n of passes) {
+  for (const pass of passes) {
+    const n: Record<string, unknown> & { id: string; price: number; is_for_sale: number } = { ...pass };
+    if (catalogOnly) delete n.owner_id;
+    const owner = typeof n.owner_id === "string" ? n.owner_id : undefined;
     items.push({
       PK: pk.nft(n.id), SK: META, entity: "NFT", createdAt: now, updatedAt: now, ...n,
       ...gsi1.nftBySale(n.is_for_sale as 0 | 1, n.price, n.id),
-      ...(n.owner_id ? gsi2.nftByOwner(n.owner_id, n.id) : {}),
+      ...(owner ? gsi2.nftByOwner(owner, n.id) : {}),
     });
   }
+  if (catalogOnly) return items;
 
   // -- offers and activity on one pass, to exercise the sub-resources -----------
   items.push({
