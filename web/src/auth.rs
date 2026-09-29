@@ -88,6 +88,12 @@ fn redirect_uri() -> String {
     page_origin() + oauth::CALLBACK_PATH
 }
 
+/// A fresh `Idempotency-Key` for one action that spends play coins: 128 random bits from
+/// `crypto.getRandomValues`, base64url (22 characters).
+pub fn random_key() -> String {
+    oauth::b64url(&random_bytes(16))
+}
+
 /// The auth seam. `use_auth()` anywhere under `App`.
 #[derive(Clone, Copy)]
 pub struct Auth {

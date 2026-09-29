@@ -17,7 +17,7 @@ const jwt = (claims) => `${b64url('{"alg":"RS256","kid":"test"}')}.${b64url(JSON
 const sha256 = (text) => b64url(createHash('sha256').update(text, 'ascii').digest());
 
 // A fake Cognito: authorize, token (code and refresh grants, with rotation), revoke, logout.
-function fakeCognito(BASE) {
+export function fakeCognito(BASE) {
   const log = { authorize: [], token: [], revoke: [], logout: [], me: [], problems: [] };
   const state = { redirect: true, rt: null, n: 0, life: 900, access: null };
   const issue = () => {
@@ -89,7 +89,7 @@ function fakeCognito(BASE) {
   return { log, state, handle: guarded(handle), guarded };
 }
 
-async function configuredContext(browser, BASE, cognito, { width = 1280, meFirst401 = true, init } = {}) {
+export async function configuredContext(browser, BASE, cognito, { width = 1280, meFirst401 = true, init } = {}) {
   const context = await browser.newContext({ viewport: { width, height: 800 } });
   if (init) await context.addInitScript(init);
   await context.route('**/config.json', (route) => route.fulfill({ contentType: 'application/json', body: CONFIG }));

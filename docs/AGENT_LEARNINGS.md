@@ -95,3 +95,24 @@ Read this before each work session on capyweb. Add a line whenever something fai
 - DynamoDB Local serialises transactions: 20 concurrent debits on one balance gave 10 successes and 10 `ConditionalCheckFailed`, never a `TransactionConflict`. Real DynamoDB does return conflicts; that retry path is only unit-tested.
 - `node --experimental-strip-types` refuses TypeScript parameter properties (`constructor(readonly x)`); declare the field instead.
 - Colima's socket is not the default docker socket: `export DOCKER_HOST=unix://$HOME/.colima/default/docker.sock`.
+
+## Leptos code size, measured (2026-09-29, W5/W8, capyweb-b6e.5 / b6e.8)
+- Every reactive region that returns a view (`move || cond.then(|| view!{…})`, `.into_any()`, a
+  `Vec` of views in a closure) compiles that view's **rebuild** code as well as its build code. A
+  keyed `<For>` builds items and never rebuilds them in place. Leaves that return a `String` or a
+  `bool` (text, `hidden=`, `class:`) are cheap; prefer them to showing and hiding elements.
+- Reactive text closures that differ only by a `fn` pointer share one type:
+  `let t = move |f: fn(&State) -> String| move || state.with(f);` then `{t(|s| …)}` everywhere.
+- One `RwSignal<State>` per component instead of a signal per field; `update_untracked` for input
+  that nothing renders back.
+- Show and hide with CSS where the DOM may stay (`li:has(input:checked) .x`, `:empty` for empty live
+  regions). `.btn` sets `display`, so `hidden` needs `.btn[hidden] { display: none }`.
+- Two `sort_by` calls with two identical closures compile the sort twice (about 700 bytes brotli);
+  a named comparator compiles it once.
+- Measuring: build with `CARGO_PROFILE_RELEASE_STRIP=false cargo build --release --target
+  wasm32-unknown-unknown` into a scratch target dir and sum function body sizes from the wasm name
+  section by mangled path (a baseline built from `git archive HEAD web` needs its sources touched,
+  or cargo calls it fresh). Pre-wasm-opt bytes run about 3.5 to 1 against brotli bytes.
+- Where W5+W8 landed: +27.5 KB brotli (262,155) against a +14 KB share. Roughly: signed-in profile
+  10 KB (its two API calls alone about 4 KB), the confirm dialog and charge path 7 KB, cards,
+  pricing, the pending action and the shared API core 11 KB. First drafts were +36 KB.

@@ -14,6 +14,9 @@ pub fn Modal(
     open: RwSignal<bool>,
     #[prop(into)] title: String,
     #[prop(optional, into)] close_label: Option<String>,
+    /// Buttons shown before the close button (e.g. Confirm); they must not submit the form.
+    #[prop(optional)]
+    actions: Option<Children>,
     children: Children,
 ) -> impl IntoView {
     let dialog = NodeRef::<html::Dialog>::new();
@@ -35,6 +38,7 @@ pub fn Modal(
             <h2 id=title_id>{title}</h2>
             <div class="mb-4">{children()}</div>
             <form method="dialog" class="actions justify-end">
+                {actions.map(|a| a())}
                 <button class="btn btn-small" type="submit">{close_label}</button>
             </form>
         </dialog>
