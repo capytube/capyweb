@@ -62,15 +62,15 @@ region, so there is one topic per place:
 
 | Topic | Region | Stack | What notifies it | State (2026-09-29) |
 |---|---|---|---|---|
-| `capyapp-capyweb-<stage>-alarms` | ap-southeast-1 | backend | api-down, site-down, table-throttled | dev: deployed, no subscriber |
-| `capyapp-capyweb-<stage>-egress-alarm` | us-east-1 | `capyapp-capyweb-alarms-<stage>` (`site/alarms-use1.yaml`) | CloudFront egress over ~800 GB/month | waits for `sns:*` on `capyapp-*` in us-east-1 |
-| `capyapp-capyweb-alerts` | ap-southeast-1 | `capyapp-capyweb-ops` (`ops/template.yaml`, one per account) | the tag-scoped monthly budget (A2); A4 is skipped in v1 | waits for the Budgets delete and tag grants and capyweb-manager's word |
+| `capyapp-capyweb-<stage>-alarms` | ap-southeast-1 | backend | api-down, site-down, table-throttled | dev: deployed 2026-09-29, no subscriber |
+| `capyapp-capyweb-<stage>-egress-alarm` | us-east-1 | `capyapp-capyweb-alarms-<stage>` (`site/alarms-use1.yaml`) | CloudFront egress over ~800 GB/month | dev: deployed 2026-09-29, no subscriber |
+| `capyapp-capyweb-alerts` | ap-southeast-1 | `capyapp-capyweb-ops` (`ops/template.yaml`, one per account) | the tag-scoped monthly budget `capyapp-capyweb-monthly` (A2); A4 is skipped in v1 | deployed 2026-09-29; the budget also emails its one recipient |
 
 The budget also emails one person directly: the address the account-wide budget `capyweb-monthly-20`
 already uses (capyweb-manager, 2026-09-29). `capyweb-monthly-20` itself stays, since it is the only
 account-wide budget. The SNS alarm topics have no subscribers on dev; production alarms get theirs at W12.
 
-The ops stack, once the grants are there and capyweb-manager says go:
+The ops stack (budget names must start with `capyapp-`: the deploy identity may only write those):
 
 ```sh
 infra/ops/deploy.sh <change-set-name>   # reads the address without printing it; shows the change set
@@ -78,7 +78,9 @@ infra/ops/deploy.sh <change-set-name>   # reads the address without printing it;
 ```
 
 The budget measures **gross** cost (credits and refunds left out, `docs/PLAN.md` section 1b) of resources
-tagged `Project=capyweb`, which counts only once that cost-allocation tag is active in Billing (A1).
+tagged `Project=capyweb`, which counts only once that cost-allocation tag is active in Billing (A1). It
+was switched on 2026-09-29 21:47 by capyweb-manager; Billing can take up to 24 hours to show it, so the
+budget may read $0 at first.
 
 ## Ledger integration tests (DynamoDB Local)
 
