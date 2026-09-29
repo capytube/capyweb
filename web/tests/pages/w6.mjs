@@ -109,6 +109,9 @@ export async function check({ open, browser, settle, BASE, SHOTS }) {
     }));
     await setHidden(page, true);
     assert.equal(await video(page).evaluate((v) => v.paused), true, 'paused while hidden');
+    // Request events reach this process a little late: one sent just before stopLoad() can
+    // arrive after the hide. Count from half a second on.
+    await sleep(500);
     const before = paths.length;
     await sleep(2500); // longer than the 2 s playlist reload
     assert.deepEqual(paths.slice(before).filter(isMedia), [], 'nothing fetched while hidden');
