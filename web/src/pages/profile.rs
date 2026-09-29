@@ -186,7 +186,7 @@ fn signed_in_view() -> impl IntoView {
                 <label class="play-field">
                     "Name"
                     <input class="play-input" type="text" maxlength="32" autocomplete="nickname"
-                        data-testid="name-input"
+                        data-testid="name-input" aria-describedby="name-note"
                         prop:value=t(|s| s.typed.clone())
                         on:input=move |ev| p.update_untracked(|s| {
                             s.typed = event_target_value(&ev);
@@ -195,7 +195,8 @@ fn signed_in_view() -> impl IntoView {
                 </label>
                 <button type="submit" class="btn">"Save"</button>
             </form>
-            <p class="play-hint" role="status" data-testid="name-note">{t(|s| s.note.into())}</p>
+            // The field points here, so "Use 2 to 32 characters." is read with the field too.
+            <p class="play-hint" role="status" id="name-note" data-testid="name-note">{t(|s| s.note.into())}</p>
         </section>
         <section class="card profile-block" aria-labelledby="profile-coins">
             <h2 id="profile-coins">"Play coins"</h2>

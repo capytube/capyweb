@@ -79,10 +79,18 @@ fn coins(price: Option<u64>) -> String {
     }
 }
 
-fn pass_image(pass: &Pass) -> impl IntoView {
-    pass.image_url.as_deref().and_then(api::media_src).map(|src| view! {
-        <img class="pass-image" src=src alt=pass.name.clone() width="480" height="320" loading="lazy"/>
-    })
+/// `first` is the image at the top of the page and usually its largest paint (Lighthouse's LCP
+/// on /shop and a pass's page): fetch it at once; the rest wait until they scroll near.
+fn pass_image(pass: &Pass, first: bool) -> impl IntoView {
+    pass.image_url
+        .as_deref()
+        .and_then(api::media_src)
+        .map(|src| {
+            view! {
+                <img class="pass-image" src=src alt=pass.name.clone() width="480" height="320"
+                    loading=if first { "eager" } else { "lazy" }/>
+            }
+        })
 }
 
 fn pass_meta(pass: &Pass) -> impl IntoView {
@@ -126,10 +134,10 @@ pub fn Shop() -> impl IntoView {
                     } else {
                         view! {
                             <ul class="shop-grid" data-testid="pass-list">
-                                {items.into_iter().map(|pass| view! {
+                                {items.into_iter().enumerate().map(|(i, pass)| view! {
                                     <li class="card shop-card">
                                         <A href=format!("/shop/{}", pass.id) attr:class="pass-link">
-                                            {pass_image(&pass)}
+                                            {pass_image(&pass, i == 0)}
                                             <h2>{pass.name.clone()}</h2>
                                             {pass_meta(&pass)}
                                         </A>
@@ -198,7 +206,7 @@ fn DetailContent(pass: Pass) -> impl IntoView {
         <PageHead title=pass.name.clone() eyebrow="The capy club"/>
         <div class="pass-detail">
             <section class="card" aria-label="Pass details">
-                {pass_image(&pass)}
+                {pass_image(&pass, true)}
                 <div class="mt-4">{pass_meta(&pass)}</div>
                 <h2 class="mt-6">"Properties"</h2>
                 <dl class="pass-properties">{pass.properties.unwrap_or_default().into_iter().map(|p| view! {

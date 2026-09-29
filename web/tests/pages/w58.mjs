@@ -39,10 +39,10 @@ export async function check({ open, SHOTS }) {
     await play.reload();
     await play.waitForURL('**/play?capy=elon');
     await play.waitForSelector('[data-testid="bid-card"]');
-    assert.equal(await play.locator('.play-picker-btn.active', { hasText: 'Elon' }).count(), 1, 'reload keeps capy query selection');
+    assert.equal(await play.locator('.play-picker-btn[aria-pressed=true]', { hasText: 'Elon' }).count(), 1, 'reload keeps capy query selection');
     await play.goto(new URL('/play?capy=unknown-id', play.url()).toString());
     await play.waitForSelector('.play-picker-btn');
-    assert.equal(await play.locator('.play-picker-btn.active', { hasText: 'Einstein' }).count(), 1, 'bad capy query falls back to first by name');
+    assert.equal(await play.locator('.play-picker-btn[aria-pressed=true]', { hasText: 'Einstein' }).count(), 1, 'bad capy query falls back to first by name');
     assert.equal(
       await play.locator('main button', { hasText: /vote|bid|confirm|sign in|log in/i }).count(),
       0,
