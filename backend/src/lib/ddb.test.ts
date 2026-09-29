@@ -98,9 +98,9 @@ test("base-table cursors carry only PK and SK", () => {
 });
 
 test("playback locators never reach an unauthenticated client", () => {
-  // On a private, paid stream these ARE the paywall: whoever holds the Livepeer playback id
-  // or the S3 video URL can watch without paying. Playback is obtained via GET /stream/{id},
-  // which resolves it server-side and can be gated.
+  // On a private, paid stream these ARE the paywall: whoever holds the video provider's
+  // playback id or the S3 video URL can watch without paying. The catalog never serves them;
+  // playback has to be resolved server-side, where it can be gated.
   const privateStream = {
     PK: "STREAM#wall-cam",
     SK: "#META",
@@ -108,11 +108,11 @@ test("playback locators never reach an unauthenticated client", () => {
     title: "Climbing wall cam",
     access_type: "private",
     price_per_10_sec: 1,
-    streaming_address: "livepeer-playback-id-abc123",
+    streaming_address: "provider-playback-id-abc123",
     s3_video_address: "https://capyapp-media.s3.ap-southeast-1.amazonaws.com/private/wall.mp4",
   };
   const out = clean(privateStream)!;
-  assert.ok(!("streaming_address" in out), "Livepeer playback id must not be exposed");
+  assert.ok(!("streaming_address" in out), "provider playback id must not be exposed");
   assert.ok(!("s3_video_address" in out), "S3 video URL must not be exposed");
   assert.deepEqual(out, {
     id: "wall-cam",
@@ -132,7 +132,7 @@ test("credential-shaped field names are stripped whatever entity carries them", 
     id: "x",
     api_key: "sk-live-1",
     apiKey: "sk-live-2",
-    livepeer_token: "t",
+    provider_token: "t",
     user_password: "p",
     aws_secret_access_key: "s",
     private_key: "pk",
@@ -165,7 +165,7 @@ test("camelCase credential names are stripped like snake_case ones", () => {
     id: "u1",
     accessToken: "a", access_token: "b",
     clientSecret: "c", client_secret: "d",
-    livepeerApiKey: "e", livepeer_api_key: "f",
+    providerApiKey: "e", provider_api_key: "f",
     sessionToken: "g", password_hash: "h", passphrase: "i",
     // must survive: these are domain fields, not credentials
     totalWatchTime: 10, token_count: 5, wallet_address: "0xabc", ratingCounts: { capylove: 1 },

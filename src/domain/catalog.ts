@@ -2,8 +2,8 @@
 //
 // They describe what the API actually SENDS, which is not the same as what the table stores:
 // key attributes and playback locators are stripped server-side (backend/src/lib/ddb.ts), so
-// `streaming_address` and `s3_video_address` deliberately do not appear here. Playback comes
-// from GET /stream/{id}, never from the catalog.
+// `streaming_address` and `s3_video_address` deliberately do not appear here. Playback never
+// comes from the catalog.
 
 export type AccessType = "public" | "private";
 export type InteractionType = "vote" | "bid";
@@ -114,9 +114,4 @@ export interface ActivityLogEntry extends Entity {
   to: string;
   timestamp?: string;
   royalties?: string;
-}
-
-/** What GET /stream/{id} resolves to. Obtained per-request, never listed in the catalog. */
-export interface PlaybackSource {
-  [key: string]: unknown;
 }

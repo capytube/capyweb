@@ -27,7 +27,6 @@ Globals:
       Variables:
         STAGE: !Ref Stage
         TABLE_MAIN: !Sub capyapp-capyweb-${Stage}-main
-        LIVEPEER_PARAM: !Sub /capyapp/capyweb/${Stage}/livepeer-api-key
         LOG_LEVEL: info
     Tags:
       Project: capyweb
@@ -45,17 +44,8 @@ Resources:
       DefaultRouteSettings:
         ThrottlingRateLimit: 10
         ThrottlingBurstLimit: 20
-      # /stream and /viewership resolve a playback locator from an id. Until the Cognito
-      # authorizer lands (capyweb-w26) they are unauthenticated capability endpoints, so the
-      # only thing standing between a guessed id and a paid stream is how fast ids can be
-      # tried. Throttle them hard and log them. Tracked as capyweb-s6d.
-      RouteSettings:
-        "GET /stream/{id}":
-          ThrottlingRateLimit: 2
-          ThrottlingBurstLimit: 5
-        "GET /viewership/{id}":
-          ThrottlingRateLimit: 2
-          ThrottlingBurstLimit: 5
+      # The playback route comes back with the new video source (task W6 in docs/WASM_PLAN.md).
+      # Until then there is no playback route.
       CorsConfiguration:
         AllowOrigins: !Ref AllowedOrigins
         AllowMethods: [GET, POST, PUT, DELETE, OPTIONS]
@@ -82,31 +72,6 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/capyapp-capyweb-${Stage}-health
-      RetentionInDays: 14
-      Tags:
-        - {Key: Project, Value: capyweb}
-
-  StreamFunction:
-    Type: AWS::Serverless::Function
-    Metadata: {BuildMethod: esbuild, BuildProperties: {EntryPoints: [stream.ts], Target: es2022, Minify: true, Format: esm, OutExtension: [".js=.mjs"], External: ["@aws-sdk/*"]}}
-    Properties:
-      FunctionName: !Sub capyapp-capyweb-${Stage}-stream
-      CodeUri: ../../backend/src/
-      Handler: stream.handler
-      ReservedConcurrentExecutions: 2
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action: [ssm:GetParameter]
-              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/capyapp/capyweb/${Stage}/livepeer-api-key
-      Events:
-        Stream: {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/stream/{id}", Method: GET}}
-        Viewership: {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/viewership/{id}", Method: GET}}
-
-  StreamLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/capyapp-capyweb-${Stage}-stream
       RetentionInDays: 14
       Tags:
         - {Key: Project, Value: capyweb}

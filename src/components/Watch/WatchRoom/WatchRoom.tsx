@@ -189,12 +189,6 @@ const WatchRoom = () => {
             <div className={styles.videoMainContainer}>
               <div className={styles.videoAndCommentSection}>
                 <div className={styles.videoSection}>
-                  {/* <LivepeerPlayer
-                    streamId={videoStreamAddress ?? ''}
-                    title={currCapyData?.name ?? ''}
-                    setIsCapyCoinIncrementing={setIsCapyCoinIncrementing}
-                    setIsVideoPlaying={setIsVideoPlaying}
-                  /> */}
                   <VideoPlayer
                     streamId={currentStreamData?.id ?? ''}
                     videoUrl={videoStreamAddress}

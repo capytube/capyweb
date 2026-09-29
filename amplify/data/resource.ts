@@ -1,6 +1,4 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
-import { getStream } from '../functions/getStream/resource';
-import { getViewership } from '../functions/getViewership/resource';
 
 const access_type = a.enum(['public', 'private']);
 const interaction_type = a.enum(['vote', 'bid']);
@@ -19,23 +17,6 @@ const schema = a.schema({
     title: a.string(),
     description: a.string(),
   }),
-
-  getStream: a
-    .query()
-    .arguments({
-      streamId: a.string(),
-    })
-    .returns(a.string())
-    .handler(a.handler.function(getStream))
-    .authorization((allow) => [allow.publicApiKey()]),
-  getViewership: a
-    .query()
-    .arguments({
-      streamId: a.string(),
-    })
-    .returns(a.json())
-    .handler(a.handler.function(getViewership))
-    .authorization((allow) => [allow.publicApiKey()]),
 
   // Interactions Table
   Interactions: a
@@ -132,7 +113,7 @@ const schema = a.schema({
       access_type: access_type,
       price_per_10_sec: a.integer(),
       s3_video_address: a.string(), // S3 bucket URL address for playing custom stream
-      streaming_address: a.string(), // livepeer address for the live stream (if available)
+      streaming_address: a.string(), // playback address for the live stream (if available)
       ratingCounts: a.customType({
         capylove: a.integer(),
         capylike: a.integer(),

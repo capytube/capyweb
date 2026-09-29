@@ -2,8 +2,8 @@
 //!
 //! They describe what the API SENDS, not what the table stores: key attributes and playback
 //! locators are stripped server-side (backend/src/lib/ddb.ts clean()), so there is no field
-//! here that could carry a stream key or playback id. Playback comes from GET /stream/{id},
-//! and only for a signed-in payer (docs/WASM_PLAN.md section 3).
+//! here that could carry a stream key or playback id. Playback never comes from the catalog;
+//! the playback route arrives with the video source in task W6 (docs/WASM_PLAN.md).
 
 use serde::{Deserialize, Serialize};
 

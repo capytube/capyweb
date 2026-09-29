@@ -18,8 +18,8 @@ const INTERNAL = new Set(["PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK", "e
 
 /**
  * Playback locators: how you actually WATCH a stream. On a private (paid) stream these are the
- * paywall - anyone holding the Livepeer playback id or the video URL can watch without paying.
- * The public catalog serves metadata only; playback is resolved by GET /stream/{id}.
+ * paywall - anyone holding a provider's playback id or the video URL can watch without paying.
+ * The public catalog serves metadata only; it never resolves playback.
  *
  * Matched by SHAPE, not by an exact list. Naming two fields only protects those two:
  * `playback_id`, `hls_url`, `m3u8_url` or `video_url` would sail straight through.

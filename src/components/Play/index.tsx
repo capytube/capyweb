@@ -154,7 +154,6 @@ function index() {
             </div>
           </div>
           <div className="lg:max-w-5xl mx-auto mt-10">
-            {/* <LivepeerPlayer streamId="fa7ahoikpf19u1e0" title="Magnus" /> */}
             <VideoPlayer
               streamId="play-page"
               videoUrl="https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4"

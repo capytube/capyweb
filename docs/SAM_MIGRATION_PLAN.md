@@ -14,10 +14,10 @@ Allowed services (Nic): Lambda, DynamoDB, API Gateway, CloudFront, Route 53 (cap
 |---|---|---|
 | Cognito user pool: email, Google, Facebook, Admins/Users groups | **No.** Login is Dynamic.xyz (Solana wallet, `@dynamic-labs/sdk-react-core`). No Amplify Auth calls in `src/`. | **Drop Cognito.** API Gateway HTTP API **JWT authorizer** checks Dynamic's JWT (issuer = the Dynamic environment, keys = `https://app.dynamic.xyz/api/v0/sdk/<ENV_ID>/.well-known/jwks.json`). No Google/Facebook OAuth secrets needed. If Nic wants email/Google/Facebook login later, add Cognito then. |
 | AppSync GraphQL + DynamoDB, 11 models (User, Capybara, LiveStream, Interactions, UserVotes, UserBids, TokenTransaction, ChatComments, NFT, Offers, ActivityLog), **all public API-key auth** (anyone can write) | Yes, ~45 `client.models.*` calls in `src/api/*` | **HTTP API + Lambda (Node 20) + DynamoDB.** One table per model, keeping the same GSIs (ByWalletAddress, ByEmailAddress, CapybaraInteractionIndex, by-stream/by-NFT/by-owner). Public GET for read-only catalog data (Capybara, LiveStream, Interactions, NFT list). Writes need a Dynamic JWT, and the server checks ownership (you can only edit your own User, votes and bids). Balance/TokenTransaction/NFT-transfer writes are **server-side only**, never client-set. |
-| `getStream`, `getViewership` Lambdas (Livepeer) | Yes | Same code as `GET /stream/{id}` and `GET /viewership/{id}` routes. The Livepeer key moves to **SSM SecureString** `/capyweb/livepeer-api-key`, read at runtime. **Rotate both leaked keys first** (they're hardcoded in this public repo). |
+| `getStream`, `getViewership` Lambdas (video playback) | Yes | Not carried over. The playback route comes with the new video source (task W6 in `docs/WASM_PLAN.md`). |
 | S3 `capytubeDrive`, `public/*` with **guest read/write/delete** | Yes: `StorageImage` shows capybara/NFT images (20 uses) | Private S3 bucket served read-only through the same CloudFront distribution at `/media/*` (Origin Access Control). **No guest writes.** Admin uploads go through a presigned-URL Lambda limited to an admin wallet allowlist. |
 | Amplify Hosting + custom domain | n/a (currently down, no DNS records) | Private **S3 bucket + CloudFront** in the Capy account (OAC, SPA fallback to index.html, HTTPS via ACM us-east-1). DNS: A/AAAA alias records for `capytube.xyz` and `www`, plus the ACM validation CNAME, written in the AL account's zone by a separate DNS-only user. Deploy = `vite build` -> `aws s3 sync` -> CloudFront invalidation. |
-| SSM `/amplify/*` secrets (Google/FB OAuth) | n/a once Cognito is dropped | One SSM SecureString `/capyweb/livepeer-api-key`, created by the admin by hand and read by Lambda at runtime. The pipeline gets no SSM permissions. |
+| SSM `/amplify/*` secrets (Google/FB OAuth) | n/a once Cognito is dropped | No SSM parameters. The pipeline gets no SSM permissions. |
 
 ## 2. Frontend changes this forces
 - Remove `aws-amplify`, `@aws-amplify/ui-react`, `@aws-amplify/ui-react-storage`, `@aws-amplify/backend*`, `aws-cdk*`, the `amplify/` folder, `amplify.yml`, `amplify_outputs.json`.
@@ -347,7 +347,7 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
 ```
 
 ### 5c. Capy account: role `capyweb-lambda-exec` (runtime role for every function, made by the admin, so the pipeline never creates IAM)
-Allows: write own logs, CRUD on `capyweb-*` tables, read the one Livepeer SSM param, and PutObject under `media/` (admin image upload presign only).
+Allows: write own logs, CRUD on `capyweb-*` tables, and PutObject under `media/` (admin image upload presign only).
 Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
 ```json
 {
@@ -380,14 +380,6 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "arn:aws:dynamodb:ap-southeast-1:619071347239:table/capyweb-*",
         "arn:aws:dynamodb:ap-southeast-1:619071347239:table/capyweb-*/index/*"
       ]
-    },
-    {
-      "Sid": "ReadLivepeerKey",
-      "Effect": "Allow",
-      "Action": [
-        "ssm:GetParameter"
-      ],
-      "Resource": "arn:aws:ssm:ap-southeast-1:619071347239:parameter/capyweb/livepeer-api-key"
     },
     {
       "Sid": "AdminImageUploadPresign",
@@ -457,7 +449,7 @@ Only zone Z01748582U1VPM60UY0TW. Only A/AAAA/CNAME records. Only the names `capy
 This is a one-off, read-only grant added to `capyweb-deploy` and removed afterwards: `dynamodb:ListTables`, `dynamodb:DescribeTable`, `dynamodb:Scan` on the old tables, and `s3:ListBucket`/`s3:GetObject` on the old storage bucket. (Whichever account they were in: if it's the AL account, the grant goes there instead.)
 
 ## 6. Hard usage limits (built into the stacks)
-- **Lambda:** `ReservedConcurrentExecutions` 5 on API functions and 2 on the Livepeer/upload functions, so the whole backend can never run more than about 20 at once. Timeout 10s, memory 256 MB. Caveat: AWS requires 10 unreserved concurrency to stay in the account. If the Capy account still has the new-account limit of 10 total, reserved caps can't be set, and the admin must request a concurrency limit increase (Service Quotas, Lambda concurrent executions -> 100, free).
+- **Lambda:** `ReservedConcurrentExecutions` 5 on API functions and 2 on the upload function, so the whole backend can never run more than about 20 at once. Timeout 10s, memory 256 MB. Caveat: AWS requires 10 unreserved concurrency to stay in the account. If the Capy account still has the new-account limit of 10 total, reserved caps can't be set, and the admin must request a concurrency limit increase (Service Quotas, Lambda concurrent executions -> 100, free).
 - **API Gateway (HTTP API):** stage default throttling 10 req/s steady, 20 burst. Stricter per-route limits on writes (votes/bids/chat: 2 req/s, burst 5). CORS limited to https://capytube.xyz and www. HTTP APIs have no usage plans or API keys (those are REST-API only). Throttling plus the Dynamic JWT on writes plus the Lambda caps do that job. If Nic wants per-client quotas, it has to be a REST API with a Lambda authorizer, which costs more and is slower.
 - **DynamoDB:** on-demand with a hard `OnDemandThroughput` ceiling per table (MaxReadRequestUnits 50, MaxWriteRequestUnits 20). Past that, requests throttle instead of costing more. No autoscaling, so no extra IAM. Point-in-time recovery on for the User and TokenTransaction tables.
 - **CloudFront:** PriceClass_100 (cheapest edge locations), long cache on hashed assets, compressed. No Lambda@Edge.

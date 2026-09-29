@@ -55,7 +55,3 @@ React cutover (Epic C), the source is Nic's `demo/`. For the React SPA, change t
 |---|---|
 | site (demo) | https://dev.capytube.xyz/ |
 | health | https://6aav3mczmingsx7oooetnvu2c40ilton.lambda-url.ap-southeast-1.on.aws/ |
-| stream / viewership | https://bf5uorawbts5pzedofuxye5o3u0hogcv.lambda-url.ap-southeast-1.on.aws/ |
-
-`/capyapp/capyweb/dev/livepeer-api-key` currently holds a placeholder. Overwrite it after
-rotating the leaked keys (`bd show capyweb-962`).

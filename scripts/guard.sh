@@ -235,7 +235,7 @@ else
   if [ -n "$playback_hits" ]; then
     echo "$playback_hits"
     fail "no playback-locator field in the WASM client" \
-      "playback comes only from GET /stream/{id} for a payer; see PLAYBACK_NAME in backend/src/lib/ddb.ts"
+      "the catalog never serves playback; see PLAYBACK_NAME in backend/src/lib/ddb.ts"
   else
     pass "no playback-locator field in $PLAYBACK_RS_FILES (pattern read from ddb.ts)"
   fi

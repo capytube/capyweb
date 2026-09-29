@@ -99,9 +99,8 @@ pool of people who know Leptos. Section 7 prices the rewrite with that in mind.
 | Guards and hooks (`scripts/`) | Page logic from each component (section 2) | `swiper` → CSS scroll-snap; `react-hot-toast` → a 40-line toast signal |
 
 Dead code in the React app that is **not** ported: `WhatCapytube`, `ComingSoonRibbon`, `NotPremiumPage`
-(unreachable), the top-up modal (never opens), watch-to-earn (`isCoinUpdateEnabled=false`),
-`src/utils/mockData.ts` (imported by nothing), and `LivepeerPlayer`/`LiveStream` (unmounted; replaced by
-the player in W6).
+(unreachable), the top-up modal (never opens), watch-to-earn (`isCoinUpdateEnabled=false`), and
+`src/utils/mockData.ts` (imported by nothing).
 
 ---
 
@@ -118,7 +117,7 @@ Routes keep their URLs so shared links still work. One route is added: `/auth/ca
 | Footer, Modal, toasts | Static links; overlay; hot-toast | Ported. The modal gets Escape and focus trapping, which it lacks today | — |
 | `/` Home | Public stream (S3 MP4), premium card (disabled), capybara cards, gallery | Stream player (W6) with the reel fallback (`capyweb-0c8`), capybara cards, scroll-snap gallery. Premium card dropped | `GET /streams?access=public`, `/capybaras` (live) |
 | `/watch` | Capybara cards with a count of private streams each | Same | live routes |
-| `/stream/:capyId` | Camera tabs, S3 video, emoji ratings, chat (no polling), watch-time counter | Camera tabs from `/streams` filtered by capybara, loaded by id so deep links work (broken today). Reactions and chat with 5 s polling while visible (the `docs/PLAN.md` cost model). Private cameras show title and price only until the viewer is signed in and has paid (`capyweb-0m7`) | Write API for chat and reactions; authenticated `GET /stream/{id}` for private playback |
+| `/stream/:capyId` | Camera tabs, S3 video, emoji ratings, chat (no polling), watch-time counter | Camera tabs from `/streams` filtered by capybara, loaded by id so deep links work (broken today). Reactions and chat with 5 s polling while visible (the `docs/PLAN.md` cost model). Private cameras show title and price only until the viewer is signed in and has paid (`capyweb-0m7`) | Write API for chat and reactions; private playback with the video source (W6) |
 | `/play` | Capybara picker, vote card, bid card, rules, CAPYL on-chain payment, thanks | Same flow, paid in **play coins from the server ledger** (`docs/PLAN.md` B6), with the cost shown before confirming. No on-chain transfer (Q1) | `/capybaras/{id}/interactions` (live); write API for votes and bids |
 | `/shop`, `/shop/:id` | NFT list, search, sort; details, offers, activity; buy/offer buttons do nothing | Read-only "passes" list and details from the live routes. Claiming with play coins once the write API exists | `/nfts…` (live) |
 | `/profile` | Signed-out marketing; name, CAPYL transactions from Solana, wallet, NFT link | Signed out: the same pitch plus a sign-in button. Signed in: name, coin balance, transactions from the ledger | `GET /me`, `GET /me/transactions` |
@@ -163,12 +162,10 @@ when it is built.
     `/media/<key>`). A URL, a path or a query string is refused and tested. The backend should decide
     whether a private stream exposes a reel at all.
 - **Private streams (`capyweb-0m7`):** the catalog shows title and price only; a private stream with no
-  price reads "Private", never "0 coins". The app calls `GET /stream/{id}` for a private stream **only**
-  with a token, and only after the server says the viewer has paid. The real protection must be
-  server-side. Today **both** `GET /stream/{id}` and `GET /viewership/{id}` are unauthenticated and only
-  rate-limited (`capyweb-s6d`): the same function forwards the id to Livepeer and returns its JSON. The
-  backend work to require the JWT and check entitlement on both blocks private playback, whatever the
-  front end does.
+  price reads "Private", never "0 coins". There is no playback route yet: it comes with the video
+  source in W6. The app will request playback for a private stream **only** with a token, and only after
+  the server says the viewer has paid. The real protection must be server-side: the playback route has to
+  require the JWT and check entitlement, whatever the front end does.
 - **Write routes the app will call** (proposed names that follow `docs/DATA_MODEL.md`; the backend owner
   decides them in `capyweb-7hj`): `GET/PUT /me`, `GET /me/transactions`, `GET/POST /streams/{id}/chat`,
   `POST /streams/{id}/reactions`, `POST /interactions/{id}/votes`, `POST /interactions/{id}/bids`,
@@ -462,7 +459,7 @@ everything else can start now.
 | W3 | Home: stream reel, capybara cards, gallery | 6% | W6 for video |
 | W4 | Watch + watch room: camera tabs, deep links, reel fallback, viewer count, reactions, chat with polling | 12% | writes: `capyweb-7hj` |
 | W5 | Play: capybara picker, vote and bid cards, rules, cost confirm, thanks | 9% | writes: `capyweb-7hj` |
-| W6 | Video player: hls.js (lazy-loaded, self-hosted) / native HLS through a JS shim; Livepeer playback from `/stream/{id}`; resume position; pause when the tab is hidden | 9% | private playback: `capyweb-0m7` + `capyweb-s6d` (backend) |
+| W6 | Video player and a new video source (options in `docs/VIDEO_OPTIONS.md`, being written): the playback route, resume position, pause when the tab is hidden | 9% | private playback: `capyweb-0m7` (backend) |
 | W7 | Shop and pass details: list, search, sort, offers, activity | 6% | claiming: write API |
 | W8 | Profile: signed-out pitch, name, balance, ledger history | 5% | `/me` routes |
 | W9 | Robot page and the four static pages | 4% | — |
@@ -491,16 +488,15 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
 3. **Sign-in blocked.** All write features wait on `capyweb-w26`, then `capyweb-7hj`. *Mitigation:* build
    against the auth seam and fixtures; do not ship half-working write buttons (hide them until the routes
    exist).
-4. **Private playback depends on the backend.** `/stream/{id}` and `/viewership/{id}` are unauthenticated
-   today. The front end can avoid calling them, but only the server can enforce payment (`capyweb-0m7`,
-   `capyweb-s6d`).
+4. **Private playback depends on the backend.** There is no playback route until W6. The front end can
+   avoid requesting private playback, but only the server can enforce payment (`capyweb-0m7`).
 5. **WebMCP is a moving draft.** It has already moved from `navigator` to `document`, and no browser
    ships it. *Mitigation:* the shim handles both; a feature flag keeps it off until reviewed.
 6. **Stale-asset crash after a deploy.** A deleted hashed `.wasm` comes back as HTML. *Mitigation:*
    section 5 item 3.
-7. **Video.** Without `@livepeer/react`, WebRTC low-latency playback and viewer metrics are gone.
-   hls.js adds ~150 KB gzip, loaded lazily on video pages only. iOS uses native HLS. *Mitigation:* test on
-   a real iPhone and Android phone before cutover.
+7. **Video.** The video source and the player are chosen in W6 (options in `docs/VIDEO_OPTIONS.md`). If
+   the player uses hls.js, it adds ~150 KB gzip, loaded lazily on video pages only; iOS uses native HLS.
+   *Mitigation:* test on a real iPhone and Android phone before cutover.
 8. **Tokens in `localStorage`.** Readable by any XSS. *Mitigation:* strict CSP, no third-party scripts,
    refresh-token rotation, short-lived access tokens kept in memory.
 9. **Lent Mac.** If it does not come back, the beads history and capyweb-lead's notes are gone. The ids
@@ -532,7 +528,7 @@ node tests/smoke.mjs            # headless browser check; setup in the file's he
 - **Pages:** `/` lists the cameras from `GET /streams` (fixture generated from
   `backend/src/scripts/seed-dev.ts`, in the shape `clean()` returns). `/streams/:id` shows one stream: a
   public stream shows where the player goes; a private one shows only "Sign in and pay to watch", with no
-  call to `/stream/{id}`. The prototype's `/streams/:id` is illustrative; the real app keeps
+  playback request. The prototype's `/streams/:id` is illustrative; the real app keeps
   `/stream/:capyId` (section 2).
 - **WebMCP:** `list_streams` (readOnly) and `open_stream` (navigation, not readOnly) are registered from
   Rust through `web/js/webmcp.js`.

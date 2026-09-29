@@ -9,7 +9,7 @@ s3-url src/utils/mockData.ts:66 capyweb-c24 direct S3 video URL
 s3-url src/utils/mockData.ts:75 capyweb-c24 direct S3 video URL
 s3-url src/utils/mockData.ts:84 capyweb-c24 direct S3 video URL
 s3-url src/components/RobotExperience/RobotExperience.tsx:8 capyweb-c24 direct S3 video URL
-s3-url src/components/Play/index.tsx:160 capyweb-c24 direct S3 video URL
+s3-url src/components/Play/index.tsx:159 capyweb-c24 direct S3 video URL
 
 # The clickable prototype also streams video straight from S3. Same fix as the frontend
 # (capyweb-2gx serves media through CloudFront); demo/ is a static page with no build step.

@@ -127,7 +127,6 @@ Constraint from Nic: *serverless only — Lambda + DynamoDB — cheap and scalab
                     └─────────────────────────────────────┘
 
   Cognito user pool (email OTP, free ≤10k MAU) ── identity only, no Hosted UI
-  SSM Parameter Store (SecureString) ─────────── Livepeer key
   No VPC. No NAT Gateway. No containers. No provisioned capacity anywhere.
 ```
 
@@ -233,7 +232,7 @@ Each of these becomes a guardrail task, because none of them is caught by "we ch
 | B6 | Server-authoritative ledger: balances and transactions are **only** writable by Lambda |
 | B7 | Media pipeline: private S3 + CloudFront OAC at `/media/*`; admin upload via presigned URL |
 | B8 | Seed data + (if keeping) one-off migration from the Amplify tables |
-| B9 | Livepeer `getStream` / `getViewership` ported to `GET /stream/{id}`, key from SSM |
+| B9 | Video playback route: comes with the new video source (task W6 in `docs/WASM_PLAN.md`) |
 
 ### Epic C — Frontend cutover *(depends on B)*
 
