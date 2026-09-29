@@ -1,5 +1,5 @@
 //! The app shell and route table. Routes keep the React app's URLs (docs/WASM_PLAN.md
-//! section 2); pages not ported yet render a ComingSoon stand-in.
+//! section 2).
 
 use leptos::prelude::*;
 use leptos_router::components::{Route, Router, Routes};
@@ -8,7 +8,6 @@ use leptos_router::{path, NavigateOptions};
 
 use crate::auth::{Auth, AuthCallback};
 use crate::components::chrome::{Footer, Header, TabBar, ToastHost};
-use crate::pages::coming::ComingSoon;
 use crate::pages::home::Home;
 use crate::pages::not_found::NotFound;
 use crate::pages::{

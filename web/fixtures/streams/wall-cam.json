@@ -2,6 +2,7 @@
   "id": "wall-cam",
   "title": "Climbing wall cam",
   "access_type": "private",
+  "video_mode": "recording",
   "capybara_ids": [
     "elon"
   ],

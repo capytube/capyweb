@@ -7,6 +7,7 @@
       "id": "food-cam",
       "title": "Food cam",
       "access_type": "public",
+      "video_mode": "recording",
       "is_live": false,
       "start_time": "2026-09-26T09:00:00.000Z",
       "capybara_ids": [
@@ -29,6 +30,7 @@
       "id": "main-cam",
       "title": "Main cam",
       "access_type": "public",
+      "video_mode": "recording",
       "is_live": false,
       "start_time": "2026-09-26T08:00:00.000Z",
       "capybara_ids": [
@@ -48,6 +50,7 @@
       "id": "wall-cam",
       "title": "Climbing wall cam",
       "access_type": "private",
+      "video_mode": "recording",
       "capybara_ids": [
         "elon"
       ],
