@@ -11,8 +11,8 @@ use crate::components::chrome::{Footer, Header, TabBar, ToastHost};
 use crate::pages::home::Home;
 use crate::pages::not_found::NotFound;
 use crate::pages::{
-    about::About, deletion::Deletion, play::Play, privacy::Privacy, profile::ProfileSignedOut,
-    robot::Robot, terms::Terms,
+    about::About, deletion::Deletion, play::Play, privacy::Privacy, profile::Profile, robot::Robot,
+    terms::Terms,
 };
 use crate::routes::Page;
 use crate::state::{use_toasts, Session, Toasts};
@@ -37,7 +37,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/play") view=Play/>
                     <Route path=path!("/shop") view=crate::pages::shop::Shop/>
                     <Route path=path!("/shop/:id") view=crate::pages::shop::PassDetails/>
-                    <Route path=path!("/profile") view=ProfileSignedOut/>
+                    <Route path=path!("/profile") view=Profile/>
                     <Route path=path!("/robot") view=Robot/>
                     <Route path=path!("/about-us") view=About/>
                     <Route path=path!("/privacy-policy") view=Privacy/>

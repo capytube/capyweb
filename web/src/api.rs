@@ -225,6 +225,20 @@ async fn authed(
     signal: Option<&web_sys::AbortSignal>,
 ) -> Result<serde_json::Value, ApiError> {
     let url = build_url(base_url(), path, &[]);
+    let (status, url, text) = authed_send(auth, method, url, body, idempotency, signal).await?;
+    decode(status, &url, &text)
+}
+
+/// `request_authed` without the decoding: status, URL and body text, so a caller can also read
+/// the error's `code`.
+async fn authed_send(
+    auth: Auth,
+    method: Method,
+    url: String,
+    body: Option<&str>,
+    key: Option<&str>,
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<(u16, String, String), ApiError> {
     let mut retried = false;
     loop {
         let Some(token) = auth.access_token().await else {
@@ -235,22 +249,14 @@ async fn authed(
                 code: String::new(),
             });
         };
-        let (status, text) = send(
-            &url,
-            method.clone(),
-            Some(&token),
-            body,
-            idempotency,
-            signal,
-        )
-        .await?;
+        let (status, text) = send(&url, method.clone(), Some(&token), body, key, signal).await?;
         if status == 401 && !retried {
             retried = true;
             if auth.refresh().await {
                 continue;
             }
         }
-        return decode(status, &url, &text);
+        return Ok((status, url, text));
     }
 }
 
@@ -292,27 +298,34 @@ fn json_field(name: &str, value: &str) -> String {
 }
 
 /// The signed-in user's own record (`GET /me`, capyweb-7hj: `{id, display_name, balance,
-/// createdAt}`). Only what the header needs; the other fields are ignored.
+/// createdAt}`). Only what the pages need; the other fields are ignored.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Me {
     /// Play-coin balance from the server ledger.
     pub balance: Option<u64>,
+    /// `None` until the user picks one (`PUT /me`).
+    pub display_name: Option<String>,
 }
 
 impl Me {
     pub fn from_value(v: &serde_json::Value) -> Me {
         Me {
             balance: v.get("balance").and_then(serde_json::Value::as_u64),
+            display_name: str_field(v, "display_name"),
         }
     }
 }
 
+fn str_field(v: &serde_json::Value, key: &str) -> Option<String> {
+    v.get(key).and_then(|s| s.as_str()).map(str::to_owned)
+}
+
 /// `Ok(None)` while the route does not exist (404).
 pub async fn get_me(auth: Auth) -> Result<Option<Me>, ApiError> {
-    match request_authed(auth, Method::GET, "/me", None, None).await {
+    match authed_json(auth, Method::GET, "/me", &[], None, None).await {
         Ok(v) => Ok(Some(Me::from_value(&v))),
-        Err(e) if e.is_not_found() => Ok(None),
-        Err(e) => Err(e),
+        Err(e) if e.error.is_not_found() => Ok(None),
+        Err(e) => Err(e.error),
     }
 }
 
@@ -730,6 +743,194 @@ pub async fn post_reaction_json(
     post_json(auth, &path, &json_field("reaction", reaction), signal).await
 }
 
+// -- Signed-in writes and the ledger (W5, W8; docs/DATA_MODEL.md section 6) ----------------
+
+/// A failed signed-in call, with the server's stable `code` when it sent one
+/// (`insufficient_coins`, `interaction_closed`, `bid_too_low`, `conflict`, …).
+#[derive(Debug, Clone, PartialEq)]
+pub struct CodedError {
+    pub code: Option<String>,
+    pub error: ApiError,
+}
+
+impl From<ApiError> for CodedError {
+    /// `decode` has already read the body's `code` into the error.
+    fn from(error: ApiError) -> Self {
+        let code = Some(error.code.clone()).filter(|c| !c.is_empty());
+        CodedError { code, error }
+    }
+}
+
+impl CodedError {
+    pub fn is(&self, code: &str) -> bool {
+        self.code.as_deref() == Some(code)
+    }
+
+    /// No answer, or a server failure: the request may have been carried out, so the only safe
+    /// retry is the same request with the same `Idempotency-Key`.
+    pub fn outcome_unknown(&self) -> bool {
+        self.error.status == 0 || self.error.status >= 500
+    }
+}
+
+/// `Idempotency-Key`: 8–64 of `A-Za-z0-9_-`, as the server requires.
+fn validate_key(key: &str) -> Result<(), ApiError> {
+    if (8..=64).contains(&key.len())
+        && key
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-'))
+    {
+        Ok(())
+    } else {
+        Err(bad_input("invalid idempotency key"))
+    }
+}
+
+async fn authed_json(
+    auth: Auth,
+    method: Method,
+    path: &str,
+    query: &[(&str, &str)],
+    body: Option<serde_json::Value>,
+    key: Option<&str>,
+) -> Result<serde_json::Value, CodedError> {
+    let url = build_url(base_url(), path, query);
+    let body = body.map(|b| b.to_string());
+    let (status, url, text) = authed_send(auth, method, url, body.as_deref(), key, None).await?;
+    decode(status, &url, &text).map_err(CodedError::from)
+}
+
+/// `PUT /me`: set the display name. The server applies the rules (2–32 letters or digits, single
+/// separators, reserved names) and answers 400 with a message when it refuses.
+pub async fn put_me(auth: Auth, display_name: &str) -> Result<Me, CodedError> {
+    let body = serde_json::json!({ "display_name": display_name });
+    authed_json(auth, Method::PUT, "/me", &[], Some(body), None)
+        .await
+        .map(|v| Me::from_value(&v))
+}
+
+/// One ledger entry. `amount` is signed: + received, - spent.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LedgerEntry {
+    pub id: String,
+    /// `signup_grant`, `vote`, `bid`, `bid_raise`, `bid_refund`, …
+    pub kind: String,
+    pub amount: i64,
+    pub created_at: String,
+}
+
+/// A page of the ledger, newest first; `cursor` fetches the next (older) page.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Ledger {
+    pub items: Vec<LedgerEntry>,
+    pub cursor: Option<String>,
+}
+
+impl Ledger {
+    pub fn from_value(v: &serde_json::Value) -> Ledger {
+        let items = v
+            .get("items")
+            .and_then(|i| i.as_array())
+            .map(|items| {
+                items
+                    .iter()
+                    .filter_map(|e| {
+                        Some(LedgerEntry {
+                            id: str_field(e, "id")?,
+                            kind: str_field(e, "type").unwrap_or_default(),
+                            amount: e.get("amount")?.as_i64()?,
+                            created_at: str_field(e, "createdAt").unwrap_or_default(),
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        Ledger {
+            items,
+            cursor: str_field(v, "cursor").filter(|c| !c.is_empty()),
+        }
+    }
+}
+
+/// `GET /me/transactions`: 20 entries per page, newest first.
+pub async fn list_transactions(auth: Auth, cursor: Option<&str>) -> Result<Ledger, CodedError> {
+    let query = [("limit", "20"), ("cursor", cursor.unwrap_or_default())];
+    authed_json(auth, Method::GET, "/me/transactions", &query, None, None)
+        .await
+        .map(|v| Ledger::from_value(&v))
+}
+
+/// A successful vote or bid: what the server charged (a raise of one's own bid pays only the
+/// difference), and whether this was a replay of an earlier answer for the same key.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct Charge {
+    pub charged: u64,
+    pub replayed: bool,
+}
+
+impl Charge {
+    pub fn from_value(v: &serde_json::Value) -> Charge {
+        Charge {
+            charged: v.get("charged").and_then(|c| c.as_u64()).unwrap_or(0),
+            replayed: v.get("replayed").and_then(|r| r.as_bool()) == Some(true),
+        }
+    }
+}
+
+/// What a vote is for: one of the interaction's options, or a custom snack request.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum VoteChoice<'a> {
+    Option(&'a str),
+    Custom(&'a str),
+}
+
+async fn spend(
+    auth: Auth,
+    id: &str,
+    kind: &str,
+    body: serde_json::Value,
+    key: &str,
+) -> Result<Charge, CodedError> {
+    validate_id(id)?;
+    validate_key(key)?;
+    let path = format!("/interactions/{id}/{kind}");
+    authed_json(auth, Method::POST, &path, &[], Some(body), Some(key))
+        .await
+        .map(|v| Charge::from_value(&v))
+}
+
+/// `POST /interactions/{id}/votes`. The server prices it from the interaction; the client never
+/// sends a price. `key` is this action's `Idempotency-Key`, the same for every retry.
+pub async fn vote(
+    auth: Auth,
+    id: &str,
+    choice: VoteChoice<'_>,
+    number_of_votes: u64,
+    key: &str,
+) -> Result<Charge, CodedError> {
+    let body = match choice {
+        VoteChoice::Option(o) => {
+            serde_json::json!({ "option_id": o, "number_of_votes": number_of_votes })
+        }
+        VoteChoice::Custom(t) => {
+            serde_json::json!({ "custom_request": t, "number_of_votes": number_of_votes })
+        }
+    };
+    spend(auth, id, "votes", body, key).await
+}
+
+/// `POST /interactions/{id}/bids` with the amount the user typed; the server decides.
+pub async fn bid(auth: Auth, id: &str, amount: u64, key: &str) -> Result<Charge, CodedError> {
+    spend(
+        auth,
+        id,
+        "bids",
+        serde_json::json!({ "amount": amount }),
+        key,
+    )
+    .await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1055,5 +1256,66 @@ mod tests {
         assert!(older.reactions.is_none());
         assert_eq!(older.cursor.as_deref(), Some("next"));
         assert!(chat_message(&serde_json::json!({})).is_none());
+    }
+
+    #[test]
+    fn write_errors_carry_the_server_code() {
+        let body = r#"{"error":"not enough coins","code":"insufficient_coins"}"#;
+        let refused = CodedError::from(decode::<serde_json::Value>(409, "/x", body).unwrap_err());
+        assert!(refused.is("insufficient_coins"));
+        assert_eq!(refused.error.message, "not enough coins");
+        let bare = |body: &str| {
+            CodedError::from(decode::<serde_json::Value>(409, "/x", body).unwrap_err()).code
+        };
+        assert_eq!(bare(r#"{"error":"bad"}"#), None);
+        assert_eq!(bare("<html>"), None);
+        let unknown = |status| {
+            CodedError::from(ApiError {
+                status,
+                url: String::new(),
+                message: String::new(),
+                code: String::new(),
+            })
+        };
+        assert!(unknown(0).outcome_unknown());
+        assert!(unknown(503).outcome_unknown());
+        assert!(!unknown(409).outcome_unknown());
+    }
+
+    #[test]
+    fn idempotency_keys_match_the_server_rule() {
+        assert!(validate_key("3f1c2a9e-7b4d-4c1e-9a55-0d8e2f6b1c3a").is_ok());
+        assert!(validate_key("abcDEF12_-").is_ok());
+        for bad in ["", "short", "has space12", &"x".repeat(65), "a#b#c#d#e"] {
+            assert!(validate_key(bad).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn ledger_and_charge_shapes() {
+        let v = serde_json::json!({"items":[
+            {"id":"q3","type":"vote","amount":-2,"related_type":"vote","related_id":"Xy","createdAt":"2026-09-29T08:01:00Z"},
+            {"id":"S9","type":"signup_grant","amount":50,"createdAt":"2026-09-29T08:00:00Z"},
+            {"type":"broken"}
+        ],"count":3,"cursor":"next-1"});
+        let l = Ledger::from_value(&v);
+        assert_eq!(l.items.len(), 2, "entries without id or amount are skipped");
+        assert_eq!(l.items[0].amount, -2);
+        assert_eq!(l.items[1].kind, "signup_grant");
+        assert_eq!(l.cursor.as_deref(), Some("next-1"));
+        assert_eq!(
+            Ledger::from_value(&serde_json::json!({"items":[],"cursor":""})).cursor,
+            None
+        );
+        let c = Charge::from_value(&serde_json::json!({"charged":21,"replayed":true}));
+        assert_eq!(
+            c,
+            Charge {
+                charged: 21,
+                replayed: true
+            }
+        );
+        let me = Me::from_value(&serde_json::json!({"display_name":"Capy Fan","balance":50}));
+        assert_eq!(me.display_name.as_deref(), Some("Capy Fan"));
     }
 }

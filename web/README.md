@@ -52,7 +52,7 @@ Cognito managed login with PKCE; the flow and its reasons are in `docs/WASM_PLAN
   configured: it is `<page origin>/auth/callback`, which must be in the app client's callback
   URLs (the template lists the dev site plus `http://127.0.0.1:8791` and `http://localhost:8791`).
   To try a deployed pool locally, put its values in `web/config.json` and do not commit them.
-  `api::get_me` reads only `balance` from `GET /me` (`{id, display_name, balance, createdAt}`).
+  `api::get_me` reads `balance` and `display_name` from `GET /me` (`{id, display_name, balance, createdAt}`).
 - **The seam** (`src/auth.rs`, pure logic in `src/oauth.rs`):
   - `auth::use_auth()` returns `Auth`: `ready()` (a pool is configured and a stored session
     was tried), `signed_in()`, `user()` (`User { sub, email }`, for display only), all reactive;
@@ -73,6 +73,31 @@ Cognito managed login with PKCE; the flow and its reasons are in `docs/WASM_PLAN
   `form-action 'self'` holds; the managed-login pages carry Cognito's own CSP on their origin.
 - **Test:** `tests/pages/auth.mjs` walks the flow against a fake Cognito intercepted in the
   browser, and checks that the default build shows no sign-in control on any page.
+
+## Play coins: votes, bids and the profile (W5, W8)
+
+Routes and error codes are in `docs/DATA_MODEL.md` section 6. Pages: `src/pages/play.rs`,
+`src/pages/profile.rs`; API: `api::vote`, `api::bid`, `api::put_me`, `api::list_transactions`
+(failures are `api::CodedError`, carrying the server's `code`).
+
+- **Buttons follow `auth.ready()`.** Without a configured pool, Play shows read-only cards and no
+  vote, bid, confirm or sign-in button. Signed out, Vote and Bid call
+  `sign_in_then("/play?capy=…", PendingAction { kind: "vote" | "bid", data })`; the page takes the
+  action back once (`take_pending`) and opens its confirm step. Nothing is charged without Confirm.
+- **Prices come from the interaction the server sent** (`vote_cost`, `custom_request_cost`,
+  `current_bid`) and are shown in the confirm dialog with the balance before and after. A vote
+  sends only the option (or the snack idea) and the number of votes; a bid sends the amount typed,
+  checked here against the minimum and the balance, and the server decides.
+- **One `Idempotency-Key` per action** (`auth::random_key`, 128 bits from `getRandomValues`), made
+  when the dialog opens. A retry after no answer (network error or 5xx) reuses it, even if the
+  dialog was closed and the same action opened again; a new action gets a new key. Confirm is
+  disabled while a request is out, so a double click sends one request.
+- After a charge the balance (`GET /me`, into `Session.coins`) and the cards are reloaded; a
+  refusal (`insufficient_coins`, `interaction_closed`, `bid_too_low`, `conflict`) shows one plain
+  sentence ending "Nothing was spent." and no Confirm.
+- **Test:** `tests/pages/w58b.mjs`, against the fake Cognito of `auth.mjs` and a fake write API
+  made of page routes. In fixture mode the query string is dropped, so the fake ledger answers by
+  call order.
 
 ## Video (W6)
 
