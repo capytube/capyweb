@@ -122,7 +122,11 @@ opens with the 11 catalog items only.
 
 **For G3:**
 - `deploy.sh prod dns <name>` (D2);
-- the alarm relay deployed and its synthetic test passed (`capyweb-b6e.12.6`; no clicks for anyone);
+- ~~the alarm relay deployed and its synthetic test passed~~ **Done 2026-09-30:**
+  - `capyapp-capyweb-alarm-relay` CREATE_COMPLETE at 02:34, with all five topics on SQS;
+  - the job `capyweb-alarm-relay` runs on Mac mini 3 every 300 s, pinned to 37b70c0;
+  - the two synthetic alarms were posted as expected at 02:38, and the queue was left empty
+    (`capyweb-b6e.12.6`; no clicks for anyone);
 - the `xqg` blockers above.
 
 The site-down alarm stays in ALARM until the apex resolves.
@@ -308,7 +312,7 @@ A simulator check of each row at the go is the manager's call.
 | Real phones | Not done | WASM_PLAN risk mitigation: "test on a real iPhone and Android phone before cutover". The W14 QA ran headless Chromium only; iOS Safari uses the native HLS path. | A person with the phones: the manager decides who. I first run Playwright's WebKit on dev myself, which catches most Safari issues but is not iOS. | One real iPhone and one Android phone, 15 minutes each, on the dark production stack if the tester can map the name; otherwise on dev. |
 | Chat moderation | No tool | Public chat on a public site, and the admin beads (`2pj`, `x7w`, `zlb`, `jji`) wait until after cutover. Today a message can be removed only by an admin in DynamoDB. | The manager: is a runbook enough for launch? | A written runbook for launch: remove a chat item, and disable a user with `AdminDisableUser`. A moderation route follows with the admin beads, spec first. |
 | The Amplify domain association | Unknown | D0 | An admin in autonomous-lab | Check it before G2 |
-| Alarm route | The relay is built (`capyweb-b6e.12.6`) | P10: the relay stack, the Mac mini 3 job and a synthetic alarm posted to the room | capyweb-manager deploys it; no clicks | Before G3 |
+| Alarm route | **Done** (`capyweb-b6e.12.6`): deployed 02:34, synthetic test passed 02:38 | P10: the relay stack, the Mac mini 3 job and a synthetic alarm posted to the room | — | — |
 
 Not blockers for play coins, and already on the "Before real money" list in `docs/WASM_PLAN.md`:
 - `c8m`: the paid footage is public elsewhere;
