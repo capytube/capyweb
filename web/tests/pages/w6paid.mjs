@@ -139,13 +139,13 @@ export async function check({ browser, BASE, SHOTS }) {
   assert.equal(api.posts.length, twice + 1, 'one purchase for a same-tick double Start');
   await page.click('[data-testid=paid-stop]');
 
-  // -- a picture that will not play: one fresh start, then no more buying, and a message ------
+  // -- a picture that will not play: one fresh start on the same cookies, then a message -------
   await page.route('**/fixtures/paid/wall-cam/**', (r) => r.fulfill({ status: 403, body: 'no' }));
   const dead = api.posts.length;
   await page.click('[data-testid=paid-watch]');
   await page.click('[data-testid=paid-start]');
   await note.getByText('The recording would not play, so nothing more will be charged.').waitFor({ timeout: 30000 });
-  assert.ok(api.posts.length - dead <= 2, `the purchase and at most one fresh start (${api.posts.length - dead})`);
+  assert.equal(api.posts.length - dead, 1, 'the purchase only: the fresh start reuses the cookies');
   assert.equal(await video.count(), 0);
   const gaveUp = api.posts.length;
   await sleep(6000);
@@ -153,8 +153,8 @@ export async function check({ browser, BASE, SHOTS }) {
   await page.unroute('**/fixtures/paid/wall-cam/**');
 
   // -- a picture that never comes (the server takes the request and never answers): no error,
-  //    so the player's 15 s watchdog fails it; one fresh start, then no more buying, even at
-  //    the fake's 5 s cadence (review rv-1790680891-72131) ------------------------------------
+  //    so the player's 15 s watchdog fails it; one fresh start on the same cookies, then no
+  //    more buying, even at the fake's 5 s cadence (review rv-1790680891-72131) ---------------
   const hung = [];
   await page.route('**/fixtures/paid/wall-cam/**', (r) => { hung.push(r); }); // never answered
   const hang = api.posts.length;
@@ -164,10 +164,10 @@ export async function check({ browser, BASE, SHOTS }) {
   await sleep(8000); // past the 5 s renewal: nothing has played, so nothing more is bought
   assert.equal(api.posts.length - hang, 1, 'no renewal for a picture that has not played');
   await note.getByText('The recording would not play, so nothing more will be charged.').waitFor({ timeout: 40000 });
-  assert.equal(api.posts.length - hang, 2, 'the purchase and one fresh start');
+  assert.equal(api.posts.length - hang, 1, 'the purchase only: the fresh start reuses the cookies');
   assert.equal(await video.count(), 0);
   await sleep(6000);
-  assert.equal(api.posts.length - hang, 2, 'nothing bought after giving up');
+  assert.equal(api.posts.length - hang, 1, 'nothing bought after giving up');
   await page.unroute('**/fixtures/paid/wall-cam/**');
   await Promise.all(hung.map((r) => r.abort().catch(() => {})));
 

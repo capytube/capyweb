@@ -399,10 +399,14 @@ free tiers (about one call a minute per paying viewer).
   viewer's own pause keeps it moving, so a paused, visible tab still pays, as before. After 40 s or more hidden it starts the player again once the
   next minute is paid, in case the cookies ran out. Stop, leaving the camera or a refusal ends it;
   after a refusal the minute already paid still plays.
-- A picture that fails or never comes (the player's 15 s rule) gets one fresh start. It is
-  usually free: the server charges only when fewer than 30 s are paid. If it fails again before
-  it has played, nothing more is bought, and the note says "The recording would not play, so
-  nothing more will be charged." A hang therefore costs the first minute and no more.
+- A picture that fails or never comes (the player's 15 s rule) gets one fresh start. It buys
+  nothing while the cookies it has are good for 20 s more: they last 30 s past the paid time,
+  so 50 s past the renewal point (`GRACE_SECONDS`, `RENEW_BEFORE_END_SECONDS`). Only later does it
+  buy fresh cookies, charged only when fewer than 30 s are paid. (Before W14 it always bought them;
+  the W14 dev check had a stall noticed with under 30 s paid, and the fresh start took a second
+  minute.) If it fails again before it has played, nothing more is bought, and the note says "The
+  recording would not play, so nothing more will be charged." A hang therefore costs the first
+  minute and no more.
 - The fresh start resumes at the saved position, which is where the picture stopped. A hang that
   clears is rescued there. Media that is broken at that spot fails again and gives up, even though
   the earlier segments still load (the review took this for an hls.js re-attach quirk; `w6media.mjs`

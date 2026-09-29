@@ -383,7 +383,7 @@ async fn watch_loop(
     let mut first = true;
     let mut epoch = 0;
     let mut restarted = false;
-    loop {
+    'buy: loop {
         let key = crate::auth::random_key();
         let mut answer = api::buy_playback(auth, &id, &key).await;
         for wait in [2, 4] {
@@ -436,7 +436,7 @@ async fn watch_loop(
         if state.with_untracked(|s| *s != Paid::Watching(src.clone(), epoch)) {
             broken.set(false);
             moving.set(false);
-            state.set(Paid::Watching(src, epoch));
+            state.set(Paid::Watching(src.clone(), epoch));
         }
         first = false;
         // Wait for the next minute a second at a time, so a picture that will not play is noticed
@@ -445,30 +445,43 @@ async fn watch_loop(
         // come back, is failed by the player after 15 s of visible time with no media arriving;
         // one that waits for a tap on play (autoplay refused) costs nothing more until it gets one.
         let (mut waited, mut away) = (0, 0);
-        while current() && !broken.get_untracked() {
-            if waited >= pass.renew_after_s {
-                if page_hidden() {
-                    away += 1;
-                } else if moving.get_untracked() {
-                    break;
+        loop {
+            while current() && !broken.get_untracked() {
+                if waited >= pass.renew_after_s {
+                    if page_hidden() {
+                        away += 1;
+                    } else if moving.get_untracked() {
+                        break;
+                    }
                 }
+                sleep_s(1).await;
+                waited += 1;
             }
-            sleep_s(1).await;
-            waited += 1;
-        }
-        if !current() {
-            return;
-        }
-        if broken.get_untracked() {
+            if !current() {
+                return;
+            }
+            if !broken.get_untracked() {
+                break;
+            }
             if restarted {
                 note.set("The recording would not play, so nothing more will be charged.".into());
                 state.set(Paid::Idle);
                 return;
             }
-            // Once: fresh cookies (free while 30 s or more are paid) and a fresh player.
+            // Once, a fresh player. The cookies last 30 s past the paid time, and the renewal
+            // point is 20 s before it (backend/src/playback.ts GRACE_SECONDS and
+            // RENEW_BEFORE_END_SECONDS), so they end 50 s after the renewal point. While 20 s or
+            // more of them are left the fresh player uses them and nothing is bought: a hang costs
+            // the first minute and no more. Later, it buys fresh cookies (charged only when under
+            // 30 s are paid).
             restarted = true;
             epoch += 1;
-            continue;
+            if waited + 20 > pass.renew_after_s + 50 {
+                continue 'buy;
+            }
+            broken.set(false);
+            moving.set(false);
+            state.set(Paid::Watching(src.clone(), epoch));
         }
         // It played since the last fresh start, so a later failure gets a fresh start of its own.
         restarted = false;

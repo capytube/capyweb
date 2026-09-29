@@ -1,7 +1,8 @@
 // W6 follow-ups (W14): a paid camera whose media misbehaves, from review rv-1790683988-53300.
 // Nothing is bought while the picture is not moving; media that stops coming is failed by the
-// player's 15 s watchdog and gets one fresh start; a slow server that is still answering is not
-// a hang; a fresh start rescues a hang that clears; and a refused autoplay costs nothing more
+// player's 15 s watchdog and gets one fresh start, on the same cookies while they last (the W14 dev
+// check found a late stall paid a second minute for it); a slow server that is still answering is
+// not a hang; a fresh start rescues a hang that clears; and a refused autoplay costs nothing more
 // until the viewer presses play. Each case has its own context and fake API (w6paid.mjs), and
 // the cases run at the same time. The paid playlist is 4 segments of 2 s (fixtures/paid/wall-cam).
 import assert from 'node:assert/strict';
@@ -47,8 +48,8 @@ async function signedIn(browser, BASE) {
 }
 
 // Plays the first segment, then every later one hangs: the picture stalls at 2 s. The 5 s renewal
-// falls inside the stall and waits; the watchdog fails the player; the fresh start resumes where
-// the picture stopped, which still hangs, so it gives up.
+// falls inside the stall and waits; the watchdog fails the player; the fresh start buys nothing and
+// resumes where the picture stopped, which still hangs, so it gives up. One minute in all.
 async function stall(browser, BASE) {
   const s = await signedIn(browser, BASE);
   const held = [];
@@ -66,9 +67,10 @@ async function stall(browser, BASE) {
   await s.page.locator(VIDEO).evaluate((v) => { v.dataset.old = '1'; }); // tells the fresh start's apart
   await sleep(8000); // past the 5 s renewal
   assert.equal(s.api.posts.length, atStall, 'nothing bought while the picture is stalled');
-  await until(() => s.api.posts.length === atStall + 1, 'the fresh start after the watchdog', 20000);
   // Not an hls.js quirk: the fresh start resumes at the saved position, where the media hangs.
   const fresh = `${VIDEO}:not([data-old])`;
+  await s.page.locator(fresh).waitFor({ timeout: 20000 });
+  assert.equal(s.api.posts.length, atStall, 'the fresh start reuses the cookies: nothing bought');
   await s.page.waitForFunction((sel) => {
     const v = document.querySelector(sel);
     return v && v.readyState >= 1 && v.currentTime >= 1.5;
@@ -76,25 +78,30 @@ async function stall(browser, BASE) {
   assert.equal(await s.page.locator(fresh).evaluate((v) => v.played.length > 0 && v.played.start(0) < 1), false,
     'the fresh start resumed where the picture stopped, not from the beginning');
   await s.page.getByText(GAVE_UP).waitFor({ timeout: 30000 });
-  assert.equal(s.api.posts.length, atStall + 1, 'then no more buying');
+  assert.equal(s.api.posts.length, atStall, 'then no more buying');
   await sleep(6000);
-  assert.equal(s.api.posts.length, atStall + 1, 'nothing bought after giving up');
+  assert.equal(s.api.posts.length, atStall, 'nothing bought after giving up');
   await s.done(held);
 }
 
-// Every media request hangs until the fresh start is bought; after that the media answers. The
-// fresh start plays, the renewals carry on, and nothing gives up.
+// Every media request hangs until the fresh start's player appears; then the media answers
+// (what was held included). The fresh start plays, the renewals carry on, and nothing gives up.
 async function rescue(browser, BASE) {
   const s = await signedIn(browser, BASE);
-  const held = [];
-  await s.context.route(MEDIA, (route) => (s.api.posts.length < 2 ? held.push(route) : route.fallback()));
+  let held = [];
+  await s.context.route(MEDIA, (route) => (held ? held.push(route) : route.fallback()));
   await s.start();
-  await until(() => s.api.posts.length === 2, 'the fresh start after the watchdog', 25000);
+  await s.page.locator(VIDEO).evaluate((v) => { v.dataset.old = '1'; });
+  await s.page.locator(`${VIDEO}:not([data-old])`).waitFor({ timeout: 25000 });
+  assert.equal(s.api.posts.length, 1, 'the fresh start reuses the cookies: nothing bought');
+  const waiting = held;
+  held = null;
+  await Promise.all(waiting.map((route) => route.fallback().catch(() => {})));
   await s.moved(15000);
-  await until(() => s.api.posts.length === 3, 'the next minute once the picture moves', 10000);
+  await until(() => s.api.posts.length === 2, 'the next minute once the picture moves', 10000);
   assert.equal(await s.gaveUp(), 0, 'the fresh start rescued it');
   await s.page.click('[data-testid=paid-stop]');
-  await s.done(held);
+  await s.done();
 }
 
 // Every media request takes 6 s: the first picture comes after about 24 s (playlist, rendition,
