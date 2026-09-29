@@ -93,8 +93,11 @@ fn name_error(message: &str) -> &'static str {
 struct Prof {
     /// The name the server has.
     saved: Option<String>,
-    /// What is in the field now (not rendered back, so typing is not disturbed).
+    /// What is in the field now. The field shows exactly this, so what Save sends is what is on
+    /// screen.
     typed: String,
+    /// The user has typed in the field: the account loading late must not replace their text.
+    touched: bool,
     note: &'static str,
     entries: Vec<LedgerEntry>,
     cursor: Option<String>,
@@ -118,7 +121,9 @@ fn signed_in_view() -> impl IntoView {
         if let Ok(Some(me)) = api::get_me(auth).await {
             coins.set(me.balance);
             p.update(|s| {
-                s.typed = me.display_name.clone().unwrap_or_default();
+                if !s.touched {
+                    s.typed = me.display_name.clone().unwrap_or_default();
+                }
                 s.saved = me.display_name;
             });
         }
@@ -182,8 +187,11 @@ fn signed_in_view() -> impl IntoView {
                     "Name"
                     <input class="play-input" type="text" maxlength="32" autocomplete="nickname"
                         data-testid="name-input"
-                        prop:value=t(|s| s.saved.clone().unwrap_or_default())
-                        on:input=move |ev| p.update_untracked(|s| s.typed = event_target_value(&ev))/>
+                        prop:value=t(|s| s.typed.clone())
+                        on:input=move |ev| p.update_untracked(|s| {
+                            s.typed = event_target_value(&ev);
+                            s.touched = true;
+                        })/>
                 </label>
                 <button type="submit" class="btn">"Save"</button>
             </form>

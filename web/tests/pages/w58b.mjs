@@ -16,8 +16,19 @@ async function fakeApi(context, cognito) {
     puts: [],
     seen: new Map(),
     abortNext: false,
+    // Apply the next spend, then drop the answer: the server charged, the browser saw a failure.
+    loseNext: false,
     refuse: null,
     txCalls: 0,
+    // GET /me waits while this is set (a promise); with meGateOnce, only the next one waits.
+    meGate: null,
+    meGateOnce: false,
+  };
+  api.hold = (once) => {
+    let release;
+    api.meGate = new Promise((r) => { release = r; });
+    api.meGateOnce = once;
+    return () => { api.meGate = null; release(); };
   };
   const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   const me = () => ({ id: 'user-sub-1', display_name: api.name, balance: api.balance, createdAt: '2026-09-29T08:00:00.000Z' });
@@ -25,7 +36,14 @@ async function fakeApi(context, cognito) {
   await context.route('**/fixtures/me.json', cognito.guarded(async (route) => {
     const req = route.request();
     bearer(req);
-    if (req.method() === 'GET') return json(route, 200, me());
+    if (req.method() === 'GET') {
+      const gate = api.meGate;
+      if (gate) {
+        if (api.meGateOnce) api.meGate = null;
+        await gate;
+      }
+      return json(route, 200, me());
+    }
     assert.equal(req.method(), 'PUT');
     const body = JSON.parse(req.postData());
     assert.deepEqual(Object.keys(body), ['display_name'], 'PUT /me sends only the name');
@@ -79,12 +97,24 @@ async function fakeApi(context, cognito) {
     api.balance -= cost;
     const answer = { charged: cost, transaction_id: `tx-${api.posts.length}` };
     api.seen.set(key, answer);
+    if (api.loseNext) {
+      api.loseNext = false;
+      return route.abort('failed');
+    }
     return json(route, 201, answer);
   }));
   return api;
 }
 
 const dialog = (page) => page.locator('dialog.modal[open]');
+
+/** Wait for a condition on the fake API's side, for at most 10 s. */
+async function until(page, cond, what) {
+  for (let t = 0; !cond(); t += 20) {
+    assert.ok(t < 10000, `timed out waiting for ${what}`);
+    await page.waitForTimeout(20);
+  }
+}
 
 async function openVote(page, option, votes) {
   const card = page.locator('[data-testid=vote-card]');
@@ -166,12 +196,51 @@ export async function check({ browser, BASE, SHOTS }) {
   assert.deepEqual(api.posts[2].body, { custom_request: 'Mango please', number_of_votes: 1 });
   assert.equal(api.balance, 42, 'charged once for the retried vote');
 
+  // -- a late answer for one action never touches another (review rv-1790673984-94044) --------
+  // Vote A succeeds, but its balance refresh is slow. Meanwhile vote B is sent, is charged, and
+  // its answer is lost. When A's refresh lands, B's dialog must stay open with B's key, so
+  // Try again replays B instead of charging it a second time.
+  await openVote(page, 'Carrots', 1);
+  await page.waitForFunction(() => document.querySelector('[data-testid=confirm-sum]')?.innerText.includes('After'));
+  let release = api.hold(true);
+  await page.locator('[data-testid=confirm]').click();
+  await until(page, () => api.posts.length === 4, 'vote A to reach the server');
+  await dialog(page).getByRole('button', { name: 'Cancel' }).click();
+  await openVote(page, 'Timothy', 2);
+  api.loseNext = true;
+  await page.locator('[data-testid=confirm]').click();
+  await dialog(page).getByText('No answer from CapyTube').waitFor();
+  const lostKey = api.posts.at(-1).key;
+  assert.equal(api.balance, 39, 'A (1) and B (2) were both charged by the server');
+  release();
+  await page.locator('[data-testid=thanks]').getByText('Thank you for your vote! 1 play coin spent.').waitFor();
+  assert.equal(await dialog(page).count(), 1, "A's late answer leaves B's dialog open");
+  await dialog(page).getByText('No answer from CapyTube').waitFor();
+  await page.locator('[data-testid=confirm]', { hasText: 'Try again' }).click();
+  await page.locator('[data-testid=thanks]').getByText('2 play coins spent').waitFor();
+  assert.equal(api.posts.at(-1).key, lostKey, "B's retry reuses B's key");
+  assert.equal(api.balance, 39, 'B was charged once');
+  // The same late answer must not close a dialog the user has not confirmed yet.
+  await openVote(page, 'Carrots', 1);
+  await page.waitForFunction(() => document.querySelector('[data-testid=confirm-sum]')?.innerText.includes('After'));
+  release = api.hold(true);
+  await page.locator('[data-testid=confirm]').click();
+  await until(page, () => api.posts.length === 7, 'the second vote A to reach the server');
+  await dialog(page).getByRole('button', { name: 'Cancel' }).click();
+  await openVote(page, 'Pandan', 1);
+  release();
+  await page.locator('[data-testid=thanks]').getByText('1 play coin spent. You have 38').waitFor();
+  assert.equal(await dialog(page).count(), 1, 'the unconfirmed Pandan dialog stays open');
+  assert.match(await page.innerText('[data-testid=confirm-what]'), /Pandan/);
+  await dialog(page).getByRole('button', { name: 'Cancel' }).click();
+  assert.equal(api.balance, 38);
+
   // -- refusals: plain messages, nothing charged ------------------------------------------------
   const before = api.balance;
   api.refuse = { error: 'not enough coins', code: 'insufficient_coins' };
   await openVote(page, 'Pandan', 1);
   await page.locator('[data-testid=confirm]').click();
-  await dialog(page).getByText('Not enough play coins: this costs 1 play coin and you have 42 play coins. Nothing was spent.').waitFor();
+  await dialog(page).getByText('Not enough play coins: this costs 1 play coin and you have 38 play coins. Nothing was spent.').waitFor();
   assert.equal(await page.isVisible('[data-testid=confirm]'), false, 'no Confirm after a refusal');
   await dialog(page).getByRole('button', { name: 'Cancel' }).click();
   api.refuse = { error: 'this interaction is closed', code: 'interaction_closed' };
@@ -258,6 +327,19 @@ export async function check({ browser, BASE, SHOTS }) {
   await note.getByText('Saved.').waitFor();
   await page.getByText('Others see you as Capy Fan.').waitFor();
   assert.deepEqual(api.puts, ['admin', 'Capy Fan']);
+  // The account arriving late does not replace what the user has typed, and Save sends what is on
+  // screen (review rv-1790673984-94044).
+  const releaseMe = api.hold(false);
+  await page.reload();
+  await name.waitFor();
+  await name.fill('Early Bird');
+  releaseMe();
+  await page.getByText('Others see you as Capy Fan.').waitFor();
+  await page.locator('[data-testid=ledger] li').first().waitFor();
+  assert.equal(await name.inputValue(), 'Early Bird', 'the late account and the ledger leave the typed name alone');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByText('Others see you as Early Bird.').waitFor();
+  assert.equal(api.puts.at(-1), 'Early Bird');
 
   assert.deepEqual(errors, [], 'no page errors');
   assert.deepEqual(cognito.log.problems, [], 'every request the fakes saw was valid');

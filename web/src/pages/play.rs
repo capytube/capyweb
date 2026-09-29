@@ -210,9 +210,10 @@ struct Dlg {
     step: Step,
     /// After a success: the interaction's id and the thank-you line.
     thanks: Option<(String, String)>,
-    /// The last action that got no answer, and its key. Asking again for the same thing reuses
-    /// the key, so an attempt that did arrive cannot be charged a second time.
-    unsure: Option<(Draft, String)>,
+    /// Every action that has been sent and has no definite answer yet, with its key. Asking again
+    /// for the same thing reuses its key, so an attempt that did arrive cannot be charged a second
+    /// time. One entry per action: confirming another action in between must not drop this one.
+    unsure: Vec<(Draft, String)>,
     /// The action kept across a sign-in, until its interaction has loaded.
     waiting: Option<Draft>,
 }
@@ -244,8 +245,8 @@ impl Spend {
         self.dlg.update(|d| {
             let key = d
                 .unsure
-                .as_ref()
-                .filter(|(u, _)| *u == draft)
+                .iter()
+                .find(|(u, _)| *u == draft)
                 .map(|(_, k)| k.clone())
                 .unwrap_or_else(crate::auth::random_key);
             d.ask = Some(Ask {
@@ -273,7 +274,9 @@ impl Spend {
         };
         self.dlg.update(|d| {
             d.step = Step::Busy;
-            d.unsure = Some((a.draft.clone(), a.key.clone()));
+            if !d.unsure.iter().any(|(_, k)| *k == a.key) {
+                d.unsure.push((a.draft.clone(), a.key.clone()));
+            }
         });
         spawn_local(async move {
             let d = &a.draft;
@@ -287,12 +290,15 @@ impl Spend {
             } else {
                 api::bid(auth, &d.ixn, d.count, &a.key).await
             };
-            // Another action may have opened meanwhile: leave its dialog alone.
-            let current = self
-                .dlg
-                .with_untracked(|x| x.ask.as_ref().is_some_and(|x| x.key == a.key));
+            // Another action may have opened meanwhile: leave its dialog alone. Asked again after
+            // every await, never remembered across one.
+            let key = a.key.clone();
+            let current = move || {
+                self.dlg
+                    .with_untracked(|x| x.ask.as_ref().is_some_and(|x| x.key == key))
+            };
             if matches!(&result, Err(e) if e.outcome_unknown()) {
-                if current {
+                if current() {
                     self.dlg.update(|x| {
                         x.step = Step::Failed {
                             message:
@@ -307,8 +313,11 @@ impl Spend {
             self.reload.refetch();
             let coins = balance(auth, self.session).await;
             let done = result.is_ok();
+            let current = current();
             self.dlg.update(|x| {
-                x.unsure = None;
+                // A definite answer for this key: forget it, and only it. Another action that is
+                // still waiting for an answer keeps its own key.
+                x.unsure.retain(|(_, k)| *k != a.key);
                 match result {
                     Ok(charge) => {
                         let mut t = if d.vote {
