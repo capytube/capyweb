@@ -1,6 +1,7 @@
 # CapyTube front end in Rust/WebAssembly: plan
 
-Status: **draft for review. Plan only: nothing deployed, no AWS calls.**
+Status: **draft, reviewed once (Cursor, rv-1790656808-53577; findings applied). Plan only: nothing deployed,
+no AWS calls.**
 Author: capyweb-wasm-lead (Claude), 2026-09-29, on mac-pro-japan-16.
 Asked by nic on 2026-09-29: "i want the web rewritten as webassembly." herdr-master scoped it to a plan
 plus, at most, a local prototype. The HTTP API stays as it is. Only the front end is rewritten.
@@ -13,8 +14,8 @@ Read with: `docs/PLAN.md` (architecture, cost model, epics), `docs/DATA_MODEL.md
   static files that the existing S3 + CloudFront site serves. No server, no new AWS service, no cost change.
 - **A working prototype is in `web/`** (section 8). It renders the stream list and a stream page from
   API-shaped data, reuses the React app's Tailwind theme unchanged, and registers two WebMCP tools from
-  Rust. First-load size: **116 KB brotli of WASM + 7 KB of JS**. Today's React entry bundle is
-  **777 KB brotli** (4.46 MB raw).
+  Rust. First-load size: **117 KB brotli of WASM + 8 KB of JS** (glue plus the WebMCP shim). Today's
+  React entry bundle is **777 KB brotli** (4.46 MB raw).
 - **The API stays the same.** One infrastructure gap blocks any front end on dev today, whatever it is
   written in. The API's CORS list does not include `https://dev.capytube.xyz`, and CloudFront has no
   `/api/*` route. Task W12 fixes that.
@@ -33,7 +34,7 @@ Read with: `docs/PLAN.md` (architecture, cost model, epics), `docs/DATA_MODEL.md
 | | Leptos 0.8 | Dioxus 0.7 | Yew 0.23 |
 |---|---|---|---|
 | Rendering model | Fine-grained signals, no virtual DOM | Virtual DOM, React-like hooks | Virtual DOM, component structs |
-| Bundle (CSR, release) | Smallest of the three. Measured here: 116 KB brotli for two routes + router + fetch + serde | Larger runtime; its own CLI (`dx`) | Largest; slower release cadence |
+| Bundle (CSR, release) | Smallest of the three. Measured here: 117 KB brotli for two routes + router + fetch + serde | Larger runtime; its own CLI (`dx`) | Largest; slower release cadence |
 | Routing | `leptos_router`: nested routes, params, `<A>`, history API | Built-in router | `yew-router` |
 | CSS | Plain `class="…"` strings, so Tailwind classes carry over verbatim | Same | Same |
 | JS interop | Standard `wasm-bindgen` / `web-sys` | Same, plus its own eval bridge | Same |
@@ -43,8 +44,8 @@ Read with: `docs/PLAN.md` (architecture, cost model, epics), `docs/DATA_MODEL.md
 Why Leptos:
 
 1. **First load.** Fine-grained reactivity has no virtual-DOM diff engine to ship. The prototype measured
-   339 KB raw, 140 KB gzip and **116 KB brotli** of WASM, plus 49 KB raw / 7 KB brotli of JS glue and
-   14 KB raw / 3.5 KB brotli of CSS. The full app should stay under a **300 KB brotli budget** for WASM
+   342 KB raw, 141 KB gzip and **117 KB brotli** of WASM, plus 51 KB raw / 8 KB brotli of JS (glue and the
+   WebMCP shim) and 14 KB raw / 3.5 KB brotli of CSS. The full app should stay under a **300 KB brotli budget** for WASM
    plus JS, which a local hook enforces (section 5).
 2. **State.** Today's state is about 10 jotai atoms that the API layer writes and components read. Leptos
    signals and `LocalResource` are the same idea, so the data flow does not need redesigning.
@@ -103,10 +104,10 @@ Routes keep their URLs so shared links still work. One route is added: `/auth/ca
 | `/shop`, `/shop/:id` | NFT list, search, sort; details, offers, activity; buy/offer buttons do nothing | Read-only "passes" list and details from the live routes. Claiming with play coins once the write API exists | `/nfts…` (live) |
 | `/profile` | Signed-out marketing; name, CAPYL transactions from Solana, wallet, NFT link | Signed out: the same pitch plus a sign-in button. Signed in: name, coin balance, transactions from the ledger | `GET /me`, `GET /me/transactions` |
 | `/robot` | Static scaffold: robots, slots, disabled controls, video that needs sign-in | Static port. The video plays for signed-out users, as the page copy promises (it does not today) | none until the hardware API exists |
-| `/about-us`, `/privacy-policy`, `/terms-of-service`, `/deletion` | Static text | Static port. The Terms placeholder "[Insert Date]" is flagged to nic, not invented | — |
+| `/about-us`, `/privacy-policy`, `/terms-of-service`, `/deletion` | Static text | Static port. The "[Insert Date]" placeholders (two in Privacy, two in Terms) are flagged to nic, not invented | — |
 | Wallet features | Dynamic login, CAPYL balance sync that overwrites the DB balance, SPL transfers, solscan links | **Not in v1** (Q1). If wanted later: a separately reviewed JS module | nic's decision |
 | Watch-time counter | 1 s display timer; writes watch time every 60 s for a future "airdrop" | **Not in v1**: tied to the CAPYL airdrop story (Q1), and it adds a write per viewer per minute | nic's decision |
-| Media | 5 direct S3 video URLs (`capyweb-c24`, baselined in the guard) | Media only through CloudFront `/media/*` (`capyweb-2gx`). The Rust app contains no S3 URLs, and the guard checks `.rs` files (section 5) | `capyweb-2gx` |
+| Media | 5 direct S3 video URLs in `src/` (3 files), plus 2 in `demo/`; all 7 baselined in the guard (`capyweb-c24`) | Media only through CloudFront `/media/*` (`capyweb-2gx`). The Rust app contains no S3 URLs, and the guard scans `web/` (section 5) | `capyweb-2gx` |
 
 The admin console (`docs/PLAN.md` Epic E) is out of scope here. It can reuse this crate's components
 when it is built.
@@ -131,17 +132,24 @@ when it is built.
   count, cursor, truncated, hint}` envelope, `ApiError { status, url, message }` built from the API's
   `{error}` body, 404 on a single item returned as `Ok(None)`, and an HTML 200 reported as "expected JSON"
   (the SPA fallback answering a missing path). The base URL is fixed at build time:
-  `fixtures` → static JSON, `/api` → same origin, `https://…` → direct. It is tested natively with
-  `cargo test` (8 tests).
+  `fixtures` → static JSON, `/api` → same origin, `https://…` → direct. A request takes an optional
+  `AbortSignal`, so a cancelled WebMCP call cancels its fetch. It is tested natively with `cargo test`.
 - **Contract with the backend:** `web/src/domain.rs` mirrors `src/domain/catalog.ts`. A contract test
   parses fixtures produced from the backend's own seed data. The domain types have **no field that can
   hold a playback locator**, and a guard rule keeps it that way (section 5). An unknown `access_type`
   deserialises to `Unknown`, which is treated as private: never offer playback.
-- **Private streams (`capyweb-0m7`):** the catalog shows title and price only. The app calls
-  `GET /stream/{id}` for a private stream **only** with a token, and only after the server says the viewer
-  has paid. The real protection must be server-side. Today `/stream/{id}` is unauthenticated and only
-  rate-limited (`capyweb-s6d`), so the backend work to require the JWT and check entitlement blocks
-  private playback, whatever the front end does.
+  - **One free-text field the name rule cannot see into:** `fallback_reel`. The backend's filter works on
+    field *names*, so a locator stored in that field's *value* would pass. The app accepts it only as a
+    bare media key (`LiveStream::reel_key`: letters, digits, `-_.`, no leading dot, played from
+    `/media/<key>`). A URL, a path or a query string is refused and tested. The backend should decide
+    whether a private stream exposes a reel at all.
+- **Private streams (`capyweb-0m7`):** the catalog shows title and price only; a private stream with no
+  price reads "Private", never "0 coins". The app calls `GET /stream/{id}` for a private stream **only**
+  with a token, and only after the server says the viewer has paid. The real protection must be
+  server-side. Today **both** `GET /stream/{id}` and `GET /viewership/{id}` are unauthenticated and only
+  rate-limited (`capyweb-s6d`): the same function forwards the id to Livepeer and returns its JSON. The
+  backend work to require the JWT and check entitlement on both blocks private playback, whatever the
+  front end does.
 - **Write routes the app will call** (proposed names that follow `docs/DATA_MODEL.md`; the backend owner
   decides them in `capyweb-7hj`): `GET/PUT /me`, `GET /me/transactions`, `GET/POST /streams/{id}/chat`,
   `POST /streams/{id}/reactions`, `POST /interactions/{id}/votes`, `POST /interactions/{id}/bids`,
@@ -158,9 +166,12 @@ is Q2.
 Flow:
 
 1. The user taps "Sign in" (or tries to spend while signed out). The app saves the pending action, for
-   example "vote for watermelon ×2", in `sessionStorage`. It generates a PKCE verifier (32 random bytes
-   from `crypto.getRandomValues`) and a `state` value. The challenge is SHA-256 via `crypto.subtle`,
-   called through `web-sys`. No crypto crate is needed.
+   example "vote for watermelon ×2", in `sessionStorage`. It builds the PKCE pair as RFC 7636 requires:
+   the **verifier** is 32 bytes from `crypto.getRandomValues`, base64url-encoded without padding (43
+   ASCII characters). The **challenge** is base64url(SHA-256(the verifier's ASCII bytes)), no padding,
+   computed with `crypto.subtle.digest` through `web-sys`. A separate random `state` goes with it. Hashing
+   the raw bytes instead of the encoded string would make the token exchange fail. No crypto crate is
+   needed.
 2. The app redirects to `https://<domain>/oauth2/authorize?response_type=code&client_id=…&redirect_uri=
    https://dev.capytube.xyz/auth/callback&code_challenge=…&code_challenge_method=S256&state=…&scope=openid+email`.
 3. `/auth/callback` checks `state`, then POSTs the code and verifier to `/oauth2/token` (a public client
@@ -173,11 +184,15 @@ Flow:
 5. **Refresh:** refresh one minute before `exp` (read from the JWT payload; the server verifies the
    signature, the client only schedules), and once on a 401 followed by a retry. If refresh fails, the app
    is signed out.
-6. **Sign-out:** clear memory and storage, call `/oauth2/revoke` for the refresh token, then redirect to
-   `/logout`. The signed-in-only WebMCP tools are unregistered at the same moment (section 4).
-7. **Seam:** `api::request` takes an `authenticated` flag, as `http.ts` does, and pulls the token from the
-   auth module. Every page is written against that seam now and works signed out, so nothing waits on
-   Cognito except the sign-in button itself.
+6. **Sign-out:** clear memory and storage, and POST the refresh token to `https://<domain>/oauth2/revoke`.
+   Then redirect to Cognito's `https://<domain>/logout?client_id=…&logout_uri=https://dev.capytube.xyz/`,
+   which ends the managed-login session and returns to the app's `/`. That return URL must be listed in
+   the app client's sign-out URLs. The signed-in-only WebMCP tools are unregistered at the same moment
+   (section 4).
+7. **Seam (to build in W11):** `http.ts` has an `authenticated` flag and a token provider; the Rust port
+   does not have them yet. W11 adds them to `api::request`, pulling the token from the auth module. Pages
+   are written to work signed out and call write routes only through that flag, so nothing else waits on
+   Cognito.
 
 Needs checking when the pool is created: whether email OTP requires the pool to send mail through Amazon
 SES. If it does, that adds a verified SES domain (TXT/DKIM records the `capytube-dns` role can already
@@ -198,17 +213,27 @@ untrustedContentHint, consequentialHint }`. Earlier drafts and Chrome's early pr
 
 **How tools are registered.** Rust builds each tool (name, description, JSON Schema, annotations) and
 passes it with a `Closure` to `registerTool` in the JS shim. The closure returns a Promise made with
-`wasm_bindgen_futures::future_to_promise` that calls **the same Rust function the button calls**. There
-is no tool-only API route, so nothing new becomes public. Tools that need sign-in are registered when the
+`wasm_bindgen_futures::future_to_promise` that calls **the same Rust function the button calls**. It
+passes the draft's `signal` on to `fetch`, so a cancelled tool call cancels its request. There is no
+tool-only API route, so nothing new becomes public. A tool counts as registered only once the browser's
+`registerTool` promise fulfils; a refusal is not counted. Tools that need sign-in are registered when the
 user signs in and unregistered (`AbortController.abort()`) when they sign out. The server checks the JWT
-on every call either way. This is the "same login and permissions as the UI" rule. The prototype proves
-the mechanism: the tools registered, `list_streams` returned the catalog, `open_stream` navigated the SPA,
-and an id like `../admin` was rejected.
+on every call either way. This is the "same login and permissions as the UI" rule.
+
+The prototype proves the mechanism:
+- the tools registered;
+- `list_streams` returned the catalog;
+- `open_stream` navigated the SPA;
+- an id like `../admin` was rejected;
+- a browser that refuses registration leaves 0 tools counted.
+
+**Annotations follow the draft's meaning.** `readOnlyHint` means the tool changes nothing, so a
+navigation tool is not read-only. `consequentialHint` marks actions that spend coins or post as the user.
 
 | Tool | Sign-in | Annotations | What it does |
 |---|---|---|---|
 | `list_streams` | no | readOnly | Stream id, title, live or not, public/private, price. **Built in the prototype** |
-| `open_stream` / `open_page` | no | readOnly | Navigate the SPA to a stream or a named page (fixed list). `open_stream` is built |
+| `open_stream` / `open_page` | no | none (changes the page, not the server) | Navigate the SPA to a stream or a named page (fixed list). `open_stream` is built |
 | `list_capybaras`, `get_capybara` | no | readOnly | Cast, bios, and when each capybara is usually awake |
 | `get_interactions` | no | readOnly | Today's snack vote and bid: options, costs, current bid, rules |
 | `list_passes` | no | readOnly | Shop passes and prices |
@@ -236,15 +261,21 @@ confirm; no tool output contains a playback locator or token. Then nic says yes.
     operations require bulk memory"), so the newer version and the explicit `--enable-*` flags in
     `web/index.html` are required.
   - A cold release build takes ~46 s on this Mac.
+  - Trunk 0.21.14 fails with "invalid value '1' for '--no-color'" when the environment sets `NO_COLOR=1`.
+    Run it with `NO_COLOR` unset (or `NO_COLOR=true`).
 - **Local dev:** `cd web && trunk serve` listens on **127.0.0.1:8791 only**, set in `Trunk.toml`. It uses
   the fixtures by default, or the real API through Trunk's proxy:
   `CAPYWEB_API_BASE=/api trunk serve --proxy-backend <ApiUrl> --proxy-rewrite /api`.
   - Today's `vite.config.ts` has `host: true`, which binds 0.0.0.0. That breaks the loopback-only rule
     for the React app until it is retired.
-- **Release:** `trunk build --release` writes `web/dist/`. `infra/site/deploy.sh dev web/dist` uploads it
-  to the existing bucket. `deploy.sh` needs four changes:
-  1. Hashed files (`*-<16 hex>.wasm|js|css`, `snippets/`) are uploaded with
-     `Cache-Control: public,max-age=31536000,immutable`. `index.html` stays `no-cache`.
+- **Release:** `trunk build --release` writes `web/dist/`. **`infra/site/deploy.sh` cannot ship it as
+  written.** It syncs `$SRC/assets/`, and Trunk's output has no `assets/` directory: the hashed
+  `.wasm/.js/.css` sit at the root, next to `snippets/`. It then re-stamps every other object with
+  `max-age=300`, which would undo immutable caching. W12 adds a **web mode**
+  (`infra/site/deploy.sh dev web/dist --web`) that:
+  1. Uploads hashed files (`*-<16 hex>.wasm|js|css`, `snippets/`) with
+     `Cache-Control: public,max-age=31536000,immutable`, and leaves them out of the `max-age=300`
+     re-stamp. `index.html` stays `no-cache`. Anything else, such as `favicon`, keeps `max-age=300`.
   2. `.wasm` is uploaded with an explicit `--content-type application/wasm`. Streaming compilation needs
      it, and the CLI's type guess is not relied on.
   3. **Do not `--delete` hashed assets on deploy.** A visitor who loaded the previous `index.html` still
@@ -262,10 +293,15 @@ confirm; no tool output contains a playback locator or token. Then nic says yes.
 - **Checks as local hooks, no GitHub Actions.** `scripts/guard.sh` needs to learn these rules, each with
   a case in `scripts/guard-selftest.sh` that proves it fires:
   1. `web/` changed → `cargo fmt --check`, `cargo clippy -- -D warnings` and `cargo test` in pre-push.
-  2. **Size budget:** release WASM + JS ≤ **300 KB brotli**, measured on `web/dist` in pre-push (the
-     prototype is 123 KB).
-  3. The S3-URL rule and the secret scan cover `*.rs`, `*.toml` and `web/js/*.js`. Today they only read
-     `.ts/.tsx/.js/.html/.css/.json/.yaml/.sh/.md`.
+  2. **Size budget:** release WASM + all first-load JS (glue and snippets) ≤ **300 KB brotli**, measured on
+     `web/dist` in pre-push (the prototype is 125 KB).
+  3. **Scan `web/`.** Today neither content scan reads it, so adding extensions alone would leave the
+     crate unscanned.
+     - The S3-URL scan reads `.ts/.tsx/.js/.html/.css` under `backend/src src demo amplify`.
+     - The secret-literal scan reads `.ts/.tsx/.js/.json/.yaml/.yml/.sh/.html/.md` under
+       `SECRET_SCAN_DIRS` (`backend infra src demo amplify docs scripts`).
+     - Only the `AKIA` key-id scan covers the whole tree.
+     - Fix: add `web` to both directory lists, and `*.rs` and `*.toml` to both extension lists.
   4. **No playback-locator field** in `web/src/domain.rs`: field names checked against the same regex as
      `PLAYBACK_NAME` in `backend/src/lib/ddb.ts`.
   5. **Loopback only:** no `0.0.0.0` or `host: true` in `web/Trunk.toml` or `vite.config.ts`.
@@ -289,7 +325,7 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
 
 | What | Evidence | Recoverable here? |
 |---|---|---|
-| **The beads database** | Here `.beads/` holds an embedded Dolt DB with **0 issues**. `bd create` fails with "issue_prefix config is missing". `git ls-remote origin` shows **no `refs/dolt/data`**, and no commit ever contained `.beads/issues.jsonl` | **Partly.** 25 issue ids are named in the repo or commits: `083 0c8 0v3 19a 1iz 1nh 1td 1w5 2gx 2pj 3ge 7hj 962 c24 eh4 py9 qu7 s6d sz5 umh w26 x7w xfp zlb`, plus `0m7` from the brief. Each has a line of context in docs or code. Descriptions, status, dependencies and comments are lost until the Mac returns |
+| **The beads database** | Here `.beads/` holds an embedded Dolt DB with **0 issues**. `bd create` fails with "issue_prefix config is missing". `git ls-remote origin` shows **no `refs/dolt/data`**, and no commit ever contained `.beads/issues.jsonl` | **Partly.** 25 ids are known:<br>• 23 named in tracked files: `083 0c8 0v3 19a 1iz 1nh 1td 1w5 2gx 2pj 3ge 7hj 962 c24 eh4 py9 qu7 s6d umh w26 x7w xfp zlb`<br>• `sz5`, only in a commit message ("Closes capyweb-sz5.", 113796b)<br>• `0m7`, only in the brief<br>Each has a line of context. Descriptions, status, dependencies and comments are lost until the Mac returns |
 | capyweb-lead's notes under `~/.cache/herdr-manager/` | This Mac's copy has only this brief and unrelated projects' files | No |
 | AWS profile `capy` (IAM user `capyapp-macbook-pro-14`; key deactivated while lent) | `docs/PLAN.md` §8, `infra/README.md` | Replaced by a new identity (below) |
 | AWS profile `capytube-dns` (assumes `capyapp-capytube-dns` in autonomous-lab) and the admin `al` profile | `docs/PLAN.md` §8 | Needs a trust change (below). `al` is nic's own admin; not needed for this work |
@@ -392,8 +428,9 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
 3. **Sign-in blocked.** All write features wait on `capyweb-w26`, then `capyweb-7hj`. *Mitigation:* build
    against the auth seam and fixtures; do not ship half-working write buttons (hide them until the routes
    exist).
-4. **Private playback depends on the backend.** `/stream/{id}` is unauthenticated today. The front end can
-   avoid calling it, but only the server can enforce payment (`capyweb-0m7`, `capyweb-s6d`).
+4. **Private playback depends on the backend.** `/stream/{id}` and `/viewership/{id}` are unauthenticated
+   today. The front end can avoid calling them, but only the server can enforce payment (`capyweb-0m7`,
+   `capyweb-s6d`).
 5. **WebMCP is a moving draft.** It has already moved from `navigator` to `document`, and no browser
    ships it. *Mitigation:* the shim handles both; a feature flag keeps it off until reviewed.
 6. **Stale-asset crash after a deploy.** A deleted hashed `.wasm` comes back as HTML. *Mitigation:*
@@ -424,7 +461,7 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
 
 ```sh
 cd web
-cargo test                      # 8 native tests: envelope, errors, fixture contract, access rules
+cargo test                      # 10 native tests: envelope, errors, encoding, fixture contract, access, reel keys
 trunk serve --release           # http://127.0.0.1:8791/  (loopback only, fixtures)
 node tests/smoke.mjs            # headless browser check; setup in the file's header
 ```
@@ -434,17 +471,22 @@ node tests/smoke.mjs            # headless browser check; setup in the file's he
   public stream shows where the player goes; a private one shows only "Sign in and pay to watch", with no
   call to `/stream/{id}`. The prototype's `/streams/:id` is illustrative; the real app keeps
   `/stream/:capyId` (section 2).
-- **WebMCP:** `list_streams` and `open_stream` are registered from Rust through `web/js/webmcp.js`.
-- **Measured** (release build, headless Chromium 390×844, fake WebMCP host injected before load):
-  - list rendered 189 ms after navigation on loopback;
+- **WebMCP:** `list_streams` (readOnly) and `open_stream` (navigation, not readOnly) are registered from
+  Rust through `web/js/webmcp.js`.
+- **Measured** (release build, headless Chromium 390×844, a stand-in WebMCP host injected before load;
+  all of it is asserted in `web/tests/smoke.mjs`):
+  - the list rendered in ~190–280 ms after navigation on loopback;
   - 3 cards, the private one priced "1 coin / 10 s";
-  - `list_streams` returned the 3 streams as JSON text;
+  - a private stream without a price shows "Private";
+  - `list_streams` returned the 3 streams as JSON text with no playback fields;
   - `open_stream({id:"wall-cam"})` navigated to `/streams/wall-cam`;
   - `open_stream({id:"../admin"})` was rejected;
+  - a host that rejects `registerTool` leaves 0 tools counted;
   - without WebMCP the page worked and registered nothing;
   - `trunk serve` bound `127.0.0.1:8791` only (checked with `lsof`).
-- **Sizes:** WASM 339,040 B raw / 139,554 gzip / 116,305 brotli; JS glue 48,794 / 8,396 / 7,120; CSS
-  13,981 / 4,130 / 3,514. React today (`vite build` of `feat/serverless-capyapp-backend`): entry JS
+- **Sizes** (after the review fixes): WASM 341,840 B raw / 140,906 gzip / 117,442 brotli; JS glue
+  49,243 / 8,461 / 7,166; WebMCP shim snippet 1,891 / 834 / 676; CSS 13,981 / 4,130 / 3,514. brotli
+  1.2.0 at `-q 11`; another brotli build differed by ~25 bytes. React today (`vite build` of `feat/serverless-capyapp-backend`): entry JS
   4,462,565 B raw / 1,129,129 gzip / 776,540 brotli; CSS 373,631 / 43,969 / 35,822.
 - **Known prototype gaps:** a missing fixture comes back as the SPA shell and reads as "expected JSON, got
   something else". That is the correct client behaviour; the real API returns a JSON 404, which the

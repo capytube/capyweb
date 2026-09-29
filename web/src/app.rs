@@ -34,20 +34,27 @@ pub fn App() -> impl IntoView {
 #[component]
 fn Tools() -> impl IntoView {
     let navigate = use_navigate();
-    let count = webmcp::register_catalog_tools(move |id| {
-        navigate(&format!("/streams/{id}"), NavigateOptions::default());
+    leptos::task::spawn_local(async move {
+        let count = webmcp::register_catalog_tools(move |id| {
+            navigate(&format!("/streams/{id}"), NavigateOptions::default());
+        })
+        .await;
+        leptos::logging::log!("webmcp: {count} tool(s) registered");
     });
-    leptos::logging::log!("webmcp: {count} tool(s) registered");
 }
 
 fn access_badge(s: &LiveStream) -> impl IntoView {
     if s.is_public() {
         view! { <span class="text-xs rounded-full px-2 py-0.5 bg-avacadoCream text-darkGreen">"Free"</span> }.into_any()
     } else {
-        let price = s.price_per_10_sec.unwrap_or(0);
+        // A private stream with no price is still private, never "0 coins".
+        let label = match s.price_per_10_sec {
+            Some(p) => format!("{p} coin / 10 s"),
+            None => "Private".to_string(),
+        };
         view! {
             <span class="text-xs rounded-full px-2 py-0.5 bg-persimmon text-chocoBrown">
-                {format!("{price} coin / 10 s")}
+                {label}
             </span>
         }
         .into_any()
@@ -56,7 +63,7 @@ fn access_badge(s: &LiveStream) -> impl IntoView {
 
 #[component]
 fn StreamList() -> impl IntoView {
-    let streams = LocalResource::new(api::list_streams);
+    let streams = LocalResource::new(|| api::list_streams(None));
     view! {
         <h1 class="font-hanaleiFill text-titleSizeSM mb-4">"Cameras"</h1>
         <Suspense fallback=|| view! { <p>"Loading streams…"</p> }>
@@ -107,9 +114,11 @@ fn StreamPage() -> impl IntoView {
                     {access_badge(&s)}
                     <div class="mt-4 aspect-video rounded-xl bg-chocoBrown text-cream grid place-items-center p-4 text-center">
                         {if s.is_public() {
-                            // The player (hls.js through a JS shim) is task P5 in the plan.
-                            format!("Player goes here. Nothing live, so it would show the reel {}.",
-                                s.fallback_reel.clone().unwrap_or_default())
+                            // The player (hls.js through a JS shim) is task W6 in the plan.
+                            match s.reel_key() {
+                                Some(reel) => format!("Player goes here. Nothing live, so it would show /media/{reel}."),
+                                None => "Player goes here. Nothing live and no reel.".to_string(),
+                            }
                         } else {
                             // Private: title and price only. Playback needs sign-in and payment,
                             // and is resolved by GET /stream/{id} with a token, never from the catalog.

@@ -70,6 +70,7 @@ Read this before each work session on capyweb. Add a line whenever something fai
 ## WebAssembly front end (2026-09-29, docs/WASM_PLAN.md)
 - Trunk 0.21's default binaryen (`version_123`) rejects Rust 1.98 output: "memory.copy operations require bulk memory". Pin `wasm_opt = "version_133"` in `web/Trunk.toml` and pass `--enable-bulk-memory --enable-nontrapping-float-to-int …` in `data-wasm-opt-params`. Without wasm-opt the build fails outright in release mode.
 - Homebrew's `rust` has no wasm32 std. Use `brew install rustup trunk`, then `rustup target add wasm32-unknown-unknown` (`web/rust-toolchain.toml` pins 1.98.1).
+- Trunk 0.21.14 dies with "invalid value '1' for '--no-color'" when `NO_COLOR=1` is set (some agent shells set it). Unset it or use `NO_COLOR=true`.
 - Port 8787 on mac-pro-japan-16 is taken by another local service, so the prototype serves on 127.0.0.1:8791.
 - The API's CORS list (template default) is `capytube.xyz`, `www` and `localhost:5173`. It does NOT include `dev.capytube.xyz`, and the site distribution has no `/api/*` behaviour, so no front end on dev can call the API from a browser yet. Nobody noticed because dev serves `demo/`, which makes no API calls.
 - WebMCP moved: the CG draft of 2026-09-28 is `document.modelContext.registerTool(tool, {signal})`, not `navigator.modelContext`. `web/js/webmcp.js` handles both.

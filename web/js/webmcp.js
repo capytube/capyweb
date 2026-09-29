@@ -16,8 +16,9 @@ export function webmcpAvailable() {
   return !!mc && typeof mc.registerTool === "function";
 }
 
-// Returns an AbortController that unregisters the tool, or null when WebMCP is absent.
-export function registerTool(name, title, description, inputSchemaJson, annotationsJson, execute) {
+// Resolves to an AbortController that unregisters the tool, or to null when WebMCP is absent
+// or the browser refused the registration. A rejected registration is not a registered tool.
+export async function registerTool(name, title, description, inputSchemaJson, annotationsJson, execute) {
   const mc = modelContext();
   if (!mc || typeof mc.registerTool !== "function") return null;
   const controller = new AbortController();
@@ -31,15 +32,14 @@ export function registerTool(name, title, description, inputSchemaJson, annotati
   };
   try {
     const r = mc.registerTool(tool, { signal: controller.signal });
-    // Older drafts returned { unregister() } instead of honouring the signal.
-    if (r && typeof r.unregister === "function") {
+    if (r && typeof r.then === "function") {
+      await r;
+    } else if (r && typeof r.unregister === "function") {
+      // Older drafts returned { unregister() } instead of honouring the signal.
       controller.signal.addEventListener("abort", () => r.unregister());
     }
-    if (r && typeof r.catch === "function") {
-      r.catch((e) => console.warn("webmcp: registerTool rejected", name, e));
-    }
   } catch (e) {
-    console.warn("webmcp: registerTool threw", name, e);
+    console.warn("webmcp: registerTool failed", name, e);
     return null;
   }
   return controller;

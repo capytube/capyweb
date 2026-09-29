@@ -6,8 +6,8 @@
 //!   "/api"       -> same-origin, as CloudFront will route it (and `trunk serve --proxy-*` locally)
 //!   "https://…"  -> direct, which needs the origin in the API's CORS allow-list
 //!
-//! Auth is a seam here exactly as in http.ts: `authenticated` requests need a token provider,
-//! which the Cognito task supplies (docs/WASM_PLAN.md section 3).
+//! Not ported yet: http.ts's `authenticated` flag and token provider. The Cognito task (W11)
+//! adds them here (docs/WASM_PLAN.md section 3).
 
 use serde::de::DeserializeOwned;
 
@@ -59,8 +59,18 @@ pub fn build_url(base: &str, path: &str, query: &[(&str, &str)]) -> String {
     url
 }
 
+/// Percent-encode everything outside RFC 3986's unreserved set. Pure Rust, so it is testable
+/// natively (js_sys would panic outside a browser).
 fn enc(s: &str) -> String {
-    String::from(js_sys::encode_uri_component(s))
+    let mut out = String::with_capacity(s.len());
+    for b in s.bytes() {
+        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~') {
+            out.push(b as char);
+        } else {
+            out.push_str(&format!("%{b:02X}"));
+        }
+    }
+    out
 }
 
 /// The API's `{ "error": "…" }` message, or a generic one.
@@ -89,13 +99,16 @@ pub fn decode<T: DeserializeOwned>(status: u16, url: &str, body: &str) -> Result
     })
 }
 
+/// `signal` cancels the fetch, e.g. when a WebMCP caller aborts the tool call.
 pub async fn request<T: DeserializeOwned>(
     path: &str,
     query: &[(&str, &str)],
+    signal: Option<&web_sys::AbortSignal>,
 ) -> Result<T, ApiError> {
     let url = build_url(base_url(), path, query);
     let res = gloo_net::http::Request::get(&url)
         .header("accept", "application/json")
+        .abort_signal(signal)
         .send()
         .await
         .map_err(|e| ApiError {
@@ -110,15 +123,17 @@ pub async fn request<T: DeserializeOwned>(
 
 /// GET a single item; 404 is an ordinary outcome, not an error.
 pub async fn get_one<T: DeserializeOwned>(path: &str) -> Result<Option<T>, ApiError> {
-    match request::<T>(path, &[]).await {
+    match request::<T>(path, &[], None).await {
         Ok(v) => Ok(Some(v)),
         Err(e) if e.is_not_found() => Ok(None),
         Err(e) => Err(e),
     }
 }
 
-pub async fn list_streams() -> Result<Page<LiveStream>, ApiError> {
-    request("/streams", &[]).await
+pub async fn list_streams(
+    signal: Option<&web_sys::AbortSignal>,
+) -> Result<Page<LiveStream>, ApiError> {
+    request("/streams", &[], signal).await
 }
 
 pub async fn get_stream(id: &str) -> Result<Option<LiveStream>, ApiError> {
@@ -144,6 +159,18 @@ mod tests {
     #[test]
     fn api_urls_drop_empty_query_values() {
         assert_eq!(build_url("/api/", "/streams", &[]), "/api/streams");
+        assert_eq!(
+            build_url("/api", "/streams", &[("access", "public"), ("cursor", "")]),
+            "/api/streams?access=public"
+        );
+    }
+
+    #[test]
+    fn query_values_are_percent_encoded() {
+        assert_eq!(
+            build_url("/api", "streams", &[("cursor", "a b&c=d/é")]),
+            "/api/streams?cursor=a%20b%26c%3Dd%2F%C3%A9"
+        );
     }
 
     #[test]

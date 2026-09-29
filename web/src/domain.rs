@@ -49,6 +49,19 @@ impl LiveStream {
     pub fn is_public(&self) -> bool {
         self.access_type == Some(AccessType::Public)
     }
+
+    /// The reel as a bare media key (served under /media/), or None. `fallback_reel` is free text
+    /// that the backend's name-based playback filter cannot see into, so anything that could be
+    /// a locator - a URL, a path, a query - is refused here rather than played.
+    pub fn reel_key(&self) -> Option<&str> {
+        let r = self.fallback_reel.as_deref()?;
+        let bare = !r.is_empty()
+            && r.len() <= 128
+            && !r.starts_with('.')
+            && r.bytes()
+                .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.'));
+        bare.then_some(r)
+    }
 }
 
 /// A list endpoint's envelope. `cursor` is opaque and belongs only to the query that returned it.
@@ -85,6 +98,28 @@ mod tests {
             serde_json::from_str(r#"{"id":"x","title":"t","access_type":"members"}"#).unwrap();
         assert_eq!(s.access_type, Some(AccessType::Unknown));
         assert!(!s.is_public());
+    }
+
+    #[test]
+    fn reel_must_be_a_bare_media_key() {
+        let with = |r: &str| LiveStream {
+            fallback_reel: Some(r.into()),
+            ..serde_json::from_str(r#"{"id":"x","title":"t"}"#).unwrap()
+        };
+        assert_eq!(
+            with("capytube-stream.mp4").reel_key(),
+            Some("capytube-stream.mp4")
+        );
+        for bad in [
+            "https://livepeer.studio/hls/abc/index.m3u8",
+            "../x.mp4",
+            "a/b.mp4",
+            "x.mp4?t=1",
+            ".env",
+            "",
+        ] {
+            assert_eq!(with(bad).reel_key(), None, "{bad}");
+        }
     }
 
     #[test]

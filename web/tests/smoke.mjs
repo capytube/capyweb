@@ -18,7 +18,9 @@ const browser = await chromium.launch();
 try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = [];
+  const logs = [];
   page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => logs.push(m.text()));
   await page.addInitScript(() => {
     const tools = new Map();
     window.__webmcpTools = tools;
@@ -41,6 +43,11 @@ try {
   assert.deepEqual(names, ['list_streams', 'open_stream']);
   const annotations = await page.evaluate(() => window.__webmcpTools.get('list_streams').annotations);
   assert.equal(annotations.readOnlyHint, true);
+  const nav = await page.evaluate(() => window.__webmcpTools.get('open_stream').annotations);
+  assert.equal(nav.readOnlyHint, false, 'navigation is not read-only');
+  assert.equal(nav.consequentialHint, false);
+  await page.waitForFunction(() => true);
+  assert.ok(logs.includes('webmcp: 2 tool(s) registered'), 'both registrations counted');
 
   const listed = await page.evaluate(() => window.__webmcpTools.get('list_streams').execute({}, {}));
   const rows = JSON.parse(listed.content[0].text);
@@ -59,6 +66,31 @@ try {
     catch (e) { return String(e); }
   });
   assert.match(bad, /invalid stream id/);
+
+  // A browser that refuses registration: nothing may be counted as registered.
+  const refusing = await browser.newPage();
+  const refusedLogs = [];
+  refusing.on('console', (m) => refusedLogs.push(m.text()));
+  await refusing.addInitScript(() => {
+    document.modelContext = { registerTool: () => Promise.reject(new Error('refused')) };
+  });
+  await refusing.goto(BASE + '/');
+  await refusing.waitForSelector('[data-testid=stream-list] li');
+  await refusing.waitForFunction(() => true);
+  await new Promise((r) => setTimeout(r, 300));
+  assert.ok(refusedLogs.includes('webmcp: 0 tool(s) registered'), 'rejected registrations are not counted: ' + refusedLogs.join(' | '));
+
+  // A private stream with no price reads "Private", never "0 coin".
+  const unpriced = await browser.newPage();
+  await unpriced.route('**/fixtures/streams.json', (route) => route.fulfill({
+    contentType: 'application/json',
+    body: JSON.stringify({ items: [{ id: 'members-cam', title: 'Members cam', access_type: 'members' }], count: 1 }),
+  }));
+  await unpriced.goto(BASE + '/');
+  await unpriced.waitForSelector('[data-testid=stream-list] li');
+  const unpricedCard = await unpriced.innerText('[data-testid=stream-list] li');
+  assert.match(unpricedCard, /Private/);
+  assert.doesNotMatch(unpricedCard, /0 coin/);
 
   const plain = await browser.newPage();
   await plain.goto(BASE + '/');
