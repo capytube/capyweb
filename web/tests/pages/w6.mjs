@@ -99,6 +99,8 @@ export async function check({ open, browser, settle, BASE, SHOTS }) {
     assert.equal(await page.locator('main video').count(), 0);
     assert.equal(await locked.locator('button, a, input').count(), 0, 'no buttons on a locked camera');
     assert.deepEqual(paths.filter(isMedia), [], 'no media request for a private camera');
+    // The playback route does not exist yet; when it lands, only a signed-in payer may call it.
+    assert.deepEqual(paths.filter((p) => /playback/.test(p)), [], 'no playback request for a private camera');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `no horizontal scroll at ${width}px`);
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/w6-private-${width}.png`, fullPage: true });
     await page.close();
