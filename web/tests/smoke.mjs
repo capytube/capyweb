@@ -92,7 +92,7 @@ try {
   await page.waitForURL('**/shop');
   await page.waitForSelector('.toast');
   assert.match(await page.innerText('.toasts'), /An assistant opened Shop/);
-  assert.equal(await page.title(), 'Shop · CapyTube');
+  await page.waitForFunction(() => document.title === 'Passes · CapyTube'); // the Shop page's h1
   const bad = await page.evaluate(async () => {
     try { await window.__webmcpTools.get('open_page').execute({ page: 'admin' }, {}); return 'accepted'; }
     catch (e) { return String(e); }

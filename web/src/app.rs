@@ -34,12 +34,8 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/play") view=|| view! {
                         <ComingSoon title="Play" blurb="Snack votes and bids, paid in play coins. This page is being rebuilt."/>
                     }/>
-                    <Route path=path!("/shop") view=|| view! {
-                        <ComingSoon title="Shop" blurb="Passes for the capy club. This page is being rebuilt."/>
-                    }/>
-                    <Route path=path!("/shop/:id") view=|| view! {
-                        <ComingSoon title="Pass" blurb="Pass details. This page is being rebuilt."/>
-                    }/>
+                    <Route path=path!("/shop") view=crate::pages::shop::Shop/>
+                    <Route path=path!("/shop/:id") view=crate::pages::shop::PassDetails/>
                     <Route path=path!("/profile") view=|| view! {
                         <ComingSoon title="Your account" blurb="Sign-in is on its way. Until then you can watch without an account."/>
                     }/>
