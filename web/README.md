@@ -39,3 +39,35 @@ There is no CI (the GitHub Actions allowance is used up), so the checks are loca
 
   `CAPYWEB_SMOKE_PORT` changes the port. A busy port fails the step; it does not reuse
   another server.
+
+## Sign-in (W11)
+
+Cognito managed login with PKCE; the flow and its reasons are in `docs/WASM_PLAN.md` section 3.
+
+- **Configuration is read at run time** from `/config.json` (`web/config.json`, copied into
+  `dist/`): `{"auth": {"domain": "https://<ManagedLoginDomain output>", "client_id": "<UserPoolClientId output>"}}`.
+  The repository ships `{"auth": null}`, and then **no sign-in control renders anywhere**. One
+  build serves every stage; the deploy (W12) writes the stage's file. The redirect URI is not
+  configured: it is `<page origin>/auth/callback`, which must be in the app client's callback
+  URLs (the template lists the dev site plus `http://127.0.0.1:8791` and `http://localhost:8791`).
+  To try a deployed pool locally, put its values in `web/config.json` and do not commit them.
+- **The seam** (`src/auth.rs`, pure logic in `src/oauth.rs`):
+  - `auth::use_auth()` returns `Auth`: `ready()` (a pool is configured and a stored session
+    was tried), `signed_in()`, `user()` (`User { sub, email }`, for display only), all reactive;
+  - `sign_in(return_to)`, or `sign_in_then(return_to, PendingAction { kind, data })` when the
+    user tried to spend while signed out; after the callback, the page calls
+    `take_pending(kind)` once to replay it;
+  - `sign_out()`;
+  - `api::request_authed(auth, Method::…, path, json_body, signal)` sends the access token as
+    `Authorization: Bearer …`, refreshes once on a 401 and retries once. `api::get_me(auth)`
+    is the first user (the header's coin balance).
+- **Tokens:** access and ID tokens in memory only; the refresh token in localStorage
+  (`capyweb.auth.refresh`); the PKCE verifier, `state` and pending action in sessionStorage for
+  one redirect. Every storage access is wrapped (`js/auth.js`). Refresh runs a minute before
+  expiry, counted from when the token arrived, not from the device clock.
+- **CSP for W12:** `connect-src 'self' https://<ManagedLoginDomain>` (token and revoke calls
+  from the page; `/config.json` and the API are same-origin). Sign-in and `/logout` are
+  top-level navigations, which CSP does not restrict. The app posts no forms, so
+  `form-action 'self'` holds; the managed-login pages carry Cognito's own CSP on their origin.
+- **Test:** `tests/pages/auth.mjs` walks the flow against a fake Cognito intercepted in the
+  browser, and checks that the default build shows no sign-in control on any page.

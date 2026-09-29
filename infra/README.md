@@ -29,6 +29,14 @@ sam deploy --template-file .aws-sam/build/template.yaml \
   --no-confirm-changeset --no-fail-on-empty-changeset
 ```
 
+Sign-in (W11) adds a Cognito user pool, its managed-login domain, a public web client and the
+HTTP API's `CognitoJwt` authorizer to this stack. The deploy identity needs `cognito-idp` on
+them. Outputs `UserPoolId`, `UserPoolClientId`, `ManagedLoginDomain` and `AuthIssuer`; the web
+app takes the domain and client id in its `/config.json` (`web/README.md`). Passwordless email
+OTP needs `--parameter-overrides SesIdentityArn=<verified SES identity ARN> SesFromAddress=<from>`;
+without them the pool offers password sign-in only (`docs/WASM_PLAN.md` section 3, "The user
+pool as written"). The pool has deletion protection and is retained if the stack is deleted.
+
 Requires `esbuild` on PATH (`npm i -g --allow-scripts=esbuild esbuild@0.21`) and
 `aws-sam-cli` (`brew install aws-sam-cli`).
 

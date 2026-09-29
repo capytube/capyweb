@@ -80,3 +80,12 @@ Read this before each work session on capyweb. Add a line whenever something fai
 - A fresh clone has NO active hooks: `core.hooksPath` is per-clone config, not in git. Run `git config core.hooksPath .beads/hooks` (the tracked hooks already contain both the beads and guard blocks), then `scripts/guard.sh`.
 - The beads DB never left the lent MacBook Pro: origin has no `refs/dolt/data` and no `issues.jsonl` was ever committed. The repo is public, so do not push Dolt data to it; use a private remote.
 - `backend/src/node_modules` is needed for the pre-push backend tests and the behavioural playback-locator guard; both skip silently without it (`npm ci --ignore-scripts` there).
+
+## Cognito sign-in (2026-09-29, W11)
+- Passwordless email OTP needs the pool to send mail through **your own SES identity** (`EmailSendingAccount: DEVELOPER`); the Cognito default sender is not enough. Source: Cognito "Email settings" page, footnote on OTP. Plan for a verified SES domain and a sandbox exit before OTP works.
+- A choice-based sign-in policy must still list `PASSWORD` ("Password should be configured as one of the allowed first auth factors"), and OTP first factors are refused while MFA is on.
+- Refresh-token rotation is incompatible with `ALLOW_REFRESH_TOKEN_AUTH`; refresh at `/oauth2/token` instead (it returns the new refresh token).
+- A client created through the API or CloudFormation has no managed-login branding style, and managed login shows nothing for it: add `AWS::Cognito::ManagedLoginBranding` (`UseCognitoProvidedValues: true`).
+- Cognito callback URLs accept plain http for `localhost`, `127.0.0.1` and `[::1]`, so `trunk serve` on 127.0.0.1 works as a registered callback.
+- `sam build` offline needs `esbuild` on PATH; none was installed on mac-pro-japan-16. `npm i --prefix <scratch> --ignore-scripts esbuild@0.21` and putting its `.bin` first on PATH was enough (with the lane's credential cut-off).
+- Size: each new Leptos signal or stored-value *type* costs code; one `StoredValue<Inner, LocalStorage>` for all non-rendered auth state, `serde_json::Value` instead of `derive(Deserialize)`, and small JS helpers for fetch/storage/crypto kept sign-in at +14.7 KB brotli (first draft: +20.5 KB).

@@ -3,8 +3,10 @@
 
 pub mod api;
 pub mod app;
+pub mod auth;
 pub mod components;
 pub mod domain;
+pub mod oauth;
 pub mod pages;
 pub mod routes;
 pub mod state;
