@@ -103,6 +103,21 @@ impl Page {
     }
 }
 
+/// The production origin. Canonical links name it on every stage (dev tells crawlers to stay
+/// out), and `web/index.html`, `web/sitemap.xml` and `web/robots.txt` carry it too; a test
+/// keeps them equal.
+pub const SITE_ORIGIN: &str = "https://capytube.xyz";
+
+/// The canonical URL for a routed path: the origin plus the path only, with no query or
+/// fragment and no trailing slash (except the root). `/watch/` and `/watch?x=1` are `/watch`,
+/// as the router treats them.
+pub fn canonical_url(path: &str) -> String {
+    let path = path.split(['?', '#']).next().unwrap_or_default();
+    let path = path.trim_end_matches('/');
+    let slash = if path.starts_with('/') { "" } else { "/" };
+    format!("{SITE_ORIGIN}{slash}{path}")
+}
+
 /// The document title for a page heading: "Watch · CapyTube".
 pub fn title_for(heading: &str) -> String {
     if heading.is_empty() {
@@ -186,6 +201,105 @@ mod tests {
     fn unknown_page_name_is_none() {
         assert_eq!(Page::from_name("admin"), None);
         assert_eq!(Page::from_name("/watch"), None);
+    }
+
+    #[test]
+    fn canonical_is_the_path_only() {
+        for (path, want) in [
+            ("/", "https://capytube.xyz/"),
+            ("", "https://capytube.xyz/"),
+            ("/watch", "https://capytube.xyz/watch"),
+            ("/watch/", "https://capytube.xyz/watch"),
+            ("/play?capy=magnus", "https://capytube.xyz/play"),
+            (
+                "/stream/magnus?cam=wall-cam#chat",
+                "https://capytube.xyz/stream/magnus",
+            ),
+            ("/shop/capy-1234/", "https://capytube.xyz/shop/capy-1234"),
+        ] {
+            assert_eq!(canonical_url(path), want, "{path}");
+        }
+    }
+
+    /// Every sitemap URL is a page of the app on the production origin, in canonical form, and
+    /// the capybara rooms and passes are exactly the seed's: each capybara a camera watches, and
+    /// every pass. web/fixtures is the seed as the API serves it (the fixtures check keeps it
+    /// so); each id is also looked up in the seed file itself.
+    #[test]
+    fn sitemap_matches_the_app_and_the_seed() {
+        let sitemap = include_str!("../sitemap.xml");
+        let mut got: Vec<String> = sitemap
+            .split("<loc>")
+            .skip(1)
+            .map(|rest| {
+                let url = rest.split("</loc>").next().unwrap();
+                assert_eq!(canonical_url(url.trim_start_matches(SITE_ORIGIN)), url);
+                url.strip_prefix(SITE_ORIGIN)
+                    .unwrap_or_else(|| panic!("{url} is not on {SITE_ORIGIN}"))
+                    .to_string()
+            })
+            .collect();
+
+        let items = |json: &str| -> Vec<serde_json::Value> {
+            let v: serde_json::Value = serde_json::from_str(json).unwrap();
+            v["items"].as_array().unwrap().clone()
+        };
+        let id = |v: &serde_json::Value| v["id"].as_str().unwrap().to_string();
+        let watched: Vec<String> = items(include_str!("../fixtures/streams.json"))
+            .iter()
+            .flat_map(|s| s["capybara_ids"].as_array().unwrap().clone())
+            .map(|c| c.as_str().unwrap().to_string())
+            .collect();
+        let rooms: Vec<String> = items(include_str!("../fixtures/capybaras.json"))
+            .iter()
+            .map(id)
+            .filter(|c| watched.contains(c))
+            .collect();
+        let passes: Vec<String> = items(include_str!("../fixtures/nfts.json"))
+            .iter()
+            .map(id)
+            .collect();
+        assert!(!rooms.is_empty() && !passes.is_empty());
+        let seed = include_str!("../../backend/src/scripts/seed-data.ts");
+        for id in rooms.iter().chain(&passes) {
+            assert!(
+                seed.contains(&format!("id: \"{id}\"")),
+                "{id} is in the seed"
+            );
+        }
+
+        // Every page but the account (it is per person); the sign-in callback is not a page.
+        let mut want: Vec<String> = Page::ALL
+            .iter()
+            .filter(|p| **p != Page::Profile)
+            .map(|p| p.path().to_string())
+            .collect();
+        want.extend(rooms.iter().map(|c| format!("/stream/{c}")));
+        want.extend(passes.iter().map(|p| format!("/shop/{p}")));
+        got.sort();
+        want.sort();
+        assert_eq!(got, want);
+    }
+
+    /// The origin in the shell's share image, the sitemap and robots.txt is `SITE_ORIGIN`, and
+    /// the shell has no canonical or og:url (it is served for every route).
+    #[test]
+    fn static_files_name_the_site_origin() {
+        let shell = include_str!("../index.html");
+        assert!(shell.contains(&format!(
+            r#"<meta property="og:image" content="{SITE_ORIGIN}/assets/"#
+        )));
+        assert!(!shell.contains(r#"rel="canonical""#));
+        assert!(!shell.contains(r#"property="og:url""#));
+        let robots = include_str!("../robots.txt");
+        assert!(robots
+            .trim_end()
+            .ends_with(&format!("Sitemap: {SITE_ORIGIN}/sitemap.xml")));
+        let sitemap = include_str!("../sitemap.xml");
+        assert_eq!(
+            sitemap.matches("<loc>").count(),
+            sitemap.matches(&format!("<loc>{SITE_ORIGIN}/")).count()
+        );
     }
 
     #[test]

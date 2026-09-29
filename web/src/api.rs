@@ -986,21 +986,60 @@ impl PlaybackPass {
 pub async fn buy_playback(auth: Auth, id: &str, key: &str) -> Result<PlaybackPass, CodedError> {
     validate_id(id)?;
     validate_key(key)?;
-    let path = format!("/playback/{id}");
-    let url = if base_url() == FIXTURES {
-        build_url(FIXTURES, &path, &[])
-    } else {
-        format!("/api{path}")
-    };
+    let url = playback_url(base_url(), id);
     let (status, url, text) = authed_send(auth, Method::POST, url, None, Some(key), None).await?;
     decode::<serde_json::Value>(status, &url, &text)
         .map(|v| PlaybackPass::from_value(&v))
         .map_err(CodedError::from)
 }
 
+/// `/api/playback/<id>` whatever the API base, so the cookies land on this site; the fixture
+/// file in fixture mode.
+fn playback_url(base: &str, id: &str) -> String {
+    let path = format!("/playback/{id}");
+    if base == FIXTURES {
+        build_url(FIXTURES, &path, &[])
+    } else {
+        format!("/api{path}")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Release builds use `CAPYWEB_API_BASE=/api` (docs/RELEASE_PLAN.md 1a item 6): every URL is
+    /// a path on this site, never another origin, so `connect-src 'self'` covers the API.
+    #[test]
+    fn relative_api_base_stays_on_this_site() {
+        for base in ["/api", "/api/"] {
+            for (path, want) in [
+                ("/streams", "/api/streams"),
+                ("streams/main-cam/chat", "/api/streams/main-cam/chat"),
+                ("/me/transactions", "/api/me/transactions"),
+            ] {
+                let url = build_url(base, path, &[]);
+                assert_eq!(url, want);
+                assert!(!url.starts_with("//") && !url.contains("://"), "{url}");
+            }
+            assert_eq!(
+                build_url(
+                    base,
+                    "/streams/main-cam/chat",
+                    &[("limit", "50"), ("cursor", "c/1")]
+                ),
+                "/api/streams/main-cam/chat?limit=50&cursor=c%2F1"
+            );
+        }
+        // The paid camera's purchase is same-origin even with a direct API base.
+        for base in ["/api", "https://api.example.com"] {
+            assert_eq!(playback_url(base, "wall-cam"), "/api/playback/wall-cam");
+        }
+        assert_eq!(
+            playback_url(FIXTURES, "wall-cam"),
+            "/fixtures/playback/wall-cam.json"
+        );
+    }
 
     #[test]
     fn media_keys_stay_on_our_origin() {

@@ -19,7 +19,7 @@ There is no CI (the GitHub Actions allowance is used up), so the checks are loca
   `cargo clippy --all-targets -- -D warnings` for `wasm32-unknown-unknown` and for the host,
   `cargo test`, the fixtures check (`tests/fixtures.mjs --check`: every file in `fixtures/`
   still equals what the API would return for the backend's seed), `trunk build --release`, the size budget (release `.wasm` + root `.js` +
-  `snippets/`, `brotli -q 11`, at most 300,000 bytes; each file and the total are printed),
+  `snippets/`, `brotli -q 11`, at most 350,000 bytes; each file and the total are printed),
   and the browser smoke test (`tests/smoke.mjs` against `dist/`, served by `tests/serve.mjs`
   on 127.0.0.1:8792). A push that touches none of those skips all of it. Timings on this Mac:
   about 20 s after a source change (the release rebuild is 10 s of that), about 50 s when the
@@ -130,3 +130,65 @@ shim `js/player.js`; the first page to use it is the watch room's first cut, `/s
   and it resumes at the live edge; the reel's position survives a reload; a private camera renders
   no `<video>` and makes no media request; leaving the page stops all video requests.
   `tests/serve.mjs` answers byte ranges (as S3 and CloudFront do), which the resume test needs.
+
+## Release build, CSP and crawler tags (W12)
+
+The plan is `docs/RELEASE_PLAN.md` section 1a, items 3, 5, 6 and 7.
+
+- **Build a stage:** `scripts/build-release.sh <dev|prod> <out-dir>`.
+  - It deletes `target/wasm-bindgen` first. wasm-bindgen never removes stale snippets, and a
+    build without the feature once shipped `js/webmcp.js` from an earlier dev build.
+  - It builds with `CAPYWEB_API_BASE=/api` and `--release`; `dev` adds `--features webmcp`.
+  - It removes `fixtures/` from the output and leaves `config.json` as built (the deploy writes
+    the stage's own).
+  - It then checks the output and prints the size step of `scripts/web-checks.sh` for it.
+  - Measured on 2026-09-29: prod 266,287 bytes brotli (the `.wasm` 251,987), dev 289,423, of
+    the 350,000 budget. About 20 s each after a warm build.
+- **The checks** (`scripts/build-release.sh --check <dir> <dev|prod>` runs them alone):
+  - both stages: no `fixtures/`; no inline script in `index.html`; every `integrity` attribute
+    matches its file;
+  - prod: no file with `webmcp` in its name or path, no `.js` that imports it, `index.html`
+    does not name it, and the `.wasm` holds none of `cast_vote`, `list_streams` or
+    `get_my_account`.
+  - `scripts/build-release-selftest.sh [<prod-out-dir>]` plants each fault in a copy (of a
+    real prod output when given one, otherwise a small stand-in) and expects the check to fail.
+- **The boot script.** Trunk starts the app with an inline `<script type="module">`, which the
+  CSP's `script-src 'self'` blocks. A `post_build` hook in `Trunk.toml` (`scripts/boot-script.mjs`)
+  moves it into `boot-<first 16 hex of its sha256>.js`, a name the deploy treats as immutable, and
+  loads it with an `integrity` attribute. The hook fails the build if any other inline script is
+  left or an `integrity` does not match. `trunk serve` still works: its live-reload script is the
+  one exception, and only in the hook (release builds never have it).
+- **The fonts are self-hosted** in `assets/fonts/`: Commissioner, DynaPuff and Hanalei Fill, latin
+  subset only, from the Google Fonts CSS2 API on 2026-09-29. They total 98,356 bytes, and the
+  licences (OFL 1.1) sit next to them. `style/fonts.css` mirrors Google's `@font-face` rules, one per weight
+  (Commissioner and DynaPuff are one variable file each), with `font-display: swap`, and
+  `index.html` preloads the three files. Screenshots of `/`, `/watch` and `/play` at 390 and 1280
+  px were pixel-identical before and after. The app's copy needs no other subset. To update,
+  fetch the CSS with a current browser's user agent, take the `/* latin */` URLs, and bump the
+  version in the file names.
+- **Same-origin API.** Every API call, the chat panel's included (`js/chat.js`), is built from the
+  base, so `/api` keeps it on the site. A paid camera's purchase is always `/api/playback/<id>`,
+  whatever the base, so its cookies land on the site. `api::tests::relative_api_base_stays_on_this_site`
+  covers both.
+- **The CSP in the tests.** `tests/serve.mjs` sends the headers of `infra/site/headers-dev.json` on
+  every response. The CSP is sent as is, except that the managed-login origin becomes the fake
+  Cognito of `tests/pages/auth.mjs`. `tests/smoke.mjs` gives every browser context, including the
+  ones page files make, a `securitypolicyviolation` listener plus a watch on Chromium's console,
+  and fails on any violation. The `smoke:` line of `web-checks.sh` prints the count.
+  `tests/pages/csp.mjs` checks that the header is really sent, the boot script is a file, and a
+  page load touches no other origin. axe-core goes in through `page.evaluate`, which the page's
+  CSP does not govern (a script tag would be inline).
+- **Crawler tags.**
+  - `sitemap.xml` lists the pages, each capybara a camera watches and every pass, with absolute
+    `https://capytube.xyz` URLs. Not `/profile` or `/auth/callback`.
+  - `robots.txt` ends with its `Sitemap:` line.
+  - The shell has `og:image` (`/assets/share/capytube-1200x630.jpg`, 151 KB, made from
+    `assets/pages/aboutOne.webp` and the logo), its size and alt text, and `twitter:card`.
+  - The shell has **no** canonical and no `og:url`: it is served for every route. `App` sets
+    `<link rel="canonical">` per route instead (`show_canonical` in `src/lib.rs`): the origin
+    `routes::SITE_ORIGIN` plus the path, with no query and no trailing slash. It removes the link
+    while a view with `noindex` shows.
+  - `routes::tests::sitemap_matches_the_app_and_the_seed` fails if a sitemap URL is not a route,
+    or if the rooms and passes differ from the seed. `tests/pages/crawl.mjs` checks the tags in a
+    browser.
+

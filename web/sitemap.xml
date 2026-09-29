@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The app's indexable pages on the production domain (docs/CRAWLERS_NOTES.md). The capybara
+     rooms and the passes are the backend's seed (backend/src/scripts/seed-data.ts); the Rust test
+     sitemap_matches_the_app_and_the_seed (src/routes.rs) fails when either drifts. Not /profile
+     (per person) and not /auth/callback. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://capytube.xyz/</loc></url>
+  <url><loc>https://capytube.xyz/watch</loc></url>
+  <url><loc>https://capytube.xyz/play</loc></url>
+  <url><loc>https://capytube.xyz/shop</loc></url>
+  <url><loc>https://capytube.xyz/robot</loc></url>
+  <url><loc>https://capytube.xyz/about-us</loc></url>
+  <url><loc>https://capytube.xyz/privacy-policy</loc></url>
+  <url><loc>https://capytube.xyz/terms-of-service</loc></url>
+  <url><loc>https://capytube.xyz/deletion</loc></url>
+  <url><loc>https://capytube.xyz/stream/einstein</loc></url>
+  <url><loc>https://capytube.xyz/stream/elon</loc></url>
+  <url><loc>https://capytube.xyz/stream/magnus</loc></url>
+  <url><loc>https://capytube.xyz/shop/capy-1234</loc></url>
+  <url><loc>https://capytube.xyz/shop/capy-5687</loc></url>
+  <url><loc>https://capytube.xyz/shop/capy-632574</loc></url>
+</urlset>

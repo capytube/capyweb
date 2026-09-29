@@ -7,6 +7,7 @@
 //   npm install --prefix ~/.cache/capyweb/pw axe-core
 // Without it this file skips, with a note in the smoke log, rather than failing the push.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fakeCognito, configuredContext } from './auth.mjs';
 
@@ -28,9 +29,11 @@ function axePath() {
   }
 }
 
-/** Serious and critical violations on the page as it is now, one line each. */
+/** Serious and critical violations on the page as it is now, one line each. axe goes in
+ *  through evaluate, which the page's CSP does not govern: a script tag would be an inline
+ *  script, which it blocks (and smoke.mjs counts as a violation). */
 async function audit(page, AXE, label) {
-  if (!(await page.evaluate(() => 'axe' in window))) await page.addScriptTag({ path: AXE });
+  if (!(await page.evaluate(() => 'axe' in window))) await page.evaluate(`${readFileSync(AXE, 'utf8')}\n;0`);
   const found = await page.evaluate(async (tags) => {
     const r = await window.axe.run(document, { runOnly: { type: 'tag', values: tags }, resultTypes: ['violations'] });
     return r.violations

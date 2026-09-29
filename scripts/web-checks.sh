@@ -227,7 +227,7 @@ if wants smoke; then
     if BASE="http://127.0.0.1:$SMOKE_PORT" NODE_PATH="$PW_DIR/node_modules" \
          PLAYWRIGHT_BROWSERS_PATH="$PW_DIR/browsers" node web/tests/smoke.mjs >"$TMP/smoke.log" 2>&1 \
        && grep -q '^smoke: ok' "$TMP/smoke.log"; then
-      pass "smoke: ok (headless Chromium against $DIST, $((SECONDS - t0))s)"
+      pass "smoke: ok, $(sed -n 's/^smoke: \([0-9]*\) CSP violation.*/\1/p' "$TMP/smoke.log") CSP violations (headless Chromium against $DIST, $((SECONDS - t0))s)"
     else
       tail -40 "$TMP/smoke.log"
       fail "smoke test" "web/tests/smoke.mjs failed against http://127.0.0.1:$SMOKE_PORT"

@@ -14,18 +14,19 @@ Marked *(not rechecked)*: claims the lead did not re-read. They come from the he
 ## What the site serves today
 
 - **The shell.** `web/index.html` has no page content until the WASM runs. Its `<head>` has a static title,
-  a meta description, `og:title`, `og:description` and `og:type`. It has no canonical, no `og:url` and no
-  `og:image`.
+  a meta description, `og:title`, `og:description` and `og:type`. Since W12 it also has `og:image` with
+  its size and alt text, and `twitter:card`. It has no canonical and no `og:url`, on purpose (see (e)).
   - Until 2026-09-29 the title and descriptions said "live". They were changed with this note, since every
     camera is a recording (VIDEO_DESIGN section 8).
-- **Client-side tags.** `PageHead` sets only `document.title`, from the client. It sets no description,
-  canonical, robots or Open Graph tag.
+- **Client-side tags.** `PageHead` sets only `document.title`, from the client. Since W12 the app sets a
+  canonical link per route, and three not-found views set `noindex` (below). No per-page description
+  or Open Graph tag.
 - **Unknown paths.** Every path without a file extension answers **200** with the shell:
   - `SpaFunction` rewrites it to `/index.html` when the API is wired;
   - otherwise `CustomErrorResponses` does the same.
 
   Unknown paths are therefore soft-404s. The client shows "Page not found" (`web/src/pages/not_found.rs`).
-- **No `robots.txt` and no `sitemap.xml`.**
+- **`robots.txt` and `sitemap.xml`** are built (below). Until 2026-09-29 there were neither.
 
 ## Google
 
@@ -131,8 +132,13 @@ through `SpaFunction` untouched.
   W12's deploy.
 
 **(e) Tags in the shell.**
-- `og:image`, `og:url` and a canonical for the site root give every shared link a capybara picture.
+- `og:image` gives every shared link a capybara picture.
 - Per-page descriptions set from the client help Google only.
+- **Correction (W12, RELEASE_PLAN 1a item 7):** this note first proposed `og:url` and a canonical for the
+  site root in the shell. That was wrong. The shell is served for every route, so a root canonical there
+  would tell search engines that every page is a copy of the home page, and they could drop the others.
+  `og:url` has the same problem for link previews. The shell has neither. The client sets a
+  self-referencing canonical per route instead, the way it sets `noindex` on the not-found views.
 
 ## The robots.txt policy (capyweb-manager, 2026-09-29)
 
@@ -171,16 +177,33 @@ wants otherwise.
      - the pages, `/watch/`, `/stream/magnus`, `/shop/pass-1` and `/auth/callback` answer 200;
      - files and the API are unchanged.
 
-**Left for W12 and the cutover:**
-- `sitemap.xml` and the `Sitemap:` line;
-- `og:image`, `og:url` and a canonical in the shell (all need the production domain);
-- the production stack update.
+**Built in W12** (in the code, tested by `web/tests/pages/crawl.mjs`; on dev with W12's deploy):
+4. **`web/sitemap.xml`**, copied into the build. It lists the nine public pages, `/stream/<id>` for
+   each capybara a camera watches and `/shop/<id>` for every pass, as absolute `https://capytube.xyz`
+   URLs. It leaves out `/profile` and `/auth/callback`. The Rust test
+   `sitemap_matches_the_app_and_the_seed` (`web/src/routes.rs`) fails if a URL is not a route of the
+   app, or if the rooms and passes differ from the backend's seed.
+5. **`Sitemap: https://capytube.xyz/sitemap.xml`** at the end of `web/robots.txt`. The rest of the
+   file is the manager's policy, unchanged. Dev still gets `Disallow: /` from the upload script.
+6. **Share tags in the shell:**
+   - `og:image`: `https://capytube.xyz/assets/share/capytube-1200x630.jpg`, 1200x630 and 151 KB, made
+     from `web/assets/pages/aboutOne.webp` and the logo;
+   - `og:image:width`, `og:image:height` and `og:image:alt`;
+   - `twitter:card` `summary_large_image`.
+7. **A canonical per route, set by the client** (`show_canonical` in `web/src/lib.rs`, called by
+   `App` on every navigation). It is `routes::SITE_ORIGIN` plus the path, with no query and no trailing
+   slash (except `/`). There is no canonical in the shell (the correction in (e)), and none while a
+   view that sets `noindex` shows: the canonical goes when the `noindex` arrives and comes back when
+   it goes.
+
+**Left for the cutover:** the production stack update.
 
 ## Recommendation for the cutover (W16, with the W12 site work)
 
 1. **Client `noindex` on the not-found view**, and on the watch room or a pass page when their id is
    unknown. Cheap, and Google's own advice. It can land before the cutover.
-2. **`og:image`, `og:url` and a canonical** in `web/index.html`.
+2. **`og:image`** in `web/index.html`, and a canonical per route from the client. Built in W12. Not
+   `og:url` or a canonical in the shell (the correction in (e)).
 3. **`robots.txt` with a `Sitemap:` line, and `sitemap.xml`** of the static routes and the current
    capybara rooms. The AI-training opt-out lines only if capyweb-manager decides so.
 4. **A real 404 at the edge** (b), after a dev test of what the viewer-response function sees. It needs

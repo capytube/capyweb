@@ -16,3 +16,10 @@ tailwindcss = "3.4.17"
 # default) rejects that module as invalid. Pin a newer one, and enable the features explicitly
 # in index.html (data-wasm-opt-params) so an older binaryen cannot silently strip them.
 wasm_opt = "version_133"
+
+# The CSP's `script-src 'self'` blocks Trunk's inline boot script: move it into a hashed file,
+# and fail the build if any inline script is left (docs/RELEASE_PLAN.md 1a item 3).
+[[hooks]]
+stage = "post_build"
+command = "node"
+command_arguments = ["scripts/boot-script.mjs"]
