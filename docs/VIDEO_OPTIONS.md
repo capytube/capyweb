@@ -4,7 +4,7 @@ Research memo, 2026-09-29 (written by a Kimi research helper, reviewed and edite
 
 ## Summary
 
-**Recommendation: self-hosted HLS — one small encoder box at the capybaras' home pushes HLS segments to S3, served through the existing CloudFront, with CloudFront signed cookies gating the paid camera.** It is the only option that meets both hard constraints at once: the ~$7/month video budget and real server-side paywall protection. At the repo's own viewing assumption (500 viewer-hours/month) it costs ≈$3.40/month, because total egress (~795 GB including existing site traffic) stays inside the 1 TB CloudFront free tier. It gives plain HLS to W6's hls.js/native-Safari player, free recordings for the fallback reel, and near-zero lock-in. Every managed vendor fails the budget even at the lowest scenario: Amazon IVS ≈$104/month (input metering alone is $54), Cloudflare Stream ≈$21, Mux ≈$487. YouTube Live is free and works for the two public cameras, but it cannot gate the paid camera: a leaked unlisted URL works forever, private streams cap at roughly 50 invited Google accounts, and charging for access to embedded YouTube content conflicts with YouTube's Terms of Service. The price of the recommendation: ~6–10 person-days of build, a ~$100 always-on box in a home in Thailand, 15–45 s latency, and egress costs that grow linearly if viewing far exceeds the plan assumption — with a clear escape hatch (720p at 1.5 Mbps, or moving the free cameras to YouTube).
+**Recommendation: self-hosted HLS — one small encoder box at the capybaras' home pushes HLS segments to S3, served through the existing CloudFront, with CloudFront signed cookies gating the paid camera.** It is the only option that meets both hard constraints at once: the ~$7/month video budget and real server-side paywall protection. At the repo's own viewing assumption (500 viewer-hours/month) it costs ≈$3.40/month, because total egress (~795 GB including existing site traffic) stays inside the 1 TB CloudFront free tier. It gives plain HLS to W6's hls.js/native-Safari player, free recordings for the fallback reel, and near-zero lock-in. Every managed vendor fails the budget even at the lowest scenario: Amazon IVS ≈$104/month (input metering alone is $54), Cloudflare Stream ≈$21, Mux ≈$497–516. YouTube Live is free and works for the two public cameras, but it cannot gate the paid camera: a leaked unlisted URL works forever, private streams cap at roughly 50 invited Google accounts, and charging for access to embedded YouTube content conflicts with YouTube's Terms of Service. The price of the recommendation: ~6–10 person-days of build, a ~$100 always-on box in a home in Thailand, 15–45 s latency, and egress costs that grow linearly if viewing far exceeds the plan assumption — with a clear escape hatch (720p at 1.5 Mbps, or moving the free cameras to YouTube).
 
 ## What the repo says, and what I assumed
 
@@ -37,7 +37,7 @@ Repo read at `feat/wasm-frontend` on 2026-09-29. Line numbers drift; the file na
 - The only viewer-volume number in the repo: "100 customers × 3 sessions × 10 minutes = 3,000 sessions and 30,000 viewing-minutes per month" = **500 viewer-hours/month** (`docs/PLAN.md:166-168`).
 - Constraint: "serverless only — Lambda + DynamoDB — cheap and scalable, under $10/month at 100 customers" (`docs/PLAN.md:101-102`).
 - Current non-video cost model: ≈**$2.30/month** (`docs/PLAN.md:172-182`: API Gateway $0.55, Lambda $0.24, DynamoDB $0.24, CloudWatch $0.26, S3 $0.50, CloudFront $0.00, Route 53 $0.50, Cognito $0.00). **The model has no live-video line at all** — video transport cost is the gap this document fills.
-- The CloudFront row assumes a 1 TB/month always-free tier and is flagged "load-bearing" and unverified (`docs/PLAN.md:189-194`, bead `capyweb-0v3`; an 800 GB/month egress alarm exists, `docs/PLAN.md:205`). Every self-delivery estimate in this document hinges on it.
+- The CloudFront row assumes a 1 TB/month always-free tier, flagged "load-bearing" in `docs/PLAN.md` section 3. **It was confirmed on 2026-09-29** (capyweb-manager, from the admin side: September to date about 4.7 GB out and 260,000 requests, a gross charge of $0.0025; bead `capyweb-0v3`, closed). The 800 GB/month egress alarm stays as the guard. Every self-delivery estimate in this document rests on it.
 
 ### What W6 requires of the video source (`docs/WASM_PLAN.md`)
 
@@ -68,7 +68,7 @@ Repo read at `feat/wasm-frontend` on 2026-09-29. Line numbers drift; the file na
 
 **How it works.** Three RTSP cameras feed one Raspberry Pi-class box at the home. ffmpeg remuxes each camera (`-c copy`, no transcode — a Pi cannot reliably transcode 3×1080p, and remuxing keeps CPU trivial) into 4-second HLS segments plus playlists, and PUTs them to S3 over outbound HTTPS. CloudFront serves `/public/*` unsigned and `/private/*` with signed cookies. Nothing inbound is opened on the home network; no EC2 anywhere.
 
-**Monthly cost.** S3 side is constant across viewer levels: 486,000 PUTs × $0.005/1,000 = $2.43; rolling storage ≈34 GB ≈ $0.85; origin GETs ≈ $0.10 → **≈$3.40/month** (≈$2.20 with 8 s segments). CloudFront requests stay under the 10M/month free tier at every level → $0. Egress (including the site's existing ~120 GB/month, which shares the same 1 TB free tier):
+**Monthly cost.** S3 side is constant across viewer levels: 486,000 PUTs × $0.005/1,000 = $2.43; rolling storage ≈34 GB ≈ $0.85; origin GETs ≈ $0.10 → **≈$3.40/month** (≈$2.20 with 8 s segments). CloudFront requests stay under the 10M/month free tier at every level → $0 (with 4 s segments; the maximum is ~4.9M at HIGH, and 2 s segments would double it). Egress (including the site's existing ~120 GB/month, which shares the same 1 TB free tier):
 
 | Scenario | Video egress | Total incl. existing 120 GB | Billable beyond 1 TB | **Total/month** | Fits? |
 |---|---|---|---|---|---|
@@ -99,7 +99,7 @@ Price caveat: CloudFront per-GB rates ($0.085 US/EU edge, $0.120 Asia edge, firs
 
 ## Option 2 — Amazon IVS
 
-**Cost.** Low-latency channels bill per input hour plus per viewer-hour delivered. Input: Basic $0.20/h (≤1080p, ≤3.5 Mbps, no ABR ladder), Advanced SD $0.50/h, Advanced HD $0.85/h (720p max), Standard $2.00/h. Output for SE Asia viewers: SD $0.0460 / HD $0.0920 / Full HD $0.1840 per viewer-hour. Real-time stages bill $0.0920 per participant-hour (SE Asia; camera host and each viewer both count; 720p max). Channels and stages cost $0 while idle — verified on the pricing page. Free tier exists but is negligible here (~$1–2/month at LOW).
+**Cost.** Low-latency channels bill per input hour plus per viewer-hour delivered. Input: Basic $0.20/h (≤1080p, ≤3.5 Mbps, no ABR ladder), Advanced SD $0.50/h, Advanced HD $0.85/h (720p max), Standard $2.00/h. Output for SE Asia viewers: SD $0.0460 / HD $0.0920 / Full HD $0.1840 per viewer-hour. Real-time stages bill $0.0920 per participant-hour (SE Asia; camera host and each viewer both count; 720p max). Channels and stages cost $0 while idle — verified on the pricing page. The free tier (5 h Basic input, 100 h SD output and 20 stage participant-hours a month) is for new accounts in their first 12 months only, so it does not apply to this account; it would be worth ≈$5.60/month at these rates.
 
 | Configuration | LOW | EXPECTED | HIGH |
 |---|---|---|---|
@@ -132,7 +132,7 @@ The floor is the $54/month input metering on Basic — about 8× the video budge
 | EXPECTED (48,600 min) | $5 | $48.60 | **$53.60** | No |
 | HIGH (162,000 min) | $5 | $162.00 | **$167.00** | No |
 
-Best case with the Starter bundle: LOW ≈$16.20 — still over. For scale: the $7 video budget buys ~7,000 delivered minutes ≈ 117 viewer-hours/month, less than half of LOW.
+Best case with the Starter bundle: LOW ≈$16.20 — still over. For scale: after the mandatory prepaid $5 storage block, the $7 video budget leaves $2, which buys ~2,000 delivered minutes ≈ 33 viewer-hours/month, an eighth of LOW.
 
 **Latency.** Standard HLS ~10–30 s. LL-HLS (opt-in beta, `preferLowLatency`) <10 s, ~5 s demonstrated. WebRTC (WHIP in / WHEP out) <500 ms — but WebRTC broadcasts **cannot be recorded** (no reel), get no viewer counts, and lose HLS playback.
 
@@ -146,17 +146,19 @@ Best case with the Starter bundle: LOW ≈$16.20 — still over. For scale: the 
 
 **Recordings / reel.** Yes on the RTMPS/SRT path: every broadcast is auto-recorded, playable ~60 s after stream end, clippable — subject to the storage-retention tradeoff above. No on the WebRTC path.
 
+If Cloudflare is ever revisited: `deleteRecordingAfterDays` has a 30-day minimum, so shorter retention needs explicit API deletes; storage is prepaid capacity, so a second $5 block buys minutes that may go unused; and live inputs created through the API default to `recording.mode=off`.
+
 **Verdict.** A good technical fit that fails the budget ~2.3× even at LOW. Revisit only if viewer-hours collapse or the budget cap moves.
 
 ## Option 4 — Mux
 
-**Cost.** The free plan excludes live streaming entirely, and live requires the "plus" quality tier, which meters **input (encoding) per camera-minute**: 1080p $0.03125/min for the first 5,000 min/month (tiered down to $0.028906). Delivery: first 100,000 min/month free (1080p), then $0.001/min. PAYG adds a $20 monthly usage credit. Storage of recordings in cold tier: $0.0012/min/month.
+**Cost.** The free plan excludes live streaming entirely, and live requires the "plus" quality tier, which meters **input (encoding) per camera-minute**: 1080p $0.03125/min for the first 5,000 min/month (tiered down to $0.028906). Delivery: first 100,000 min/month free (1080p), then $0.001/min. PAYG adds a $20 monthly usage credit. Storage of recordings: $0.003/min/month (frequent) or $0.0018 (infrequent); the $0.0012 cold rate needs an asset unplayed for 90+ days, which 30-day retention never reaches.
 
-| Scenario | Input (16,200 min) | Delivery | Storage (30-day cold) | Credit | **Total/month** | Fits? |
+| Scenario | Input (16,200 min) | Delivery | Storage (30-day, infrequent–frequent) | Credit | **Total/month** | Fits? |
 |---|---|---|---|---|---|---|
-| LOW | $487.82 | $0 | $19.44 | −$20 | **≈$487** | No (~70×) |
-| EXPECTED | $487.82 | $0 | $19.44 | −$20 | **≈$487** | No |
-| HIGH | $487.82 | $62.00 | $19.44 | −$20 | **≈$549** | No |
+| LOW | $487.82 | $0 | $29.16–48.60 | −$20 | **≈$497–516** | No (~70×) |
+| EXPECTED | $487.82 | $0 | $29.16–48.60 | −$20 | **≈$497–516** | No |
+| HIGH | $487.82 | $62.00 | $29.16–48.60 | −$20 | **≈$559–578** | No |
 
 Encoding alone dwarfs the budget; the generous free delivery minutes are irrelevant. (Even 720p input is ≈$390/month.) A curated ~10-hour reel instead of 30-day retention drops storage to ~$1–2.
 
@@ -185,7 +187,7 @@ Encoding alone dwarfs the budget; the generous free delivery minutes are irrelev
 - *Private:* each viewer needs their own Google account, individually invited by email in Studio; the invite cap is consistently third-party-reported as 50 accounts (not on an official page) — below the ~100 paying viewers; private embeds only play for invited, signed-in Google users; and there is no API to manage the share list, so onboarding/offboarding is manual toil. Cognito cannot grant YouTube access.
 - *ToS:* the Terms of Service forbid selling access to any part of the Service or Content without written permission, and forbid sales on any page "where Content from the Service is the primary basis for such sales" — which describes a page selling play coins to watch embedded YouTube streams. YouTube may also run ads on the cams with no revenue to you, and can terminate API/embed access at will. The paywalled use would put the whole channel — free cams included — at structural termination risk.
 
-**What runs where.** Home: encoder pushing RTMPS to YouTube (outbound only; verified channel, no live-streaming restrictions in the last 90 days; 10 active streams per channel — 3 cams fit). YouTube: everything else. AWS: untouched.
+**What runs where.** Home: encoder pushing RTMPS to YouTube (outbound only; verified channel, no live-streaming restrictions in the last 90 days; 10 active streams per channel, which I could not confirm on an official page — 3 cams fit). YouTube: everything else. AWS: untouched.
 
 **Lock-in.** Technically low (swap the iframe for another player; recordings exportable via Studio/Takeout). But you hold no viewer relationship on YouTube's side, and channel suspension kills all cameras at once with no SLA.
 
@@ -205,7 +207,7 @@ Video-only cost per month (add ≈$2.30 existing site cost; budget: video ≤ ~$
 | Amazon IVS low-latency (Basic) | $104 | $203 | $551 | No (~8×) | 2–5 s | IVS playback JWT, exp ≤10 min; session revocation API | Low-moderate | 4–6 d |
 | Amazon IVS real-time stages | $50 | $99 | $273 | No | <300 ms | Participant tokens; disconnect API | Low-moderate | 4–6 d |
 | Cloudflare Stream | $21 | $54 | $167 | No (~2.3×) | 10–30 s (LL-HLS beta <10 s) | RS256 JWT ≤24 h; leak lives to exp; domain pinning | Low | 3–5 d |
-| Mux | ≈$487 | ≈$487 | ≈$549 | No (~70×) | 5–30 s | RS256 JWT, short exp + refresh; dies mid-playback | Moderate-low | 3–5 d |
+| Mux | ≈$497–516 | ≈$497–516 | ≈$559–578 | No (~70×) | 5–30 s | RS256 JWT, short exp + refresh; dies mid-playback | Moderate-low | 3–5 d |
 | YouTube Live embed | $0 | $0 | $0 | Yes, but paywall fails | 5–60 s by mode | None — unlisted leaks forever; private ≈50-account cap, Google accounts required | Low tech / account-termination risk | 1–3 d |
 
 ## Recommendation
@@ -217,30 +219,43 @@ Video-only cost per month (add ≈$2.30 existing site cost; budget: video ≤ ~$
 3. At the repo's own viewing assumption (500 viewer-hours/month) total egress is ~795 GB — inside the 1 TB free tier even at 1080p, with ~20% headroom.
 4. Near-zero lock-in: open formats end to end, and the site's playback layer is already vendor-neutral by design.
 
-Accepted costs: ~6–10 person-days of build, a physical box to babysit in Thailand, 15–45 s latency (fine for watching pets; not fine for real-time interaction), and linear egress growth beyond ~700 viewer-hours/month.
+Accepted costs: ~6–10 person-days of build, a physical box to babysit in Thailand, 15–45 s latency (fine for watching pets; not fine for real-time interaction), and linear egress growth beyond ~650 viewer-hours/month (1080p).
 
 First three concrete steps:
 
-1. **Verify the free tier before writing code.** Confirm the 1 TB/month CloudFront always-free tier actually applies to this account (already open as `capyweb-0v3`; the 800 GB egress alarm exists because of it). The entire EXPECTED-case fit depends on this. Lock the launch quality decision to the outcome: 720p @ 1.5 Mbps keeps EXPECTED at $0 egress; 1080p fits only while viewer-hours stay under ~700/month.
+1. **Keep the free tier.** The 1 TB/month CloudFront always-free allowance was confirmed on 2026-09-29 (`capyweb-0v3`). It applies under default pay-as-you-go billing; keep the account there (no CloudFront flat-rate plan, see Risks). The entire EXPECTED-case fit depends on this. Lock the launch quality decision to the outcome: 720p @ 1.5 Mbps keeps EXPECTED at $0 egress; 1080p fits only while viewer-hours stay under ~650/month.
 2. **Build the home encoder.** One Pi-class box: ffmpeg remux of the three cameras' RTSP feeds into 4 s HLS segments + playlists, PUT to a new `capyapp-*` S3 bucket under `/public/*` and `/private/*` prefixes, using an upload-only scoped IAM key, 2-day lifecycle expiry, systemd watchdog, tmpfs or USB SSD for scratch (SD cards die under continuous writes).
 3. **Build the gated playback path.** CloudFront behaviors for `/public/*` (unsigned) and `/private/*` (trusted key group); a Lambda behind the API Gateway Cognito authorizer that checks payment in DynamoDB and returns a 2–4 h signed cookie; W6's hls.js shim with `withCredentials`; player falls back to the reel playlist when the live playlist goes stale.
 
 ## Risks, and what to measure before committing
 
-- **The 1 TB free tier is unverified.** It carries the LOW and repo-level cases. Confirm it in the account's billing console first; without it, even LOW costs ≈$34–47/month in egress and the recommendation changes.
+- **The 1 TB free tier (confirmed 2026-09-29) must stay.** It carries the LOW and repo-level cases. It applies under default pay-as-you-go billing. CloudFront's flat-rate pricing plans (AWS What's New, 2025-11-18, extended in 2026) cannot be combined with it: the Free plan includes only 100 GB/month, so opting the account into it would silently cut the allowance from 1 TB to 100 GB. Without the allowance, even LOW costs ≈$41–58/month in egress (485 GB at $0.085–0.120/GB) and the recommendation changes. (The Pro plan, $15 for 50 TB, becomes interesting only if billable egress ever passes ~176 GB/month.)
 - **Viewer-hours are a plan assumption, not a measurement.** The repo's 500 viewer-hours/month was written before launch. Measure real viewing for a few weeks before fixing the bitrate: CloudFront request logs for the reel, or a count of signed-cookie mints once the private camera is live. (The React app's per-minute watch-time writes are not carried into v1, `docs/WASM_PLAN.md` section 2.)
 - **Home uplink.** Three 1080p streams need ~9–10 Mbps sustained upload; 720p needs ~4.5–5 Mbps. Measure the home's actual uplink in Thailand.
 - **Encoder reliability.** Heat, dust, power cuts, SD wear. Watchdog + auto-resume + a playlist-freshness alarm (Lambda checking S3 object age) + someone on-site for rare physical resets. Replacement box ≈$100.
-- **Linear egress at HIGH.** Beyond ~700 viewer-hours/month at 1080p (~1,480 at 720p), costs grow linearly. Mitigation ladder: cut bitrate → 720p-only → move the two public cams to YouTube embeds (free) while the paid cam stays on signed-cookie CloudFront.
+- **Linear egress at HIGH.** Beyond ~650 viewer-hours/month at 1080p (~1,300 at 720p; the 1 TB less the site's existing ~120 GB, divided by 1.35 or 0.675 GB per viewer-hour), costs grow linearly. Mitigation ladder: cut bitrate → 720p-only → move the two public cams to YouTube embeds (free) while the paid cam stays on signed-cookie CloudFront.
 - **Device-key theft.** Upload-only scoped key, quarterly rotation, storage billing alarm; upgrade to Lambda-minted presigned URLs if the risk bothers you (+1 day).
 - **Latency vs. interactivity.** 15–45 s HLS latency is fine for viewing. If the robot-interaction experience (see `docs/docs-robot-marketplace.md`) needs sub-second video, no budget-fitting option provides it (IVS real-time stages would, at ~7× budget). Flagged as a question below.
 - **Single-cloud dependency.** S3/CloudFront regional outage takes video down; the reel fallback (cached at the edge) softens it.
 
+## Decisions (2026-09-29)
+
+- **Direction:** self-hosted HLS, as recommended (capyweb-manager with herdr-master, 2026-09-29). The encoder box at
+  the capybaras' home, and who restarts it, is asked of nic; nothing that needs the box is built until then.
+- **Free tier:** confirmed (`capyweb-0v3`, closed).
+- **Robot page:** no sub-second video in v1 (open question 5 below is answered).
+- **Sign-in:** Cognito managed login with PKCE (the Q2 decision in `docs/WASM_PLAN.md`). `docs/SAM_MIGRATION_PLAN.md`
+  still says login is Dynamic.xyz; that line predates the decision and is out of date. The signed-cookie design
+  works with any identity provider that the API's JWT authorizer accepts.
+- **The detailed design** (S3 prefixes, CloudFront behaviours, the cookie lifetime and renewal, the encoder upload
+  path) is in `docs/VIDEO_DESIGN.md`. Where it differs from the three steps above (prefix names, lifecycle, cookie
+  lifetime, `withCredentials`), the design doc wins.
+
 ## Open questions
 
-1. **Free tier:** confirm the 1 TB/month CloudFront always-free tier on this account (`capyweb-0v3`). It needs a billing check with the deploy identity; the recommendation's economics depend on it.
+1. **Free tier:** confirmed on 2026-09-29 (`capyweb-0v3`). The open point is only to keep the account on default pay-as-you-go billing, with no CloudFront flat-rate plan.
 2. **Deployer policy:** the deployer policy denies "media" services (`docs/PLAN.md`, "Three things the new deployer identity changed"). Whether that covers IVS is moot while IVS fails on cost.
-3. **Quality trade-off:** is 720p at ~1.5 Mbps acceptable for pet cams if viewer-hours exceed ~700/month? That is the main budget-preserving lever at EXPECTED scale.
+3. **Quality trade-off:** is 720p at ~1.5 Mbps acceptable for pet cams if viewer-hours exceed ~650/month? That is the main budget-preserving lever at EXPECTED scale.
 4. **Hardware at the home:** is placing a ~$100 always-on encoder box at the capybaras' home acceptable, and who can give it an occasional physical reboot?
 5. **Robot experience latency:** does the robot-interaction feature need sub-second glass-to-glass video? If yes, the video budget and the feature conflict, and the scope needs a decision.
 6. **Escape hatch:** if egress ever grows past the free tier, is it acceptable to move the two free public cams to YouTube embeds (YouTube chrome, possible ads) while keeping the paid cam self-hosted?

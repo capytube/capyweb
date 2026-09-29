@@ -1,5 +1,7 @@
 # capyweb: Amplify Gen 2 -> AWS SAM migration plan (DRAFT, awaiting Nic's approval)
 
+> **Out of date on sign-in (2026-09-29):** the rewrite uses Cognito managed login with PKCE and no Dynamic.xyz or wallet code (`docs/WASM_PLAN.md`, decisions Q1 and Q2). Read this plan for the SAM migration history only.
+
 Status: plan only. Nothing is migrated until Nic approves.
 
 Accounts and regions:
