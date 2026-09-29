@@ -1,0 +1,94 @@
+/* Watch list and watch room (W4). Component rules only; tokens live in base.css. */
+
+.cast-grid {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cast-grid > * { min-width: 0; }
+.cast-card {
+  display: grid;
+  gap: 0.45rem;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+.cast-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.cast-card h3 {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 1.35rem;
+}
+.cast-card p { margin: 0; overflow-wrap: anywhere; }
+.cast-meta { font-size: 0.95rem; }
+
+.cam-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.8rem;
+}
+.cam-tabs button {
+  font-family: var(--font-ui);
+  border: 2px solid var(--choco-brown);
+  background: white;
+  color: var(--choco-brown);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+.cam-tabs button[aria-selected="true"] { background: var(--grass-green); }
+
+.watch-grid {
+  display: grid;
+  gap: 1rem;
+}
+.watch-grid > * { min-width: 0; }
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 24rem;
+  overflow: auto;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+.chat-line { overflow-wrap: anywhere; }
+.chat-name { font-weight: 700; margin-right: 0.35rem; }
+.chat-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.chat-form input {
+  flex: 1 1 8rem;
+  min-width: 0;
+  border: 2px solid var(--choco-brown);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font: inherit;
+  background: white;
+}
+.reacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.6rem 0;
+}
+.chat-count { font-size: 0.85rem; }
+
+@media (min-width: 700px) {
+  .cast-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 760px) {
+  .watch-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
+}

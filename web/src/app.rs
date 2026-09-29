@@ -32,9 +32,7 @@ pub fn App() -> impl IntoView {
             <main id="main" class="view" tabindex="-1">
                 <Routes fallback=NotFound>
                     <Route path=path!("/") view=Home/>
-                    <Route path=path!("/watch") view=|| view! {
-                        <ComingSoon title="Watch" blurb="Pick a capybara and a camera. This page is being rebuilt."/>
-                    }/>
+                    <Route path=path!("/watch") view=crate::pages::watch::Watch/>
                     <Route path=path!("/stream/:capyId") view=crate::pages::watch_room::WatchRoom/>
                     <Route path=path!("/play") view=|| view! {
                         <ComingSoon title="Play" blurb="Snack votes and bids, paid in play coins. This page is being rebuilt."/>

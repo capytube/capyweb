@@ -250,6 +250,47 @@ impl Pass {
     }
 }
 
+/// One public chat line. Names and text are other people's words: render them as text only.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ChatMessage {
+    pub id: String,
+    #[serde(default)]
+    pub stream_id: String,
+    #[serde(default)]
+    pub display_name: Option<String>,
+    #[serde(default)]
+    pub text: String,
+    #[serde(rename = "createdAt")]
+    #[serde(default)]
+    pub created_at: String,
+}
+
+/// `GET /streams/{id}/chat`. `reactions` is present on the first page only.
+#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+pub struct ChatPage {
+    #[serde(default)]
+    pub items: Vec<ChatMessage>,
+    #[serde(default)]
+    pub count: usize,
+    #[serde(default)]
+    pub cursor: Option<String>,
+    #[serde(default)]
+    pub reactions: Option<RatingCounts>,
+}
+
+impl RatingCounts {
+    pub fn of(&self, name: &str) -> u32 {
+        match name {
+            "capylove" => self.capylove.unwrap_or(0),
+            "capylike" => self.capylike.unwrap_or(0),
+            "capywow" => self.capywow.unwrap_or(0),
+            "capyangry" => self.capyangry.unwrap_or(0),
+            "capyfire" => self.capyfire.unwrap_or(0),
+            _ => 0,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
