@@ -9,16 +9,24 @@ Parameters:
     Type: Number
     Default: 10
     Description: The capyweb target from docs/PLAN.md section 1a.
+  BudgetEmail:
+    Type: String
+    Default: ''
+    NoEcho: true
+    # The address capyweb-monthly-20 already emails (capyweb-manager, 2026-09-29), read by
+    # infra/ops/deploy.sh at deploy time. Never written in the repo or printed.
+    Description: Email recipient of the budget's alerts (a direct Budgets subscriber, no confirmation).
   EnableAnomalyDetection:
     Type: String
     AllowedValues: ['true', 'false']
     Default: 'false'
-    # A4 needs ce:CreateAnomalyMonitor and ce:CreateAnomalySubscription (and their Get, Update,
-    # Delete and tag actions), which the deploy identity does not have yet.
+    # Off: A4 is skipped in v1 (capyweb-manager, 2026-09-29), because the account already has AWS's
+    # default services monitor. On would also need ce:*Anomaly* grants the deploy identity lacks.
     Description: Cost Anomaly Detection on the whole account (A4), alerting this topic.
 
 Conditions:
   Anomaly: !Equals [!Ref EnableAnomalyDetection, 'true']
+  HasEmail: !Not [!Equals [!Ref BudgetEmail, '']]
 
 Resources:
   # The budget's and cost anomalies' alerts. The alarms have their own topics, in their own regions
@@ -73,11 +81,20 @@ Resources:
           IncludeRefund: false
       NotificationsWithSubscribers:
         - Notification: {NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 50, ThresholdType: PERCENTAGE}
-          Subscribers: [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
+          Subscribers: !If
+            - HasEmail
+            - [{SubscriptionType: SNS, Address: !Ref AlertTopic}, {SubscriptionType: EMAIL, Address: !Ref BudgetEmail}]
+            - [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
         - Notification: {NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 80, ThresholdType: PERCENTAGE}
-          Subscribers: [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
+          Subscribers: !If
+            - HasEmail
+            - [{SubscriptionType: SNS, Address: !Ref AlertTopic}, {SubscriptionType: EMAIL, Address: !Ref BudgetEmail}]
+            - [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
         - Notification: {NotificationType: FORECASTED, ComparisonOperator: GREATER_THAN, Threshold: 100, ThresholdType: PERCENTAGE}
-          Subscribers: [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
+          Subscribers: !If
+            - HasEmail
+            - [{SubscriptionType: SNS, Address: !Ref AlertTopic}, {SubscriptionType: EMAIL, Address: !Ref BudgetEmail}]
+            - [{SubscriptionType: SNS, Address: !Ref AlertTopic}]
 
   # A4: the whole account, by service, so a stray EC2 in any project is caught (section 3, "the
   # five ways"). An account has at most one such monitor; if AWS already made one, point the

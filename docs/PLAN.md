@@ -217,9 +217,9 @@ Each of these becomes a guardrail task, because none of them is caught by "we ch
 | # | Task |
 |---|---|
 | A1 | Tag every capyweb resource `Project=capyweb`; activate the cost-allocation tag in Billing |
-| A2 | Create a **tag-filtered** `$10/month` budget; retire the account-wide `capyweb-monthly-20` |
+| A2 | Create a **tag-filtered** `$10/month` budget (`infra/ops/template.yaml`, emailing the address `capyweb-monthly-20` uses). **Keep** the account-wide `capyweb-monthly-20`: it is the only account-wide budget, so it guards the other projects too (capyweb-manager, 2026-09-29) |
 | A3 | Report the `mario (gastown-prod-ec2)` `t4g.2xlarge` to Nic — $240/mo, not capyweb, his call |
-| A4 | Enable Cost Anomaly Detection (free) on the account |
+| A4 | Enable Cost Anomaly Detection (free) on the account. **Skipped in v1** (capyweb-manager, 2026-09-29): the account already has AWS's default services monitor; the ops template keeps it behind `EnableAnomalyDetection=false` |
 | A5 | **Rotate both leaked Livepeer keys**; store the new one in SSM SecureString; purge from source |
 | A6 | `RetentionInDays: 14` on every capyweb log group, enforced in the template |
 | A7 | Write down the credit-expiry date and what the bill becomes after it |

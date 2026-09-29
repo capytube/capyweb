@@ -64,15 +64,17 @@ region, so there is one topic per place:
 |---|---|---|---|---|
 | `capyapp-capyweb-<stage>-alarms` | ap-southeast-1 | backend | api-down, site-down, table-throttled | dev: deployed, no subscriber |
 | `capyapp-capyweb-<stage>-egress-alarm` | us-east-1 | `capyapp-capyweb-alarms-<stage>` (`site/alarms-use1.yaml`) | CloudFront egress over ~800 GB/month | waits for `sns:*` on `capyapp-*` in us-east-1 |
-| `capyapp-capyweb-alerts` | ap-southeast-1 | `capyapp-capyweb-ops` (`ops/template.yaml`, one per account) | the tag-scoped monthly budget (A2) and, when enabled, Cost Anomaly Detection (A4) | waits for the Budgets delete and tag grants |
+| `capyapp-capyweb-alerts` | ap-southeast-1 | `capyapp-capyweb-ops` (`ops/template.yaml`, one per account) | the tag-scoped monthly budget (A2); A4 is skipped in v1 | waits for the Budgets delete and tag grants and capyweb-manager's word |
 
-The ops stack, once the grants are there (change set first, as always):
+The budget also emails one person directly: the address the account-wide budget `capyweb-monthly-20`
+already uses (capyweb-manager, 2026-09-29). `capyweb-monthly-20` itself stays, since it is the only
+account-wide budget. The SNS alarm topics have no subscribers on dev; production alarms get theirs at W12.
+
+The ops stack, once the grants are there and capyweb-manager says go:
 
 ```sh
-aws cloudformation create-change-set --region ap-southeast-1 --stack-name capyapp-capyweb-ops \
-  --change-set-name <name> --change-set-type CREATE --template-body file://infra/ops/template.yaml \
-  --tags Key=Project,Value=capyweb Key=Stage,Value=ops Key=capy-scope,Value=capyapp
-# EnableAnomalyDetection=true only once the ce:*Anomaly* grants exist
+infra/ops/deploy.sh <change-set-name>   # reads the address without printing it; shows the change set
+# read the change set, then run the execute-change-set line it prints
 ```
 
 The budget measures **gross** cost (credits and refunds left out, `docs/PLAN.md` section 1b) of resources
