@@ -1,6 +1,7 @@
 // Crawlers (capyweb-1w5, docs/CRAWLERS_NOTES.md): robots.txt, noindex on the views that stand for
 // a page that does not exist, and the two edge functions of infra/site/template.yaml, run here on
-// sample paths (on dev they answer 404 for anything that is not a route of the app).
+// sample paths (on dev they answer 404 for anything that is not a route of the app). W12: the
+// sitemap, the shell's share tags, and the canonical link the client sets per route.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -52,8 +53,59 @@ function edgeChecks() {
   assert.equal(res.statusCode, 304);
 }
 
+const ORIGIN = 'https://capytube.xyz';
+const SHARE_IMAGE = '/assets/share/capytube-1200x630.jpg';
+
+// Width and height from a JPEG's start-of-frame marker.
+function jpegSize(buf) {
+  for (let i = 2; i + 9 < buf.length;) {
+    if (buf[i] !== 0xff) throw new Error('not a JPEG marker');
+    const marker = buf[i + 1];
+    const len = buf.readUInt16BE(i + 2);
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
+      return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) };
+    }
+    i += 2 + len;
+  }
+  throw new Error('no JPEG frame header');
+}
+
+async function shellChecks(BASE) {
+  const shell = await fetch(`${BASE}/`).then((r) => r.text());
+  const meta = (attr, name) => new RegExp(`<meta ${attr}="${name}" content="([^"]*)"`).exec(shell)?.[1];
+  // The shell is served for every route: a canonical or og:url there would name the home page
+  // for all of them. The client sets the canonical instead (below).
+  assert.doesNotMatch(shell, /rel="canonical"/);
+  assert.doesNotMatch(shell, /property="og:url"/);
+  assert.equal(meta('property', 'og:image'), ORIGIN + SHARE_IMAGE);
+  assert.equal(meta('property', 'og:image:width'), '1200');
+  assert.equal(meta('property', 'og:image:height'), '630');
+  assert.ok(meta('property', 'og:image:alt')?.length > 20, 'og:image:alt describes the picture');
+  assert.equal(meta('name', 'twitter:card'), 'summary_large_image');
+  const image = await fetch(BASE + SHARE_IMAGE);
+  assert.equal(image.status, 200);
+  assert.match(image.headers.get('content-type'), /^image\/jpeg/);
+  const bytes = Buffer.from(await image.arrayBuffer());
+  assert.ok(bytes.length < 200_000, `share image is ${bytes.length} bytes, under 200 KB`);
+  assert.deepEqual(jpegSize(bytes), { width: 1200, height: 630 });
+
+  // The sitemap: absolute production URLs, never the account or the sign-in callback. That each
+  // is a route and each id is in the seed is the Rust test sitemap_matches_the_app_and_the_seed.
+  const sitemap = await fetch(`${BASE}/sitemap.xml`).then((r) => r.text());
+  const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  assert.ok(locs.length >= 15, `${locs.length} sitemap URLs`);
+  for (const loc of locs) assert.ok(loc.startsWith(`${ORIGIN}/`), loc);
+  for (const path of ['/', '/watch', '/stream/magnus', '/shop/capy-1234', '/deletion']) {
+    assert.ok(locs.includes(ORIGIN + path), `${path} is in the sitemap`);
+  }
+  for (const loc of locs) assert.doesNotMatch(loc, /\/(profile|auth)\b/);
+}
+
+const canonicals = (page) => page.evaluate(() => [...document.querySelectorAll('link[rel=canonical]')].map((l) => l.href));
+
 export async function check({ open, browser, BASE }) {
   edgeChecks();
+  await shellChecks(BASE);
 
   // robots.txt: the policy of docs/CRAWLERS_NOTES.md (the dev upload replaces it with Disallow: /).
   const robots = await fetch(`${BASE}/robots.txt`).then((r) => r.text());
@@ -66,6 +118,7 @@ export async function check({ open, browser, BASE }) {
   const all = groups.find((g) => /^User-agent: \*$/m.test(g));
   for (const path of ['/api/', '/paid/', '/media/', '/auth/']) assert.match(all, new RegExp(`^Disallow: ${path}$`, 'm'));
   assert.doesNotMatch(all, /^Disallow: \/$/m, 'search and answer engines are welcome');
+  assert.equal(robots.trimEnd().split('\n').at(-1), `Sitemap: ${ORIGIN}/sitemap.xml`);
   for (const bot of ['Googlebot', 'bingbot', 'OAI-SearchBot', 'Claude-SearchBot', 'PerplexityBot']) {
     assert.doesNotMatch(robots, new RegExp(bot), `${bot} falls under * and is allowed`);
   }
@@ -83,19 +136,41 @@ export async function check({ open, browser, BASE }) {
     await page.goto(BASE + path);
     await page.waitForFunction((h) => document.querySelector('main h1')?.textContent === h, h1);
     await page.waitForFunction(() => document.querySelectorAll('meta[name=robots]').length === 1);
+    await page.waitForTimeout(300);
+    assert.deepEqual(await canonicals(page), [], `${path}: a page that does not exist has no canonical`);
     await page.click('footer a[href="/about-us"]');
     await page.waitForFunction(() => document.querySelector('main h1')?.textContent === 'About CapyTube');
     assert.equal(await noindex(page), 0, `${path}: noindex removed after leaving`);
+    await page.waitForFunction(() => document.querySelector('link[rel=canonical]')?.href.endsWith('/about-us'));
+    assert.deepEqual(await canonicals(page), [`${ORIGIN}/about-us`], `${path}: the canonical is back after leaving`);
     await page.close();
   }
   const { page: room } = await open('/stream/nobody');
   await room.getByText('No camera watches this capybara yet.').waitFor();
   assert.equal(await noindex(room), 1, 'a capybara with no camera is not a page to index');
+  assert.deepEqual(await canonicals(room), [], 'nor anybody\'s canonical');
   await room.close();
-  for (const path of ['/', '/watch', '/stream/magnus']) {
+
+  // A canonical per route: the production origin and the path only, with no query and no
+  // trailing slash, one link, updated as the router moves.
+  for (const [path, want] of [
+    ['/', '/'],
+    ['/watch', '/watch'],
+    ['/watch/', '/watch'],
+    ['/play?capy=magnus', '/play'],
+    ['/stream/magnus?cam=main-cam', '/stream/magnus'],
+    ['/shop/capy-1234', '/shop/capy-1234'],
+    ['/terms-of-service', '/terms-of-service'],
+  ]) {
     const { page } = await open(path);
     await page.waitForTimeout(300);
     assert.equal(await noindex(page), 0, `${path} is indexable`);
+    assert.deepEqual(await canonicals(page), [ORIGIN + want], `${path}: canonical`);
+    if (path === '/') {
+      await page.click('footer a[href="/privacy-policy"]');
+      await page.waitForFunction(() => document.querySelector('link[rel=canonical]')?.href.endsWith('/privacy-policy'));
+      assert.deepEqual(await canonicals(page), [`${ORIGIN}/privacy-policy`], 'the canonical follows navigation');
+    }
     await page.close();
   }
 }

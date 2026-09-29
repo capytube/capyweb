@@ -15,3 +15,5 @@ Disallow: /api/
 Disallow: /paid/
 Disallow: /media/
 Disallow: /auth/
+
+Sitemap: https://capytube.xyz/sitemap.xml

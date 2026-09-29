@@ -1,6 +1,7 @@
 /* Order matters: Tailwind's reset, then our base, then components, then utilities, so a
    utility class on an element always wins over a component rule. */
 @import "tailwindcss/base";
+@import "./style/fonts.css";
 @import "./style/base.css";
 @import "tailwindcss/components";
 @import "./style/chrome.css";

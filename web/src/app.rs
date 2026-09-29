@@ -29,6 +29,7 @@ pub fn App() -> impl IntoView {
     view! {
         <Router>
             <Tools/>
+            <Canonical/>
             <Header/>
             <main id="main" class="view" tabindex="-1">
                 <Routes fallback=NotFound>
@@ -53,6 +54,14 @@ pub fn App() -> impl IntoView {
             <NamePrompt/>
         </Router>
     }
+}
+
+/// Keeps `<link rel="canonical">` on the route being shown (`crate::show_canonical`), since the
+/// shell, served for every route, cannot carry one.
+#[component]
+fn Canonical() -> impl IntoView {
+    let location = leptos_router::hooks::use_location();
+    Effect::new(move |_| crate::show_canonical(&location.pathname.get()));
 }
 
 /// Registers the WebMCP tools once, inside the router so a tool can navigate. When an assistant

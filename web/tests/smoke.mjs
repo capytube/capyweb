@@ -31,6 +31,28 @@ const FAKE_WEBMCP = () => {
 
 const browser = await chromium.launch();
 const errors = [];
+
+// Content Security Policy: tests/serve.mjs sends the site's policy on every response, and any
+// violation fails the run. Every context gets the watch, including those the page files make
+// themselves (browser.newPage makes one too): a `securitypolicyviolation` listener installed
+// before the page's own scripts, reported through a binding so a closed page loses nothing, and
+// Chromium's console line as a second net for what the event misses (workers).
+const cspViolations = [];
+const CSP_WATCH = () => {
+  document.addEventListener('securitypolicyviolation', (e) => {
+    window.__capywebCsp?.(`${e.effectiveDirective} blocked ${e.blockedURI || '(inline)'} at ${e.sourceFile || location.href}:${e.lineNumber}${e.sample ? ` "${e.sample}"` : ''}`);
+  }, true);
+};
+const launchContext = browser.newContext.bind(browser);
+browser.newContext = async (options) => {
+  const context = await launchContext(options);
+  await context.exposeBinding('__capywebCsp', ({ page }, what) => cspViolations.push(`${page.url()}: ${what}`));
+  await context.addInitScript(CSP_WATCH);
+  context.on('console', (m) => {
+    if (/Content Security Policy/i.test(m.text())) cspViolations.push(`${m.page()?.url() ?? '(worker)'} console: ${m.text()}`);
+  });
+  return context;
+};
 async function open(path, { width = 390, height = 844, init } = {}) {
   const page = await browser.newPage({ viewport: { width, height } });
   const logs = [];
@@ -185,6 +207,8 @@ try {
     await check({ open, browser, settle, BASE, SHOTS, FAKE_WEBMCP });
   }
 
+  console.log(`smoke: ${cspViolations.length} CSP violation(s)`);
+  assert.deepEqual(cspViolations, [], 'no Content Security Policy violations');
   assert.deepEqual(errors, [], 'no page or console errors');
   console.log(`smoke: ok (${pageFiles.length} page file(s))`);
 } finally {

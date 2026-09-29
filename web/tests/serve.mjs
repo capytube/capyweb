@@ -13,9 +13,14 @@
 // - Answers a single byte range (206), as S3 and CloudFront do, so video can seek.
 // - Refuses to start when something already answers on the port, rather than letting the
 //   smoke test run against another server (the dev server's 8791, for example).
+// - Sends the site's security headers on every response, from infra/site/headers-dev.json (the
+//   response headers policy CloudFront adds), CSP included, so every page test runs under the
+//   real policy. The one change: the managed-login origin becomes the page tests' fake Cognito
+//   (tests/pages/auth.mjs). No HSTS, which means nothing on plain http.
 // Prints "listening http://127.0.0.1:<port>/" once ready. Stops on SIGTERM or SIGINT.
 import { connect } from 'node:net';
 import { createServer as createHttpServer } from 'node:http';
+import { readFileSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
 
@@ -27,6 +32,23 @@ if (!dirArg || !Number.isInteger(port) || port < 1 || port > 65535) {
   process.exit(2);
 }
 const root = resolve(dirArg);
+
+// The fake managed-login origin of tests/pages/auth.mjs, in place of the stage's own.
+const TEST_LOGIN_ORIGIN = 'https://capyapp-test.auth.example.com';
+const policy = JSON.parse(readFileSync(new URL('../../infra/site/headers-dev.json', import.meta.url), 'utf8'));
+const sec = policy.SecurityHeadersConfig;
+const LOGIN_ORIGIN = /https:\/\/[a-z0-9-]+\.auth\.[a-z0-9-]+\.amazoncognito\.com/g;
+const csp = sec.ContentSecurityPolicy.ContentSecurityPolicy;
+if ((csp.match(LOGIN_ORIGIN) ?? []).length !== 1) {
+  console.error('serve: expected one managed-login origin in the CSP of infra/site/headers-dev.json');
+  process.exit(1);
+}
+const SECURITY_HEADERS = {
+  'content-security-policy': csp.replace(LOGIN_ORIGIN, TEST_LOGIN_ORIGIN),
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': sec.FrameOptions.FrameOption,
+  'referrer-policy': sec.ReferrerPolicy.ReferrerPolicy,
+};
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -42,6 +64,7 @@ const TYPES = {
   '.webp': 'image/webp',
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml',
   '.mp4': 'video/mp4',
   '.m3u8': 'application/vnd.apple.mpegurl',
   '.m4s': 'video/iso.segment',
@@ -69,7 +92,7 @@ async function fileAt(path) {
 
 const server = createHttpServer(async (req, res) => {
   const send = (status, type, body, extra = {}) => {
-    res.writeHead(status, { 'content-type': type, 'content-length': body.length, 'cache-control': 'no-store', ...extra });
+    res.writeHead(status, { 'content-type': type, 'content-length': body.length, 'cache-control': 'no-store', ...SECURITY_HEADERS, ...extra });
     res.end(req.method === 'HEAD' ? undefined : body);
   };
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(405, 'text/plain', Buffer.from('method not allowed\n'));
