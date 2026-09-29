@@ -69,7 +69,7 @@ change_set() {
   if echo "$changes" | grep -E 'AWS::CloudFront::Distribution|AWS::S3::Bucket' | grep -qE '(True|Conditional)$'; then
     echo "WARNING: this change set replaces a distribution or a bucket. Do not execute it." >&2
   fi
-  echo "Read it, then: aws cloudformation execute-change-set ${prof[*]} --region $region --stack-name $stack --change-set-name $name"
+  echo "Read it, then: aws cloudformation execute-change-set ${prof[*]+${prof[*]}} --region $region --stack-name $stack --change-set-name $name"
 }
 
 params_file() {  # key=value ... -> a CloudFormation parameters file (private temp)
