@@ -40,6 +40,12 @@ pool as written"). The pool has deletion protection and is retained if the stack
 The signed-in write routes (lane 4: `/me`, votes, bids, chat, reactions) use that authorizer;
 reading chat is public. Details and examples: `docs/DATA_MODEL.md` section 6.
 
+Dev stack outputs (deployed 2026-09-29): `ApiUrl` https://geqi0or5tl.execute-api.ap-southeast-1.amazonaws.com/dev,
+user pool `ap-southeast-1_DofVgMjLl`, client `4hp9maame83ah6op5leebnturc`, managed login
+`capyapp-capyweb-dev.auth.ap-southeast-1.amazoncognito.com` (password sign-in until SES, `capyweb-c6e`). None of
+these is a secret. Build into a directory outside the repo (`.aws-sam` is not gitignored) and create the change
+set with `--no-execute-changeset` first, so a replacement of `MainTable` or the pool is seen before it runs.
+
 Requires `esbuild` on PATH (`npm i -g --allow-scripts=esbuild esbuild@0.21`) and
 `aws-sam-cli` (`brew install aws-sam-cli`).
 
