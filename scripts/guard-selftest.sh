@@ -121,6 +121,8 @@ expect_fail "secret in a root-level config file" "(value not shown)" \
   "echo 'export const apiKey = \"Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2Jh1Gf0\";' >> vite.config.ts" "$NOSHOW"
 expect_fail "token in a URL query, root-level file" "no hardcoded secrets" \
   "echo 'curl \"https://hooks.example.test/x?id=1&token=Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2\"' > deploy-hook.sh" "$NOSHOW"
+expect_fail "token after an HTML-escaped &amp;, under demo/" "no hardcoded secrets" \
+  "echo '<a href=\"https://h.example.test/x?a=1&amp;token=Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2\">x</a>' > demo/oops.html" "$NOSHOW"
 expect_fail "signature in a URL query, under docs/" "no hardcoded secrets" \
   "echo 'see https://b.example.test/o?X-Amz-Signature=Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2' > docs/oops.md" "$NOSHOW"
 expect_fail "the baselined webhook fires without its baseline entry" "amplify.yml:" \

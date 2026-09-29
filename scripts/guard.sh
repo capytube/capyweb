@@ -190,8 +190,8 @@ literals=$(grep -rniE '(api_?key|secret|token|password|passphrase|credential)[A-
   $SECRET_FILES $BUILD_OUT_DIRS $SECRET_SCAN_DIRS $ROOT_SCAN_FILES 2>/dev/null \
   | grep -vE "$SECRET_ALLOW" | filter_baseline secret)
 # A credential in a URL's query string (a webhook or presigned URL): unquoted, so the rule above
-# never saw one.
-urlcreds=$(grep -rniE '[?&](token|access_token|api_?key|secret|password|signature|sig|x-amz-signature|x-amz-credential)=[A-Za-z0-9/+._%-]{16,}' \
+# never saw one. "&amp;" too: that is how an HTML attribute writes the "&".
+urlcreds=$(grep -rniE '([?&]|&amp;)(token|access_token|api_?key|secret|password|signature|sig|x-amz-signature|x-amz-credential)=[A-Za-z0-9/+._%-]{16,}' \
   $SECRET_FILES $BUILD_OUT_DIRS $SECRET_SCAN_DIRS $ROOT_SCAN_FILES 2>/dev/null \
   | grep -vE "$SECRET_ALLOW" | filter_baseline secret)
 if [ -n "$akia" ] || [ -n "$literals" ] || [ -n "$urlcreds" ]; then
