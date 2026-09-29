@@ -45,6 +45,8 @@ export const pk = {
   slot: (id: string) => `SLOT#${id}`,
   ent: (id: string) => `ENT#${id}`,
   auditDay: (d: Date | string = new Date()) => `AUDIT#${ts(d).slice(0, 10)}`,
+  /** The sign-up cap's counters for one UTC day (signupcap.ts). No other entity uses SIGNUPS#. */
+  signups: (d: Date | string = new Date()) => `SIGNUPS#${ts(d).slice(0, 10)}`,
 } as const;
 
 // -- sort keys ----------------------------------------------------------------
@@ -76,6 +78,10 @@ export const sk = {
    * USER# partition, so it sits in the same transaction as the coins that pay for it.
    */
   pass: (streamId: string) => `PASS#${streamId}`,
+  /** Self sign-ups counted so far in the SIGNUPS# partition's UTC day. */
+  signupsDay: () => "DAY",
+  /** Self sign-ups counted so far in one UTC hour of that day, `HOUR#00` to `HOUR#23`. */
+  signupsHour: (d: Date | string = new Date()) => `HOUR#${ts(d).slice(11, 13)}`,
 } as const;
 
 /** begins_with() prefixes for range queries within a partition. */

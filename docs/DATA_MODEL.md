@@ -130,6 +130,28 @@ that this log matters more than clever robot autonomy.
 
 Partitioned by day so the write hotspot moves daily. Backs issue `capyweb-2pj`.
 
+### Sign-up cap
+
+| Entity | PK | SK | GSI1PK / GSI1SK | GSI2PK / GSI2SK |
+|---|---|---|---|---|
+| SignupCounter (day) | `SIGNUPS#{yyyy-mm-dd}` | `DAY` | — | — |
+| SignupCounter (hour) | `SIGNUPS#{yyyy-mm-dd}` | `HOUR#{hh}` (`00`–`23`) | — | — |
+
+Written only by `backend/src/signupcap.ts`, the user pool's PreSignUp trigger (`capyweb-kbq`). Day and
+hour are UTC. Each item holds `n` (self sign-ups counted), `entity: SignupCounter` and `expiresAt`: two
+days after its day began, so TTL removes it without it ever expiring inside the day it counts. No other
+entity uses the `SIGNUPS#` prefix, and the items carry no index attributes.
+
+Each self sign-up (`PreSignUp_SignUp`; admin-created and external-provider sign-ups are not counted)
+is one `TransactWriteItems` of two `UpdateItem`s, day first: `ADD n :one` if
+`attribute_not_exists(n) OR n < :limit`, with the limits `SIGNUP_CAP_DAY` (40) and `SIGNUP_CAP_HOUR`
+(10). Both counters move or neither does, so a sign-up refused by the hour cap does not use up a place
+in the day. A failed condition (read from the cancellation reasons: item 0 is the day, item 1 the
+hour) refuses the sign-up; so does any other error (fail closed). A `TransactionConflict` between two
+sign-ups is retried twice. An attempt costs 4 write units (two items, doubled for a transaction), so
+once a cap is reached a warm function refuses without writing until that hour or day ends: a flood of
+refusals would otherwise throttle every write on the table (its ceiling is 20 write units a second).
+
 ---
 
 ## 3. Every existing query, mapped

@@ -37,6 +37,7 @@ type Mods = {
   sdk: typeof import("@aws-sdk/client-dynamodb");
   lib: typeof import("@aws-sdk/lib-dynamodb");
   keys: typeof import("./lib/keys.ts");
+  signupcap: typeof import("./signupcap.ts");
 };
 let M: Mods;
 
@@ -125,6 +126,7 @@ before(async () => {
     sdk: await import("@aws-sdk/client-dynamodb"),
     lib: await import("@aws-sdk/lib-dynamodb"),
     keys: await import("./lib/keys.ts"),
+    signupcap: await import("./signupcap.ts"),
   };
   // Same key schema as MainTable in infra/backend/template.yaml.
   const client = new M.sdk.DynamoDBClient({});
@@ -578,4 +580,33 @@ test("paid camera: the price is the camera's own at the moment of purchase, neve
   const r = await buy(cam, u, key());
   assert.equal(r.body.charged, 18);
   assert.equal(await balance(u), 32);
+});
+
+test("sign-up cap: the counters stop at their limits and move together or not at all", { skip }, async () => {
+  const { admit, counters } = M.signupcap;
+  const send = (cmd: Parameters<typeof M.ddb.doc.send>[0]) => M.ddb.doc.send(cmd);
+  const limits = { day: 3, hour: 2 };
+  // A day no other test touches.
+  const at = (hhmm: string) => new Date(`2031-01-01T${hhmm}:00.000Z`);
+  const n = async (key: { PK: string; SK: string }) =>
+    (await M.ddb.doc.send(new M.lib.GetCommand({ TableName: M.ddb.TABLE, Key: key, ConsistentRead: true }))).Item;
+
+  assert.deepEqual(await admit(send, at("05:10"), limits), { ok: true });
+  assert.deepEqual(await admit(send, at("05:20"), limits), { ok: true });
+  assert.deepEqual(await admit(send, at("05:30"), limits), { ok: false, reason: "hour_cap" });
+  const c5 = counters(at("05:00"));
+  assert.equal((await n(c5.day))?.n, 2, "the refused sign-up did not use up a place in the day");
+  assert.equal((await n(c5.hour))?.n, 2);
+  assert.equal((await n(c5.day))?.expiresAt, Date.parse("2031-01-03T00:00:00.000Z") / 1000);
+
+  assert.deepEqual(await admit(send, at("06:00"), limits), { ok: true }, "a new hour has room");
+  assert.deepEqual(await admit(send, at("07:00"), limits), { ok: false, reason: "day_cap" });
+  assert.equal((await n(c5.day))?.n, 3);
+  assert.equal(await n(counters(at("07:00")).hour), undefined, "the day cap left the new hour's counter unwritten");
+  assert.deepEqual(await admit(send, new Date("2031-01-02T00:00:00.000Z"), limits), { ok: true }, "a new UTC day starts again");
+
+  // Ten sign-ups at once in a fresh hour: exactly the hour's limit get through.
+  const burst = await Promise.all(Array.from({ length: 10 }, () => admit(send, at("12:00"), { day: 40, hour: 2 })));
+  assert.equal(burst.filter((v) => v.ok).length, 2);
+  assert.equal((await n(counters(at("12:00")).hour))?.n, 2);
 });

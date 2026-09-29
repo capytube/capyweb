@@ -73,7 +73,37 @@ export async function probe(t: Target, timeoutMs = 8000): Promise<Probe> {
   }
 }
 
+export function requireStage(stage: string | undefined): string {
+  if (!stage) throw new Error("STAGE is not set: refusing to publish a metric without its Stage dimension");
+  return stage;
+}
+
+/**
+ * The datums for one run. Every datum carries a Stage dimension as well as Target: dev and prod
+ * publish to the same namespace in the same account, and with Target alone their probes would land
+ * in one series, so each stage's api-down and site-down alarms would read the other stage's
+ * results. The alarms in infra/backend/template.yaml name both dimensions.
+ */
+export function metricData(probes: Probe[], stage: string | undefined) {
+  const Stage = requireStage(stage);
+  return probes.flatMap((p) => {
+    const Dimensions = [
+      { Name: "Target", Value: p.name },
+      { Name: "Stage", Value: Stage },
+    ];
+    // Healthy is 1/0 so the alarm is "below 1 for N periods".
+    return [
+      { MetricName: "Healthy", Dimensions, Value: p.healthy ? 1 : 0, Unit: "None" as const },
+      { MetricName: "LatencyMs", Dimensions, Value: p.ms, Unit: "Milliseconds" as const },
+    ];
+  });
+}
+
 export const handler = async () => {
+  // Checked before probing, so a missing STAGE fails the run outright. No data then reaches the
+  // stage's series, and its alarms (TreatMissingData: breaching) fire rather than stay green.
+  const stage = requireStage(process.env.STAGE);
+
   const targets = parseTargets(process.env.TARGETS);
   if (targets.length === 0) {
     console.error("no TARGETS configured");
@@ -85,16 +115,8 @@ export const handler = async () => {
     console.log(JSON.stringify({ target: p.name, healthy: p.healthy, status: p.status, ms: p.ms, error: p.error }));
   }
 
-  // One datum per target. Healthy is 1/0 so the alarm is "below 1 for N periods".
-  await cw.send(
-    new PutMetricDataCommand({
-      Namespace: NAMESPACE,
-      MetricData: probes.flatMap((p) => [
-        { MetricName: "Healthy", Dimensions: [{ Name: "Target", Value: p.name }], Value: p.healthy ? 1 : 0, Unit: "None" as const },
-        { MetricName: "LatencyMs", Dimensions: [{ Name: "Target", Value: p.name }], Value: p.ms, Unit: "Milliseconds" as const },
-      ]),
-    }),
-  );
+  // One Healthy and one LatencyMs datum per target.
+  await cw.send(new PutMetricDataCommand({ Namespace: NAMESPACE, MetricData: metricData(probes, stage) }));
 
   return { ok: probes.every((p) => p.healthy), probes };
 };

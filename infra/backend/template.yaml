@@ -143,6 +143,9 @@ Resources:
         - UseSes
         - {EmailSendingAccount: DEVELOPER, SourceArn: !Ref SesIdentityArn, From: !Ref SesFromAddress}
         - {EmailSendingAccount: COGNITO_DEFAULT}
+      # The sign-up cap (capyweb-kbq): every self sign-up passes SignupCapFunction first.
+      LambdaConfig:
+        PreSignUp: !GetAtt SignupCapFunction.Arn
       UserPoolTags:
         Project: capyweb
         Stage: !Ref Stage
@@ -203,6 +206,53 @@ Resources:
           - "http://127.0.0.1:8791/"
           - "http://localhost:8791/"
         - - !Sub ["${Origin}/", {Origin: !FindInMap [StageSite, !Ref Stage, Origin]}]
+
+  # Pre-sign-up cap (capyweb-kbq, docs/RELEASE_PLAN.md 1a item 11; capyweb-manager 2026-09-29):
+  # at most 40 self sign-ups a UTC day and 10 an hour. Open sign-up grants 50 play coins, and the
+  # Cognito default sender delivers 50 emails a day per account, so without a cap a script could
+  # use up everyone's sign-up emails. Two conditional counters in MainTable (docs/DATA_MODEL.md);
+  # a refusal is a thrown error, which Cognito shows on managed login and SignupsRefusedAlarm counts.
+  # No cycle: the pool names the function, the permission names both, the function names neither.
+  SignupCapFunction:
+    Type: AWS::Serverless::Function
+    Metadata: {BuildMethod: esbuild, BuildProperties: {EntryPoints: [signupcap.ts], Target: es2022, Minify: true, Format: esm, OutExtension: [".js=.mjs"], External: ["@aws-sdk/*"]}}
+    Properties:
+      FunctionName: !Sub capyapp-capyweb-${Stage}-signup-cap
+      CodeUri: ../../backend/src/
+      Handler: signupcap.handler
+      # A sign-up is one short call; 2 bounds what a flood can run at once. A throttled call
+      # fails the sign-up, which is the closed side.
+      ReservedConcurrentExecutions: 2
+      # Cognito waits 5 s for a trigger, so there is no point running longer.
+      Timeout: 5
+      Environment:
+        Variables:
+          SIGNUP_CAP_DAY: "40"
+          SIGNUP_CAP_HOUR: "10"
+      # TransactWriteItems has no action of its own: each item needs its operation's, here two
+      # UpdateItems on the table itself.
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:UpdateItem]
+              Resource: !GetAtt MainTable.Arn
+
+  SignupCapLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/capyapp-capyweb-${Stage}-signup-cap
+      RetentionInDays: 14
+      Tags:
+        - {Key: Project, Value: capyweb}
+
+  # Only this stage's user pool may invoke the cap.
+  SignupCapPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt SignupCapFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt UserPool.Arn
 
   # PLAN B3's staff role group. No members and no IAM role; nothing reads it yet (the admin
   # console, Epic E, will check the `cognito:groups` claim).
@@ -382,9 +432,11 @@ Resources:
         Variables:
           TARGETS: !Sub
             # Each target carries a body marker: a 200 with the wrong content (a parked page,
-            # someone else's default index) must count as unhealthy, not healthy.
-            - "api=${ApiBase}/health|\"ok\":true,site=https://${Stage}.capytube.xyz/|CapyTube"
+            # someone else's default index) must count as unhealthy, not healthy. The site is the
+            # StageSite origin: production is the apex, and "prod.capytube.xyz" does not exist.
+            - "api=${ApiBase}/health|\"ok\":true,site=${SiteOrigin}/|CapyTube"
             - ApiBase: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+              SiteOrigin: !FindInMap [StageSite, !Ref Stage, Origin]
       Policies:
         - Statement:
             - Effect: Allow
@@ -420,6 +472,8 @@ Resources:
       Tags:
         - {Key: Project, Value: capyweb}
 
+  # Both synthetic alarms name the Stage dimension as well as Target: dev and prod publish to the
+  # same namespace in this account, and without it each stage's alarm would read the other's probes.
   ApiDownAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -427,7 +481,7 @@ Resources:
       AlarmDescription: The synthetic check could not get a healthy /health for 15 minutes.
       Namespace: capyweb/Synthetic
       MetricName: Healthy
-      Dimensions: [{Name: Target, Value: api}]
+      Dimensions: [{Name: Target, Value: api}, {Name: Stage, Value: !Ref Stage}]
       Statistic: Minimum
       Period: 300
       EvaluationPeriods: 3
@@ -443,13 +497,43 @@ Resources:
       AlarmDescription: The synthetic check could not load the site for 15 minutes.
       Namespace: capyweb/Synthetic
       MetricName: Healthy
-      Dimensions: [{Name: Target, Value: site}]
+      Dimensions: [{Name: Target, Value: site}, {Name: Stage, Value: !Ref Stage}]
       Statistic: Minimum
       Period: 300
       EvaluationPeriods: 3
       Threshold: 1
       ComparisonOperator: LessThanThreshold
       TreatMissingData: breaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  # AWS/Lambda Errors and Throttles are free and need no custom metric. The cap function throws
+  # exactly when it refuses, whether a cap was reached or it failed (it fails closed); a call
+  # throttled at its concurrency of 2 fails the sign-up too, and shows only in Throttles.
+  SignupsRefusedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub capyapp-capyweb-${Stage}-signups-refused
+      AlarmDescription: A self sign-up was refused. Either the daily or hourly sign-up cap was reached, or the signup-cap function failed or was throttled and refused to be safe. Its log says which (a throttled call leaves no log line).
+      Metrics:
+        - Id: refused
+          Expression: FILL(errors, 0) + FILL(throttles, 0)
+          Label: Refused sign-ups
+        - Id: errors
+          ReturnData: false
+          MetricStat:
+            Metric: {Namespace: AWS/Lambda, MetricName: Errors, Dimensions: [{Name: FunctionName, Value: !Ref SignupCapFunction}]}
+            Period: 300
+            Stat: Sum
+        - Id: throttles
+          ReturnData: false
+          MetricStat:
+            Metric: {Namespace: AWS/Lambda, MetricName: Throttles, Dimensions: [{Name: FunctionName, Value: !Ref SignupCapFunction}]}
+            Period: 300
+            Stat: Sum
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
       AlarmActions: [!Ref AlarmTopic]
 
   # The table has a hard OnDemandThroughput ceiling, so a burst throttles rather than bills.
@@ -479,7 +563,8 @@ Resources:
       BillingMode: PAY_PER_REQUEST
       OnDemandThroughput: {MaxReadRequestUnits: 50, MaxWriteRequestUnits: 20}
       PointInTimeRecoverySpecification: {PointInTimeRecoveryEnabled: true}
-      # Chat (30 days) and idempotency markers (24 h) delete themselves; TTL deletes are free.
+      # Chat (30 days), idempotency markers (24 h) and the sign-up counters (2 days) delete
+      # themselves; TTL deletes are free.
       TimeToLiveSpecification: {AttributeName: expiresAt, Enabled: true}
       AttributeDefinitions:
         - {AttributeName: PK, AttributeType: S}

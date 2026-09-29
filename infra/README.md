@@ -62,13 +62,27 @@ region, so there is one topic per place:
 
 | Topic | Region | Stack | What notifies it | State (2026-09-29) |
 |---|---|---|---|---|
-| `capyapp-capyweb-<stage>-alarms` | ap-southeast-1 | backend | api-down, site-down, table-throttled | dev: deployed 2026-09-29, no subscriber |
+| `capyapp-capyweb-<stage>-alarms` | ap-southeast-1 | backend | api-down, site-down, table-throttled, signups-refused | dev: deployed 2026-09-29, no subscriber (signups-refused not yet deployed) |
 | `capyapp-capyweb-<stage>-egress-alarm` | us-east-1 | `capyapp-capyweb-alarms-<stage>` (`site/alarms-use1.yaml`) | CloudFront egress over ~800 GB/month | dev: deployed 2026-09-29, no subscriber |
 | `capyapp-capyweb-alerts` | ap-southeast-1 | `capyapp-capyweb-ops` (`ops/template.yaml`, one per account) | the tag-scoped monthly budget `capyapp-capyweb-monthly` (A2); A4 is skipped in v1 | deployed 2026-09-29; the budget also emails its one recipient |
 
 The budget also emails one person directly: the address the account-wide budget `capyweb-monthly-20`
 already uses (capyweb-manager, 2026-09-29). `capyweb-monthly-20` itself stays, since it is the only
 account-wide budget. The SNS alarm topics have no subscribers on dev; production alarms get theirs at W12.
+
+The backend alarms:
+
+| Alarm | Fires when |
+|---|---|
+| `capyapp-capyweb-<stage>-api-down` | the synthetic check has had no healthy `/health` for 15 minutes (`capyweb/Synthetic` `Healthy`, dimensions `Target=api` and `Stage`) |
+| `capyapp-capyweb-<stage>-site-down` | the same for the stage's site: the `StageSite` origin, the apex for prod (`Target=site`, `Stage`) |
+| `capyapp-capyweb-<stage>-table-throttled` | DynamoDB throttled more than 10 requests in 5 minutes: the table's on-demand ceiling is being hit |
+| `capyapp-capyweb-<stage>-signups-refused` | the sign-up cap (`capyweb-kbq`, 40 self sign-ups a UTC day, 10 an hour) refused at least one sign-up in 5 minutes, or its function failed or was throttled and refused to be safe. `AWS/Lambda` `Errors` plus `Throttles` of `capyapp-capyweb-<stage>-signup-cap`; its log says which (`"reason": "day_cap"`, `"hour_cap"` or `"error"`; a throttled call leaves no line) |
+
+The synthetic metrics carry a `Stage` dimension because dev and prod publish to the same namespace in
+one account: with `Target` alone, each stage's alarms would read the other's probes. The deploy that
+adds it moves dev's two alarms to the new series; until the first run publishes to it (5 minutes), they
+see missing data, which counts as breaching, so each may go into ALARM once.
 
 The ops stack (budget names must start with `capyapp-`: the deploy identity may only write those):
 
