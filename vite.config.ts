@@ -6,7 +6,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 export default defineConfig({
   plugins: [react(), nodePolyfills()],
   server: {
-    host: true, // This allows external access
+    host: '127.0.0.1', // loopback only (global rule, checked by scripts/guard.sh)
     port: 5173, // Ensure this is the correct port
   },
 });

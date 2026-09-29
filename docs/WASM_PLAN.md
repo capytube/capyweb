@@ -285,8 +285,8 @@ confirm; no tool output contains a playback locator or token. Then nic says yes.
 - **Local dev:** `cd web && trunk serve` listens on **127.0.0.1:8791 only**, set in `Trunk.toml`. It uses
   the fixtures by default, or the real API through Trunk's proxy:
   `CAPYWEB_API_BASE=/api trunk serve --proxy-backend <ApiUrl> --proxy-rewrite /api`.
-  - Today's `vite.config.ts` has `host: true`, which binds 0.0.0.0. That breaks the loopback-only rule
-    for the React app until it is retired.
+  - `vite.config.ts` had `host: true`, which binds 0.0.0.0. W13 changed it to `host: '127.0.0.1'`
+    (the React app's local dev server only; nothing deployed changes), and rule 5 below keeps it there.
 - **Release:** `trunk build --release` writes `web/dist/`. **`infra/site/deploy.sh` cannot ship it as
   written.** It syncs `$SRC/assets/`, and Trunk's output has no `assets/` directory: the hashed
   `.wasm/.js/.css` sit at the root, next to `snippets/`. It then re-stamps every other object with
@@ -311,10 +311,24 @@ confirm; no tool output contains a playback locator or token. Then nic says yes.
     `cloudfront:CreateFunction` are not known to be granted, so probe them first.
 - **Checks as local hooks, no GitHub Actions.** `scripts/guard.sh` needs to learn these rules, each with
   a case in `scripts/guard-selftest.sh` that proves it fires:
-  1. `web/` changed → `cargo fmt --check`, `cargo clippy -- -D warnings` and `cargo test` in pre-push.
+  - **As built (W13):**
+    - Rules 3-8 are in `scripts/guard.sh`, which runs on every commit and push.
+    - Rules 1-2 and a headless browser smoke test are in `scripts/web-checks.sh`. The pre-push hook
+      runs it when a pushed ref changes `web/`, and it counts a new branch as changed.
+    - The hook reads git's ref lines before anything else in its block. If they are gone (the beads
+      block runs first and could consume them), it compares HEAD with `<remote>/<branch>` instead,
+      and runs the checks when there is no such branch.
+    - `guard-selftest.sh` has a failing and a passing case for each rule.
+    - How to run the checks by hand, and where Playwright lives: `web/README.md`.
+  1. `web/` changed → `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` (**twice**:
+     for `wasm32-unknown-unknown` and for the host, since each lints only its own cfg-gated code)
+     and `cargo test` in pre-push. Then `trunk build --release` and the smoke test
+     (`web/tests/smoke.mjs` against `web/dist`, served by `web/tests/serve.mjs` on 127.0.0.1:8792).
+     About 20 s after a source change and 2.5 min cold on this Mac.
   2. **Size budget:** release WASM + all first-load JS (glue and snippets) ≤ **300,000 bytes brotli**
-     (`brotli -q 11`), measured on `web/dist` in pre-push. The prototype is 125,284 bytes. "KB" in this
-     document means 1,000 bytes.
+     (`brotli -q 11`), measured on `web/dist` in pre-push. The prototype is 125,284 bytes. The W1 shell
+     is 144,907: 136,754 of `.wasm`, 7,477 of glue and 676 of snippet. "KB" in this document means
+     1,000 bytes.
   3. **Scan `web/`.** Today neither content scan reads it, so adding extensions alone would leave the
      crate unscanned.
      - The S3-URL scan reads `.ts/.tsx/.js/.html/.css` under `backend/src src demo amplify`.
@@ -322,12 +336,27 @@ confirm; no tool output contains a playback locator or token. Then nic says yes.
        `SECRET_SCAN_DIRS` (`backend infra src demo amplify docs scripts`).
      - Only the `AKIA` key-id scan covers the whole tree.
      - Fix: add `web` to both directory lists, and `*.rs` and `*.toml` to both extension lists.
+     - Build output (`target/`, `dist/`) is excluded from every scan.
   4. **No playback-locator field** in `web/src/domain.rs`: field names checked against the same regex as
      `PLAYBACK_NAME` in `backend/src/lib/ddb.ts`.
+     - The regex is read from `ddb.ts` at run time, so there is no copy to drift, and the rule fails if
+       it cannot find it.
+     - Names are normalised from camelCase first. `#[serde(rename/alias = "…")]` strings are checked too.
   5. **Loopback only:** no `0.0.0.0` or `host: true` in `web/Trunk.toml` or `vite.config.ts`.
+     - As built, the rule also catches `'::'` and a bare `--host` in `package.json`.
+     - `[serve] addresses` must be set, and list only `127.0.0.1` or `::1`.
   6. `deploy.sh` keeps the `application/wasm` content type and the immutable caching for hashed files.
+     - Checked once `deploy.sh` has a `--web` mode; until then it prints a `skipped:` line naming W12.
+     - It checks the upload commands, not which branch runs them:
+       - `application/wasm` must be present;
+       - a `max-age=31536000,immutable` upload must be present, with no `--delete`;
+       - every other bulk command on the bucket root (`s3 sync`, or `--recursive`) that deletes or sets
+         Cache-Control must `--exclude` `*.wasm` (or `*`). This covers the demo mode's `sync --delete`
+         and its `max-age=300` re-stamp.
+     - W12's pruning of old releases still needs a human review.
   7. No GitHub Actions workflow (already checked).
   8. The CSP in the site template allows `'wasm-unsafe-eval'`. Without it the app is a blank page.
+     - Checked once `infra/site/template.yaml` defines a CSP; until then it prints a `skipped:` line.
 - **Cost:** unchanged. Same S3 + CloudFront, plus one CloudFront Function inside the free tier. The
   first-load payload drops from ~0.8 MB to ~0.13 MB brotli, which lowers CloudFront egress, already
   modelled at $0. `docs/PLAN.md` section 3 stands at ≈ $2.30/month. If a builder is ever needed, it is

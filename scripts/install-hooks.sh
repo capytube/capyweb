@@ -45,7 +45,11 @@ install_hook() {
 
 install_hook pre-commit '"$capyweb_root/scripts/guard.sh" --quiet || exit 1'
 
-install_hook pre-push '"$capyweb_root/scripts/guard.sh" --quiet || exit 1
+install_hook pre-push '# git'"'"'s ref lines ("<local ref> <sha> <remote ref> <sha>"), kept for the web checks below,
+# which run only when the push changes web/. Read first so no later command can eat them.
+capyweb_refs=""
+[ -t 0 ] || capyweb_refs="$(cat)"
+"$capyweb_root/scripts/guard.sh" --quiet || exit 1
 # guard.sh only sees the working tree. This catches a secret that was committed and then
 # deleted - which is how all eight secrets already in this history got there. ~1s.
 "$capyweb_root/scripts/scan-history.py" --known-ok >/dev/null 2>&1 || {
@@ -60,7 +64,11 @@ else
 fi
 # The frontend client tests need no dependencies - they stub fetch and run on plain Node.
 node --test --experimental-strip-types "$capyweb_root/src/api/" >/dev/null 2>&1 || {
-  echo "frontend api tests failed"; exit 1; }'
+  echo "frontend api tests failed"; exit 1; }
+# The WASM front end (web/): fmt, clippy for wasm32 and host, tests, release build, the
+# 300,000-byte brotli budget and a headless smoke test. Slow (~20 s warm), so last, and only
+# when the push changes web/. No CI runs these: this hook is the gate.
+printf '"'"'%s\n'"'"' "$capyweb_refs" | "$capyweb_root/scripts/web-checks.sh" --pre-push "$@" || exit 1'
 
 echo
 echo "Hooks live in $HOOKS, appended after any beads block. Verify: scripts/guard-selftest.sh"
