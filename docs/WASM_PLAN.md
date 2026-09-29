@@ -501,12 +501,18 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
      - It is **not tag-scoped**, as this plan first proposed: IAM Access Analyzer reports that Cognito
        does not support `aws:ResourceTag`, so a tag condition would allow nothing.
      - When capyweb's own pool exists, report its id to capyweb-manager so the grant can be pinned to it
-       (`capyweb-w26`).
+       (`capyweb-w26`). **Done in v4 (15:55):** `cognito-idp:*` on `ap-southeast-1_DofVgMjLl` only, and
+       `CreateUserPool` removed; the production pool gets its own permission at G2
+       (`docs/RELEASE_PLAN.md`, row 1). **v5 (21:55)** added SNS on `capyapp-*` topics in us-east-1 and
+       Budgets writes on `budget/capyapp-*` only (`capyweb-m52`, `capyweb-19a`).
      - **Also in:** billing read (`ce`, `budgets`; `capyweb-0v3`) and SNS on `capyapp-*` topics
        (`capyweb-19a`).
      - The S3 object grant was never needed: `capyapp-*` already matches objects (`capyweb-083`, closed).
-   - **Still to probe once there is an identity:** the CloudFront response-headers-policy and function
-     actions from section 5.
+   - **CloudFront (settled 2026-09-29):** `cloudfront:CreateFunction` on `*` is granted
+     (`capyapp-deploy-edge` v5); public-key and key-group writes are not, so an admin makes the key
+     groups. **No stack may create, update or delete a response headers policy** either (capyweb-manager,
+     23:10: the right reaches every project's in the account): an admin makes them from
+     `infra/site/headers-<stage>.json`, and the site stack only attaches one by id.
    - **The old key:** `capyapp-macbook-pro-14`'s key stays **deactivated** (herdr-master's choice), not
      deleted.
 5. Once the identity exists: read `ApiUrl`, set it as the app's proxy backend, and record it in

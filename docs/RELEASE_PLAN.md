@@ -5,6 +5,10 @@ capyweb-lead on mac-pro-japan-16. **This is a document only.** Nothing in it has
 production, the DNS account or the apex. Where it says "checked", the fact was read on 2026-09-29 from
 the repo, from public DNS or HTTP, or with a test browser against dev. No AWS call was made for it.
 
+**Amended 2026-09-29 ~23:50** after capyweb-manager's decisions (23:10) and the review of the first draft
+(rv-1790697825-47957, Cursor). Section "Since the draft" says what changed; the sections below are
+corrected where the draft was wrong or out of date.
+
 Read with: `docs/WASM_PLAN.md` (the W12 row, sections 4 and 5), `docs/PLAN.md` (sections 2, 3 and 8),
 `docs/VIDEO_DESIGN.md` section 8, `docs/CRAWLERS_NOTES.md` and `infra/README.md`. Beads: W12 is
 `capyweb-b6e.12`; going public is `capyweb-xqg`.
@@ -29,7 +33,8 @@ Read with: `docs/WASM_PLAN.md` (the W12 row, sections 4 and 5), `docs/PLAN.md` (
 
   For `c6e` I recommend launching with password sign-in, as dev runs, and moving to email codes after the
   launch (section 3).
-- **Found while writing this plan (each is fixed in W12's code):**
+- **Found while writing this plan, and fixed in W12's G1 code** (commits 43cd083, 0728b28, b954782 on
+  `feat/wasm-frontend`; in the first draft they were only planned, as the review pointed out):
   - The production health check would probe `prod.capytube.xyz`, and it shares its metric with dev.
   - A canonical tag in the shell would point every page at the home page.
   - Trunk's inline boot script is blocked by a strict CSP.
@@ -38,6 +43,56 @@ Read with: `docs/WASM_PLAN.md` (the W12 row, sections 4 and 5), `docs/PLAN.md` (
   - Production is about **$1.32 to $2.92 a month**.
   - Dev and production together are about **$1.40 to $4.60**, against the $10 budget.
   - `docs/PLAN.md`'s "~$14 at 2 TB" of CloudFront is wrong. It is about $87 (section 6).
+
+## Since the draft
+
+**capyweb-manager's decisions (2026-09-29, 23:10):**
+- **G1: go** on dev (below). **G2: a go from herdr-master** once W14 and G1 pass review, built dark.
+  The manager does G2's admin parts: the production pool permission (row 1), the production key group
+  (P1), the DNS-role trust if missing, and the Amplify association (D0).
+- `PriceClass_200` for production. `c6e`: launch on password sign-in, email codes right after, and the
+  announcement exception goes to the master. `kbq`: the pre-sign-up cap, 40 a day and 10 an hour, with
+  an alarm. Deletion: the email process, 30 days, an admin runbook and a data sheet for the legal reader;
+  the dates, mailbox, address and legal reader go to nic through the master, and the placeholders stay.
+  Phones: a WebKit pass now; who tests on real phones goes to the master. Chat: a runbook is enough.
+- **No stack creates, updates or deletes a response headers policy** (the right reaches every project's
+  in the account). The admin makes them from `infra/site/headers-<stage>.json`; the stack attaches by id.
+
+**G1 as built** (on `feat/wasm-frontend`; section 1a's items):
+- **Site** (43cd083): `infra/site/deploy.sh <stage> content|stack|alarms|cert|dns|prune`. Stack changes
+  are change sets shown and run by hand; `cert` and `dns` are the only steps that touch the DNS account.
+  Per-stage values are in `infra/site/stages.json` (prod: `capytube.xyz`, `www.capytube.xyz`,
+  `PriceClass_200`; its key group and headers-policy ids are filled in at G2). The site template takes
+  `ResponseHeadersPolicyId`, `WwwDomain` (a 301 to the apex) and `PriceClass`. The media scripts take the
+  stage, and production needs `CAPYWEB_PROD_GO=1`. `infra/ops/subscribe-alarms.sh` subscribes
+  production's alarm recipient.
+- **Backend** (0728b28): the health check per stage, and the sign-up cap (`backend/src/signupcap.ts`).
+  **Deployed to dev and checked** (23:3x).
+- **Web** (b954782): the app passes the CSP (0 violations across the page tests), the boot script is a
+  hashed file, the fonts are self-hosted, `scripts/build-release.sh` builds and checks a stage's release
+  (no WebMCP in prod), the API is same-origin, and the sitemap, `og:image` and per-route canonical exist.
+- **Docs** (de23381): the Deletion page tells the real process; `docs/RUNBOOKS.md` and
+  `docs/DATA_SHEET.md`.
+
+**So section 1b's steps become:**
+- P5: `deploy.sh prod cert`.
+- P6: `deploy.sh prod stack <name>`, after the ids from P1 and the headers policy are in `stages.json`.
+- P7: `upload-media.sh prod` and `upload-pass-images.sh prod`.
+- P8: `build-release.sh prod <dist>`, then `deploy.sh prod content <dist> --web`.
+- P9: `deploy.sh prod alarms <name>`.
+- P10: `subscribe-alarms.sh`.
+- D1 is part of P5.
+- D2 (G3) is `deploy.sh prod dns <name>`.
+
+Every one of them needs `CAPYWEB_PROD_GO=1`.
+
+**The going-public blockers now:**
+- `kbq` is built (on dev).
+- `bpk` still waits for the owner's inputs and a legal read. The Deletion part is done.
+- `c6e` comes after launch.
+- Real phones: the master decides who. The WebKit pass on dev found one WebKit-only bug: a chat poll
+  failing CORS from WebKit's cache, fixed by the same-origin API.
+- The chat and deletion runbooks are written.
 
 ## 1. What changes, in order
 
@@ -84,10 +139,13 @@ Each item is a commit on `feat/wasm-frontend`, reviewed, then proven on dev (sec
 4. **`infra/site/deploy.sh`:**
    - **The Content-Type bug.** The S3-to-S3 re-stamp (`--metadata-directive REPLACE` without
      `--content-type`) resets every object to `binary/octet-stream`, and browsers then refuse the module
-     scripts. Every object is written from the local file with its type, as
-     `infra/site/upload-content.sh` already does, and the re-stamp is removed.
+     scripts. Every object is written from the local file with its type, as the old
+     `upload-content.sh` did; that script is now `deploy.sh <stage> content`, and the re-stamp is gone.
    - **`--web` mode:**
-     - hashed files (`*-<16 hex>.wasm|js|css`, `snippets/`) get `public,max-age=31536000,immutable`;
+     - root files named with Trunk's content hash (`*-<12 to 16 hex>.wasm|js|css|…`) get
+       `public,max-age=31536000,immutable`. **Not `snippets/`** (correction): wasm-bindgen keeps a snippet
+       folder's name when its files change (two different `chat.js` under one name, checked), so
+       `snippets/` gets `no-cache` and is revalidated on every load;
      - `index.html` gets `no-cache,must-revalidate`, and everything else `max-age=300`;
      - hashed files are never deleted in the same run, so the previous release stays loadable.
      - Pruning releases older than the last three is a separate command, reviewed by a person
@@ -119,12 +177,12 @@ Each item is a commit on `feat/wasm-frontend`, reviewed, then proven on dev (sec
    - `og:image`: a 1200×630 capybara picture under `/assets`, with an absolute URL in the shell.
    - **Correction to CRAWLERS_NOTES (e):** no canonical and no `og:url` in the shell. The shell is served
      for every route, so a root canonical there would tell search engines that every page is a copy of
-     the home page. The client sets a self-referencing canonical per route instead, the way it already
-     sets `noindex` on the not-found view.
+     the home page. The client sets a self-referencing canonical per route instead (built in G1:
+     `sync_canonical` in `web/src/lib.rs`), and removes it on the not-found views that set `noindex`.
 8. **robots.txt**, as the manager's policy already built (`web/robots.txt`). Production keeps the file as
    built. Dev keeps `Disallow: /`, written by the upload script.
 9. **Scripts with `STAGE=dev` hard-coded.** `infra/media/upload-media.sh`,
-   `infra/media/upload-pass-images.sh` and `infra/site/upload-content.sh` each take the stage as an
+   `infra/media/upload-pass-images.sh` and the content upload (`infra/site/deploy.sh`) each take the stage as an
    argument. Production is refused unless `CAPYWEB_PROD_GO=1` is set, as a written reminder of the go.
 10. **Alarm recipients.** A small script subscribes the address `capyweb-monthly-20` already uses to the
     two production topics. It reads the address the way `infra/ops/deploy.sh` does, without printing it.
@@ -187,14 +245,14 @@ A simulator check of each row at the go is the manager's call.
 
 | # | Action | Resource | For | State |
 |---|---|---|---|---|
-| 1 | `cognito-idp:CreateUserPool` (one time, removed after P2), then `cognito-idp:*` pinned | `arn:aws:cognito-idp:ap-southeast-1:619071347239:userpool/*` for the create (the 13 other projects' pools stay denied), then `userpool/<prod pool id>` | P2, P3 | **Needed.** Policy v4 allows only the dev pool |
+| 1 | `cognito-idp:CreateUserPool` (one time, removed after P2), then `cognito-idp:*` pinned | `arn:aws:cognito-idp:ap-southeast-1:619071347239:userpool/*` for the create (the 13 other projects' pools stay denied), then `userpool/<prod pool id>` | P2, P3 | **Needed.** Since policy v4 (15:55) `cognito-idp:*` is pinned to the dev pool and `CreateUserPool` is gone; v5 (21:55) kept that. The manager does this admin part at G2 |
 | 2 | `cloudfront:CreatePublicKey`, `cloudfront:CreateKeyGroup` | `*` (these actions have no resource type) | P1 | **Done by the admin**, as for dev; not granted to the deploy user |
 | 3 | `ssm:PutParameter`, `ssm:GetParameter` | `arn:aws:ssm:ap-southeast-1:619071347239:parameter/capyapp/capyweb/prod/playback-signing-key` | P1, the playback Lambda | Covered (`/capyapp/*`) |
-| 4 | `cloudfront:CreateResponseHeadersPolicy`, `UpdateResponseHeadersPolicy`, `DeleteResponseHeadersPolicy`, `GetResponseHeadersPolicy` | `arn:aws:cloudfront::619071347239:response-headers-policy/*` (AWS makes the id, so a name cannot scope it) | Item 2, **dev first** (G1) | **Unknown**; not probed. If refused, the fallback needs no grant: `NotFoundFunction` (already allowed) sets the CSP on the HTML responses |
-| 5 | `cloudfront:CreateDistribution`, `CreateDistributionWithTags`, `UpdateDistribution`, `TagResource`, `CreateInvalidation` | `arn:aws:cloudfront::619071347239:distribution/*`, tagged `capy-scope=capyapp` | P6, P8 | Expected covered: the same group made the dev distribution on 24 Sep. The production one gets the same tags |
+| 4 | `cloudfront:CreateResponseHeadersPolicy`, `UpdateResponseHeadersPolicy`, `DeleteResponseHeadersPolicy`, `GetResponseHeadersPolicy` | `arn:aws:cloudfront::619071347239:response-headers-policy/*` (AWS makes the id, so a name cannot scope it) | Item 2 | **Changed (manager, 23:10):** no stack creates, updates or deletes a headers policy, because the right reaches every project's in the account. The admin creates `capyapp-capyweb-<stage>-headers` from `infra/site/headers-<stage>.json`; the site stack takes its id (`ResponseHeadersPolicyId`) and only attaches it, which is part of UpdateDistribution |
+| 5 | `cloudfront:CreateDistribution`, `CreateDistributionWithTags`, `UpdateDistribution`, `TagResource`, `CreateInvalidation` | `arn:aws:cloudfront::619071347239:distribution/*`, tagged `capy-scope=capyapp` | P6, P8 | Covered (manager's simulator check, 23:10): CreateDistribution with the tag is allowed; CreateDistributionWithTags is not, but the stack path works, as for dev on 24 Sep |
 | 6 | `cloudfront:CreateFunction`; `Update`, `Publish`, `DeleteFunction` | `*`; `function/capyapp-*` | P6 (`capyapp-capyweb-prod-*` functions) | Covered (`capyapp-deploy-edge` v5) |
-| 7 | `acm:RequestCertificate`, `DescribeCertificate`, `AddTagsToCertificate` | us-east-1, for `capytube.xyz` and `www.capytube.xyz` | P5 | Covered per `docs/PLAN.md` section 8 ("certs for capytube.xyz and *.capytube.xyz are allowed in capy"). Check that the condition allows the apex name itself |
-| 8 | `sts:AssumeRole`, and this Mac's user in the role's trust policy | role `capyapp-capytube-dns` in autonomous-lab; principal `arn:aws:iam::619071347239:user/capyapp-mac-pro-japan-16` | D1, D2 | **Needed, unless it was already done.** The profile is configured on this Mac; whether the trust names this user is unchecked. First step at G2: `aws sts get-caller-identity --profile capytube-dns` |
+| 7 | `acm:RequestCertificate`, `DescribeCertificate`, `AddTagsToCertificate` | us-east-1, for `capytube.xyz` and `www.capytube.xyz` | P5 | Covered (manager's simulator check, 23:10: the condition lists `capytube.xyz` and `*.capytube.xyz`) |
+| 8 | `sts:AssumeRole`, and this Mac's user in the role's trust policy | role `capyapp-capytube-dns` in autonomous-lab; principal `arn:aws:iam::619071347239:user/capyapp-mac-pro-japan-16` | D1, D2 | **Works** (checked 23:1x with the one allowed call, `aws sts get-caller-identity --profile capytube-dns`: the role is assumed as this Mac's user). Nothing else was run with that profile |
 | 9 | The role's own rights: `route53:ChangeResourceRecordSets` (apex A and AAAA; CNAME on subdomains) and CloudFormation on `capyapp-capyweb-dns-*` | zone `capytube.xyz` | D1, D2 | Covered: the dev DNS stack was made this way on 24 Sep |
 | 10 | `amplify:ListDomainAssociations`, `amplify:DeleteDomainAssociation` | the Amplify `capyweb` app in autonomous-lab | D0 | **Admin only** (profile `al`) |
 | 11 | `sns:*` (topics and subscriptions) | `capyapp-*` topics in ap-southeast-1 and us-east-1 | P2, P9, P10 | Covered (v5). Reading the recipient uses budgets read, which is account-wide |
@@ -256,10 +314,11 @@ the apex shortly before the switch keeps "no such record" for up to **15 minutes
 ### Stage 1: dev (G1; nothing in production)
 
 Every code item of section 1a, deployed to dev and proven there:
-- **CSP:** report-only first, then enforced. The full page-test suite and the dev end-to-end scripts
+- **CSP:** enforced from the start: the test server sends dev's exact CSP to every page test, so the
+  admin creates the policy once, with no report-only round. The full page-test suite and the dev end-to-end scripts
   (sign-in, name prompt, vote, bid, chat, react, free and paid cameras, sign-out) run while every
   `securitypolicyviolation` event is collected. It passes with zero violations.
-- **`deploy.sh --web` replaces `upload-content.sh` on dev:**
+- **`deploy.sh dev content <dist> --web`** (it replaces `upload-content.sh`):
   - `curl -I` shows the right Content-Type per file type, `immutable` on hashed files and `no-cache` on
     `index.html`;
   - the previous release's files are still there after a deploy.
@@ -370,7 +429,9 @@ Against `docs/PLAN.md`'s $2.30:
 
   (aws.amazon.com/waf/pricing and aws.amazon.com/cognito/pricing, read 2026-09-29.)
 
-## Decisions this plan asks for
+## Decisions this plan asked for
+
+Answered by capyweb-manager on 2026-09-29 at 23:10; see "Since the draft". The questions as asked:
 
 1. The three gos as in section 2, G1 now.
 2. `PriceClass_200` for production (my recommendation) or `100`.
