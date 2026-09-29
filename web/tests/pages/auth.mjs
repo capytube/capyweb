@@ -103,7 +103,7 @@ async function configuredContext(browser, BASE, cognito, { width = 1280, meFirst
       return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"token expired"}' });
     }
     assert.equal(bearer, `Bearer ${cognito.state.access}`, 'the API gets the current access token');
-    return route.fulfill({ contentType: 'application/json', body: '{"coins":42}' });
+    return route.fulfill({ contentType: 'application/json', body: '{"id":"user-sub-1","display_name":"Nok","balance":42,"createdAt":"2026-09-29T00:00:00Z"}' });
   }));
   const errors = [];
   context.on('weberror', (e) => errors.push(e.error().message));

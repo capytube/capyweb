@@ -46,11 +46,13 @@ Cognito managed login with PKCE; the flow and its reasons are in `docs/WASM_PLAN
 
 - **Configuration is read at run time** from `/config.json` (`web/config.json`, copied into
   `dist/`): `{"auth": {"domain": "https://<ManagedLoginDomain output>", "client_id": "<UserPoolClientId output>"}}`.
-  The repository ships `{"auth": null}`, and then **no sign-in control renders anywhere**. One
-  build serves every stage; the deploy (W12) writes the stage's file. The redirect URI is not
+  The repository ships `{"auth": null}` and keeps it that way (no pool values are committed), and
+  then **no sign-in control renders anywhere**. One build serves every stage; W12's deploy
+  writes each stage's `config.json`. The redirect URI is not
   configured: it is `<page origin>/auth/callback`, which must be in the app client's callback
   URLs (the template lists the dev site plus `http://127.0.0.1:8791` and `http://localhost:8791`).
   To try a deployed pool locally, put its values in `web/config.json` and do not commit them.
+  `api::get_me` reads only `balance` from `GET /me` (`{id, display_name, balance, createdAt}`).
 - **The seam** (`src/auth.rs`, pure logic in `src/oauth.rs`):
   - `auth::use_auth()` returns `Auth`: `ready()` (a pool is configured and a stored session
     was tried), `signed_in()`, `user()` (`User { sub, email }`, for display only), all reactive;

@@ -30,6 +30,12 @@ Parameters:
     Default: ""
     Description: 'FROM header when SesIdentityArn is set, e.g. "CapyTube <no-reply@capytube.xyz>".'
 
+# The site each stage's sign-in returns to. Production is the apex domain, not "prod.".
+Mappings:
+  StageSite:
+    dev: {Origin: "https://dev.capytube.xyz"}
+    prod: {Origin: "https://capytube.xyz"}
+
 Conditions:
   IsDev: !Equals [!Ref Stage, dev]
   UseSes: !Not [!Equals [!Ref SesIdentityArn, ""]]
@@ -175,17 +181,30 @@ Resources:
       TokenValidityUnits: {AccessToken: minutes, IdToken: minutes, RefreshToken: days}
       # Time to finish a sign-in once started: long enough to fetch a code from the inbox.
       AuthSessionValidity: 10
-      # Loopback URLs only in dev. Cognito accepts plain http for http://localhost,
+      # The stage's site from the StageSite mapping; loopback URLs only in dev. Cognito accepts plain http for http://localhost,
       # http://127.0.0.1 and http://[::1] ("for testing purposes only"); `trunk serve` binds
       # 127.0.0.1:8791 (web/Trunk.toml).
       CallbackURLs: !If
         - IsDev
-        - [!Sub "https://${Stage}.capytube.xyz/auth/callback", "http://127.0.0.1:8791/auth/callback", "http://localhost:8791/auth/callback"]
-        - [!Sub "https://${Stage}.capytube.xyz/auth/callback"]
+        - - !Sub ["${Origin}/auth/callback", {Origin: !FindInMap [StageSite, !Ref Stage, Origin]}]
+          - "http://127.0.0.1:8791/auth/callback"
+          - "http://localhost:8791/auth/callback"
+        - - !Sub ["${Origin}/auth/callback", {Origin: !FindInMap [StageSite, !Ref Stage, Origin]}]
       LogoutURLs: !If
         - IsDev
-        - [!Sub "https://${Stage}.capytube.xyz/", "http://127.0.0.1:8791/", "http://localhost:8791/"]
-        - [!Sub "https://${Stage}.capytube.xyz/"]
+        - - !Sub ["${Origin}/", {Origin: !FindInMap [StageSite, !Ref Stage, Origin]}]
+          - "http://127.0.0.1:8791/"
+          - "http://localhost:8791/"
+        - - !Sub ["${Origin}/", {Origin: !FindInMap [StageSite, !Ref Stage, Origin]}]
+
+  # PLAN B3's staff role group. No members and no IAM role; nothing reads it yet (the admin
+  # console, Epic E, will check the `cognito:groups` claim).
+  AdminsGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref UserPool
+      GroupName: Admins
+      Description: CapyTube staff. No members yet; nothing reads this group yet.
 
   # Managed login v2 shows nothing for a client without a branding style. Cognito's own
   # defaults for now; the capybara look can come later in the visual editor.

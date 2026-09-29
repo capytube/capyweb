@@ -197,20 +197,18 @@ pub async fn request_authed<T: DeserializeOwned>(
     }
 }
 
-/// The signed-in user's own record (`GET /me`, capyweb-7hj). Only what the header needs;
-/// unknown fields are ignored so the backend can add more.
+/// The signed-in user's own record (`GET /me`, capyweb-7hj: `{id, display_name, balance,
+/// createdAt}`). Only what the header needs; the other fields are ignored.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Me {
-    /// Play-coin balance from the server ledger (`coins`, or `balance`).
-    pub coins: Option<u64>,
+    /// Play-coin balance from the server ledger.
+    pub balance: Option<u64>,
 }
 
 impl Me {
     pub fn from_value(v: &serde_json::Value) -> Me {
         Me {
-            coins: ["coins", "balance"]
-                .iter()
-                .find_map(|k| v.get(k).and_then(serde_json::Value::as_u64)),
+            balance: v.get("balance").and_then(serde_json::Value::as_u64),
         }
     }
 }
@@ -456,12 +454,17 @@ mod tests {
     }
 
     #[test]
-    fn me_reads_coins_or_balance() {
-        let me = |s: &str| Me::from_value(&serde_json::from_str(s).unwrap()).coins;
-        assert_eq!(me(r#"{"coins":42,"name":"Nok"}"#), Some(42));
-        assert_eq!(me(r#"{"balance":7}"#), Some(7));
+    fn me_reads_balance() {
+        let me = |s: &str| Me::from_value(&serde_json::from_str(s).unwrap()).balance;
+        assert_eq!(
+            me(
+                r#"{"id":"u-1","display_name":"Nok","balance":42,"createdAt":"2026-09-29T00:00:00Z"}"#
+            ),
+            Some(42)
+        );
+        assert_eq!(me(r#"{"coins":7}"#), None, "only `balance` is read");
         assert_eq!(me("{}"), None);
-        assert_eq!(me(r#"{"coins":-1}"#), None);
+        assert_eq!(me(r#"{"balance":-1}"#), None);
     }
 
     #[test]

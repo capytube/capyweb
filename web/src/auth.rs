@@ -280,7 +280,7 @@ impl Auth {
             let auth = *self;
             spawn_local(async move {
                 if let Ok(Some(me)) = crate::api::get_me(auth).await {
-                    auth.session.coins.set(me.coins);
+                    auth.session.coins.set(me.balance);
                 }
             });
         }
