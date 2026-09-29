@@ -459,7 +459,7 @@ everything else can start now.
 | W3 | Home: stream reel, capybara cards, gallery | 6% | W6 for video |
 | W4 | Watch + watch room: camera tabs, deep links, reel fallback, viewer count, reactions, chat with polling | 12% | writes: `capyweb-7hj` |
 | W5 | Play: capybara picker, vote and bid cards, rules, cost confirm, thanks | 9% | writes: `capyweb-7hj` |
-| W6 | Video player and a new video source (options in `docs/VIDEO_OPTIONS.md`, being written): the playback route, resume position, pause when the tab is hidden | 9% | private playback: `capyweb-0m7` (backend) |
+| W6 | Video player and a new video source (options and a recommendation in `docs/VIDEO_OPTIONS.md`): the playback route, resume position, pause when the tab is hidden | 9% | private playback: `capyweb-0m7` (backend) |
 | W7 | Shop and pass details: list, search, sort, offers, activity | 6% | claiming: write API |
 | W8 | Profile: signed-out pitch, name, balance, ledger history | 5% | `/me` routes |
 | W9 | Robot page and the four static pages | 4% | — |
