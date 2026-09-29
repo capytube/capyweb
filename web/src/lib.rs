@@ -5,6 +5,7 @@ pub mod api;
 pub mod app;
 pub mod auth;
 pub mod components;
+pub mod display_name;
 pub mod domain;
 pub mod oauth;
 pub mod pages;

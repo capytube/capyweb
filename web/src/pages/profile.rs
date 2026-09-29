@@ -8,6 +8,7 @@ use leptos::task::spawn_local;
 use crate::{
     api::{self, LedgerEntry},
     auth::use_auth,
+    display_name::{name_error, validate_name},
     pages::play::coin_label,
     state::use_session,
 };
@@ -79,15 +80,6 @@ fn entry_line(e: &LedgerEntry) -> String {
     line
 }
 
-/// A server refusal of a display name, in plain words (the rules are in DATA_MODEL section 6).
-fn name_error(message: &str) -> &'static str {
-    if message.contains("reserved") {
-        "That name is reserved. Please pick another."
-    } else {
-        "Use 2 to 32 letters or digits, with single spaces, dots, dashes, underscores or apostrophes between them."
-    }
-}
-
 /// Everything the signed-in view shows, in one signal (each signal type costs code).
 #[derive(Default)]
 struct Prof {
@@ -110,7 +102,8 @@ const LOADING: &str = "Loading your ledger…";
 /// the first page of the ledger.
 fn signed_in_view() -> impl IntoView {
     let auth = use_auth();
-    let coins = use_session().coins;
+    let session = use_session();
+    let coins = session.coins;
     let p = RwSignal::new(Prof {
         status: LOADING,
         ..Default::default()
@@ -152,14 +145,15 @@ fn signed_in_view() -> impl IntoView {
     let save = move |ev: leptos::ev::SubmitEvent| {
         ev.prevent_default();
         let value = p.with_untracked(|s| s.typed.trim().to_string());
-        if !(2..=32).contains(&value.chars().count()) {
-            p.update(|s| s.note = "Use 2 to 32 characters.");
+        if let Some(note) = validate_name(&value) {
+            p.update(|s| s.note = note);
             return;
         }
         p.update(|s| s.note = "Saving…");
         spawn_local(async move {
             let r = api::put_me(auth, &value).await;
             if let Ok(me) = &r {
+                session.needs_name.set(me.display_name.is_none());
                 if me.balance.is_some() {
                     coins.set(me.balance);
                 }
@@ -232,6 +226,5 @@ mod tests {
         assert_eq!(entry_label("something_new"), "Other");
         assert_eq!(entry_amount(50), "+50 play coins");
         assert_eq!(entry_amount(-1), "-1 play coin");
-        assert!(name_error("that display_name is reserved").contains("reserved"));
     }
 }
