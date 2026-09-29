@@ -63,4 +63,24 @@ export async function check({ open, browser, settle, BASE }) {
   assert.doesNotMatch(text, /currency|tip Magnus/i, 'no money wording on About');
   assert.deepEqual(await about.locator('main :is(h1,h2,h3,h4,h5,h6)').evaluateAll(hs => hs.map(h => h.tagName)), ['H1', 'H2', 'H2']);
   await about.close();
+
+  // Deletion: the real process (a request by email, done by staff; docs/RUNBOOKS.md section 1),
+  // never the button the old page described. The contact placeholder stays until the owner fills it.
+  const { page: del } = await open('/deletion', { width: 1280, height: 800 });
+  assert.deepEqual(await del.locator('main h2').allInnerTexts(), [
+    "Step 1: Email us from your account's address",
+    'Step 2: Confirm by answering our reply',
+    'Step 3: We delete your account and its data',
+    'Step 4: Backups and play coins',
+    'Contact Us',
+  ]);
+  const steps = await del.locator('main').innerText();
+  assert.match(steps, /from the email address you sign in to CapyTube with/);
+  assert.match(steps, /Within 30 days, we delete the account and its data/);
+  assert.match(steps, /within 35 days after we delete it/);
+  assert.match(steps, /Play coins have no cash value/);
+  assert.equal(steps.split('[Insert contact email]').length - 1, 1, 'the contact placeholder, once, unchanged');
+  assert.doesNotMatch(steps, /Delete My Account|Account Settings|24 hours|provide your password/i, 'no step the site cannot do');
+  assert.equal(await del.locator('main button, main form, main input').count(), 0, 'no delete control on the page');
+  await del.close();
 }
