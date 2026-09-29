@@ -178,17 +178,28 @@ SECRET_FILES="--include=*.ts --include=*.tsx --include=*.js --include=*.mjs --in
 SECRET_ALLOW='PLACEHOLDER|LEAKCANARY|EXAMPLEKEY|your-|xxxx|!Ref|!Sub|!GetAtt|guard-selftest'
 SECRET_ALLOW="$SECRET_ALLOW"'|secret\(|getItem\(|getenv\(|GetParameter|process\.env\[|["'"'"'][A-Za-z0-9]*_[A-Za-z0-9_]*["'"'"'][[:space:]]*[),;]'
 
+# The files at the repo root too (amplify.yml, package.json, index.html, the tool configs): the
+# folder list above never reached them.
+ROOT_SCAN_FILES=$(find . -maxdepth 1 -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.mjs' \
+  -o -name '*.cjs' -o -name '*.json' -o -name '*.yaml' -o -name '*.yml' -o -name '*.sh' -o -name '*.html' \
+  -o -name '*.md' -o -name '*.rs' -o -name '*.toml' \) | sed 's|^\./||' | sort)
+
 akia=$(grep -rnE '(AKIA|ASIA)[A-Z0-9]{16}' $SECRET_FILES $BUILD_OUT_DIRS . 2>/dev/null \
-  | grep -vE "$SECRET_ALLOW")
+  | grep -vE "$SECRET_ALLOW" | sed 's|^\./||' | filter_baseline secret)
 literals=$(grep -rniE '(api_?key|secret|token|password|passphrase|credential)[A-Za-z_]*[[:space:]]*[:=][^"'"'"']{0,60}["'"'"'][A-Za-z0-9/+=._-]{20,}["'"'"']' \
-  $SECRET_FILES $BUILD_OUT_DIRS $SECRET_SCAN_DIRS 2>/dev/null \
-  | grep -vE "$SECRET_ALLOW")
-if [ -n "$akia" ] || [ -n "$literals" ]; then
-  [ -n "$akia" ] && echo "$akia"
-  [ -n "$literals" ] && echo "$literals"
+  $SECRET_FILES $BUILD_OUT_DIRS $SECRET_SCAN_DIRS $ROOT_SCAN_FILES 2>/dev/null \
+  | grep -vE "$SECRET_ALLOW" | filter_baseline secret)
+# A credential in a URL's query string (a webhook or presigned URL): unquoted, so the rule above
+# never saw one.
+urlcreds=$(grep -rniE '[?&](token|access_token|api_?key|secret|password|signature|sig|x-amz-signature|x-amz-credential)=[A-Za-z0-9/+._%-]{16,}' \
+  $SECRET_FILES $BUILD_OUT_DIRS $SECRET_SCAN_DIRS $ROOT_SCAN_FILES 2>/dev/null \
+  | grep -vE "$SECRET_ALLOW" | filter_baseline secret)
+if [ -n "$akia" ] || [ -n "$literals" ] || [ -n "$urlcreds" ]; then
+  # Where, never what: the value itself must not reach a terminal, a log or a hook's output.
+  printf '%s\n' "$akia" "$literals" "$urlcreds" | grep -v '^$' | cut -d: -f1,2 | sed 's/$/: (value not shown)/'
   fail "no hardcoded secrets" "use SSM SecureString and read it at runtime"
 else
-  pass "no hardcoded secrets (source, templates, scripts, demo, amplify, web)"
+  pass "no hardcoded secrets (source, templates, scripts, demo, amplify, web, root files)"
 fi
 
 # The WASM client's types are the API's public shape. A field named like a playback locator

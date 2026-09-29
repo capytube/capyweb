@@ -32,6 +32,11 @@ RULES = [
     ("github-token", re.compile(rb"\bgh[pousr]_[A-Za-z0-9]{36,}")),
     # A UUID or long opaque string assigned to a credential-shaped name. This is the rule that
     # catches the Livepeer keys: apiKey: "7f09548e-4e52-4744-9c85-6f00eb999b62".
+    # A credential in a URL's query string: a webhook's token, a presigned URL's signature.
+    ("url-query-credential", re.compile(
+        rb"(?i)[?&](?:token|access_token|api_?key|secret|password|signature|sig|x-amz-signature|x-amz-credential)"
+        rb"=([A-Za-z0-9/+._%-]{16,})"
+    )),
     ("credential-assignment", re.compile(
         rb"""(?i)(?:api[_-]?key|secret|token|password|passphrase|credential)[A-Za-z_]*"""
         rb"""\s*[:=]\s*["']([A-Za-z0-9/+=._-]{20,})["']"""

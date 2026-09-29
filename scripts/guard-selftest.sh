@@ -114,6 +114,17 @@ expect_fail "camelCase secret name" "no hardcoded secrets" \
   "echo 'const clientSecret = \"abcdef0123456789abcdef0123456789\";' > backend/src/oops.ts"
 expect_fail "secret outside backend/ (demo, amplify, shell)" "no hardcoded secrets" \
   "echo 'const apiKey = \"abcdef0123456789abcdef0123456789\";' > demo/oops.js"
+# Root-level files, and a credential in a URL's query string (2026-09-30). A hit shows where,
+# never the value: each check exits 0 (a MISS) if the value reaches the output.
+NOSHOW='out=$(./scripts/guard.sh 2>&1); rc=$?; echo "$out" | grep -q Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2 && { echo VALUE PRINTED; exit 0; }; echo "$out"; exit $rc'
+expect_fail "secret in a root-level config file" "(value not shown)" \
+  "echo 'export const apiKey = \"Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2Jh1Gf0\";' >> vite.config.ts" "$NOSHOW"
+expect_fail "token in a URL query, root-level file" "no hardcoded secrets" \
+  "echo 'curl \"https://hooks.example.test/x?id=1&token=Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2\"' > deploy-hook.sh" "$NOSHOW"
+expect_fail "signature in a URL query, under docs/" "no hardcoded secrets" \
+  "echo 'see https://b.example.test/o?X-Amz-Signature=Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2' > docs/oops.md" "$NOSHOW"
+expect_fail "the baselined webhook fires without its baseline entry" "amplify.yml:" \
+  "sed -i '' '/^secret amplify.yml:/d' scripts/guard-baseline.txt"
 expect_fail "GitHub Actions" "no GitHub Actions workflows" \
   "mkdir -p .github/workflows && echo 'name: ci' > .github/workflows/ci.yml"
 expect_fail "unpinned npx" "npx must use --no-install" \
