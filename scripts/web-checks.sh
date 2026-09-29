@@ -22,7 +22,9 @@ ROOT=$(pwd)
 # snippet), brotli -q 11, in bytes ("KB" in the plan means 1,000 bytes). The budget is
 # docs/WASM_PLAN.md section 5, rule 2. The W1 shell measured ~145,000 bytes against it.
 # Files under dist/vendor/ (hls.js) load lazily: their size is printed, not counted.
-SIZE_BUDGET_BYTES=300000
+# 300,000 until W10; raised to 350,000 with capyweb-manager's leave (the reason and the numbers
+# are in rule 2). It measures the dev build, WebMCP tools included.
+SIZE_BUDGET_BYTES=350000
 
 ALL_STEPS="fmt clippy-wasm clippy test fixtures build size smoke"
 STEPS=$ALL_STEPS

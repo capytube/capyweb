@@ -21,6 +21,9 @@ pub fn App() -> impl IntoView {
     let toasts = Toasts::default();
     provide_context(session);
     provide_context(toasts);
+    // An assistant's votes, bids and posts wait here for the page that confirms them.
+    #[cfg(feature = "webmcp")]
+    provide_context(crate::webmcp::Asks::default());
     Auth::provide(session, toasts);
     view! {
         <Router>

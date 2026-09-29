@@ -14,6 +14,8 @@
 mod act;
 mod read;
 
+pub use act::{chat_asks, use_asks, Asks, Want};
+
 use std::rc::Rc;
 
 use js_sys::{Object, Promise, Reflect};
@@ -55,7 +57,6 @@ pub(crate) enum Hint {
     /// Changes what the page shows (navigation), nothing on the server.
     Ui,
     /// Spends coins or posts as the user. Goes through the page's own confirm step.
-    #[allow(dead_code)] // act.rs (W10, in progress)
     Consequential,
 }
 

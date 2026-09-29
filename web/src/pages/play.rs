@@ -573,6 +573,141 @@ fn by_name(a: &Capybara, b: &Capybara) -> std::cmp::Ordering {
     a.name.cmp(&b.name)
 }
 
+/// An assistant's vote or bid (WebMCP, feature `webmcp`). It takes the same path as an action
+/// kept across a sign-in, so it opens this page's own confirm dialog, and how that dialog closes
+/// is the answer. Nothing is spent without the person's Confirm.
+#[cfg(feature = "webmcp")]
+#[derive(Clone, Copy)]
+struct Assistant {
+    asks: crate::webmcp::Asks,
+    /// The ask this page is handling, with its action.
+    mine: RwSignal<Option<(u32, Draft)>>,
+}
+
+#[cfg(feature = "webmcp")]
+impl Assistant {
+    fn new(spend: Spend, wake: RwSignal<u32>) -> Option<Self> {
+        use crate::webmcp::Want;
+        let asks = crate::webmcp::use_asks()?;
+        let query = use_query_map();
+        let me = Assistant {
+            asks,
+            mine: RwSignal::new(None),
+        };
+        // A new ask for this page: into the waiting slot, where the confirm step opens from. Only
+        // once the address shows its capybara: the tool's navigation lands a moment after it asks.
+        Effect::new(move |_| {
+            let here = query.with(|q| q.get("capy"));
+            let Some((id, d)) = asks.take(|w| match w {
+                Want::Vote { capybara, .. } | Want::Bid { capybara, .. }
+                    if here.as_ref() != Some(capybara) =>
+                {
+                    None
+                }
+                Want::Vote {
+                    interaction,
+                    option,
+                    idea,
+                    votes,
+                    ..
+                } => Some(Draft {
+                    ixn: interaction.clone(),
+                    vote: true,
+                    option: option.clone(),
+                    custom: idea.clone(),
+                    count: *votes,
+                }),
+                Want::Bid {
+                    interaction,
+                    amount,
+                    ..
+                } => Some(Draft {
+                    ixn: interaction.clone(),
+                    vote: false,
+                    option: String::new(),
+                    custom: String::new(),
+                    count: *amount,
+                }),
+                _ => None,
+            }) else {
+                return;
+            };
+            me.drop("A newer request replaced this one. Nothing was spent.");
+            me.mine.set(Some((id, d.clone())));
+            spend.dlg.update_untracked(|x| x.waiting = Some(d));
+            wake.update(|n| *n = n.wrapping_add(1));
+        });
+        // How the dialog closes is the answer.
+        Effect::new(move |was: Option<bool>| {
+            let open = spend.open.get();
+            if was == Some(true) && !open {
+                if let Some((id, d)) = me.mine.get_untracked() {
+                    let r = spend.dlg.with_untracked(|x| {
+                        let shown = x.ask.as_ref().is_some_and(|a| a.draft == d);
+                        match (&x.thanks, &x.step) {
+                            _ if !shown => Err("The person chose another action. Nothing was \
+                                                spent for this request."
+                                .to_string()),
+                            (Some((ixn, t)), _) if *ixn == d.ixn => {
+                                Ok(format!("The person pressed Confirm. {t}"))
+                            }
+                            (_, Step::Failed { message, .. }) => Err(message.clone()),
+                            _ => Err("The person closed the confirm step without confirming. \
+                                      Nothing was spent."
+                                .to_string()),
+                        }
+                    });
+                    me.mine.set(None);
+                    asks.answer(id, r);
+                }
+            }
+            open
+        });
+        // Withdrawn by the assistant: its dialog closes, unless Confirm is already on its way.
+        Effect::new(move |_| {
+            let Some((id, d)) = me.mine.get() else {
+                return;
+            };
+            if asks.is_open(id) {
+                return;
+            }
+            me.mine.set(None);
+            spend.dlg.update_untracked(|x| {
+                if x.waiting.as_ref() == Some(&d) {
+                    x.waiting = None;
+                }
+            });
+            let showing = spend.dlg.with_untracked(|x| {
+                x.ask.as_ref().is_some_and(|a| a.draft == d) && x.step != Step::Busy
+            });
+            if showing {
+                spend.open.set(false);
+            }
+        });
+        on_cleanup(move || me.drop("The page was left before Confirm. Nothing was spent."));
+        Some(me)
+    }
+
+    /// The ask's action cannot be done (priced wrongly, or no longer open).
+    fn refused(self, d: &Draft, why: &str) {
+        if self
+            .mine
+            .with_untracked(|m| m.as_ref().is_some_and(|(_, x)| x == d))
+        {
+            let mut why = why.to_string();
+            why.push_str(" Nothing was spent.");
+            self.drop(&why);
+        }
+    }
+
+    fn drop(self, why: &str) {
+        if let Some((id, _)) = self.mine.try_get_untracked().flatten() {
+            let _ = self.mine.try_set(None);
+            self.asks.answer(id, Err(why.to_string()));
+        }
+    }
+}
+
 #[component]
 pub fn Play() -> impl IntoView {
     let auth = use_auth();
@@ -621,32 +756,39 @@ pub fn Play() -> impl IntoView {
         reload: interactions,
         session: use_session(),
     };
-    if spend.dlg.with_untracked(|d| d.waiting.is_some()) {
-        Effect::new(move |_| {
-            let Some(Ok(page)) = interactions.get() else {
-                return;
-            };
-            let Some(d) = spend.dlg.with_untracked(|x| x.waiting.clone()) else {
-                return;
-            };
-            let found = page.items.iter().find(|i| i.id == d.ixn);
-            let gone = page
-                .items
-                .first()
-                .is_some_and(|i| Some(&i.capybara_id) == selected_capy.get_untracked().as_ref());
-            if found.is_some() || gone {
-                spend.dlg.update_untracked(|x| x.waiting = None);
+    // Rung when an action arrives after the page has loaded (an assistant's, WebMCP).
+    let wake = RwSignal::new(0u32);
+    #[cfg(feature = "webmcp")]
+    let assistant = Assistant::new(spend, wake);
+    Effect::new(move |_| {
+        wake.track();
+        let Some(Ok(page)) = interactions.get() else {
+            return;
+        };
+        let Some(d) = spend.dlg.with_untracked(|x| x.waiting.clone()) else {
+            return;
+        };
+        let found = page.items.iter().find(|i| i.id == d.ixn);
+        let gone = page
+            .items
+            .first()
+            .is_some_and(|i| Some(&i.capybara_id) == selected_capy.get_untracked().as_ref());
+        if found.is_some() || gone {
+            spend.dlg.update_untracked(|x| x.waiting = None);
+        }
+        let r = match found {
+            Some(i) => spend.ask(auth, i, d.clone()),
+            None if gone => Err("That vote or bid is no longer open.".into()),
+            None => Ok(()),
+        };
+        if let Err(e) = r {
+            #[cfg(feature = "webmcp")]
+            if let Some(a) = assistant {
+                a.refused(&d, &e);
             }
-            let r = match found {
-                Some(i) => spend.ask(auth, i, d),
-                None if gone => Err("That vote or bid is no longer open.".into()),
-                None => Ok(()),
-            };
-            if let Err(e) = r {
-                toasts.show(e);
-            }
-        });
-    }
+            toasts.show(e);
+        }
+    });
 
     view! {
         <PageHead

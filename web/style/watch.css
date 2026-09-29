@@ -116,3 +116,8 @@
 .paid-confirm p { flex-basis: 100%; }
 .paid-note:empty { display: none; }
 .locked-cam .player { margin-top: 0.75rem; }
+
+/* An assistant's chat message or reaction, posted only when the person presses Post (W10). */
+.agent-ask { margin: .5rem 0 .75rem; padding: .75rem; border: 2px solid var(--choco-brown); border-radius: 12px; background: var(--babycorn-yellow); }
+.agent-ask blockquote { margin: .4rem 0 .6rem; font-weight: 600; overflow-wrap: anywhere; }
+.agent-note:empty { display: none; }

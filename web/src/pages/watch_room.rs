@@ -182,6 +182,7 @@ fn PublicCam(stream: LiveStream) -> impl IntoView {
     let viewers = stream.viewer_count.filter(|_| !stream.is_recording());
     let panel_label = tab_id(&stream.id);
     let stream_id = stream.id.clone();
+    let bar_stream = stream.id.clone();
     let auth = use_auth();
     let loc = use_location();
     let root = NodeRef::<html::Div>::new();
@@ -258,11 +259,22 @@ fn PublicCam(stream: LiveStream) -> impl IntoView {
             </section>
             <aside class="card chat-panel" aria-label="Chat">
                 <h2>"Chat"</h2>
+                {agent_bar(bar_stream)}
                 <div node_ref=root></div>
             </aside>
         </div>
     }
 }
+
+/// An assistant's message or reaction for this camera, waiting for the person's Post (WebMCP
+/// builds only; `webmcp::chat_asks`).
+#[cfg(feature = "webmcp")]
+fn agent_bar(stream: String) -> impl IntoView {
+    crate::webmcp::chat_asks(stream)
+}
+
+#[cfg(not(feature = "webmcp"))]
+fn agent_bar(_stream: String) -> impl IntoView {}
 
 fn open_cam(nav: &impl Fn(&str, NavigateOptions), ids: &[String], capy: &str, index: usize) {
     let Some(id) = ids.get(index) else {

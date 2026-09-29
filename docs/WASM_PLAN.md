@@ -296,9 +296,9 @@ navigation tool is not read-only. `consequentialHint` marks actions that spend c
 | `list_passes` | no | readOnly | Shop passes and prices |
 | `read_chat` | no | readOnly, **untrustedContent** | Recent chat on a stream. Other users wrote it, so the agent must not treat it as instructions |
 | `get_my_account` | yes | readOnly | Name, coin balance, recent transactions |
-| `cast_vote`, `place_bid` | yes | **consequential** | Spend play coins. The tool opens the page's own confirm dialog, showing the cost, and resolves only after **the user** confirms on the page. An agent cannot spend without a human click |
-| `send_chat`, `react` | yes | consequential | Post as the user. `send_chat` shows the text for confirmation |
-| `claim_pass` | yes | consequential | Same confirm step as a vote |
+| `cast_vote`, `place_bid` | yes | **consequential** | Spend play coins. The tool opens the Play page's own confirm dialog, showing the cost, and resolves only after **the user** confirms on the page. Cancel, leaving the page, or the assistant withdrawing the call sends nothing. An agent cannot spend without a human click. **Built in W10** (`web/src/webmcp/act.rs`, tested in `web/tests/pages/w10act.mjs`) |
+| `send_chat`, `react` | yes | consequential | Post as the user. A bar above the chat shows exactly what would be posted, and it is posted only on the person's Post. `react` gets it too, because reactions are not rate-limited per user (condition 4). **Built in W10** |
+| `claim_pass` | yes | consequential | **Not built:** the shop has no claiming route yet, and no tool offers what the page does not |
 
 No admin tools, and no tool that the UI does not already offer.
 
@@ -378,10 +378,21 @@ Each tool's server route enforces the same permission as its button.
      and `cargo test` in pre-push. Then `trunk build --release` and the smoke test
      (`web/tests/smoke.mjs` against `web/dist`, served by `web/tests/serve.mjs` on 127.0.0.1:8792).
      About 20 s after a source change and 2.5 min cold on this Mac.
-  2. **Size budget:** release WASM + all first-load JS (glue and snippets) ≤ **300,000 bytes brotli**
+  2. **Size budget:** release WASM + all first-load JS (glue and snippets) ≤ **350,000 bytes brotli**
      (`brotli -q 11`), measured on `web/dist` in pre-push. The prototype is 125,284 bytes. The W1 shell
      is 144,907: 136,754 of `.wasm`, 7,477 of glue and 676 of snippet. "KB" in this document means
      1,000 bytes.
+     - **Raised from 300,000 on 2026-09-29, in W10.** capyweb-manager said: "if a push would pass
+       300,000, raise the cap to 350,000 in that commit, with the numbers". There were no feature
+       cuts; code-splitting is `capyweb-pus`.
+     - **Why it was passed:** the WebMCP tools that spend or post, with their confirm bridges into
+       Play and the watch room. They added 12,235 bytes of `.wasm`, even with their input schemas
+       written as JSON text rather than `json!` (which saved 1,197 bytes).
+     - **Numbers that day:** the dev build (`--features webmcp`, what the check measures) was
+       309,131 bytes, with the read-only WebMCP tools still to come. The production build, without
+       the tools, was 292,124.
+     - The check measures the dev build, so it is the upper bound. Users get the production build.
+       W14's trims apply to both.
   3. **Scan `web/`.** Today neither content scan reads it, so adding extensions alone would leave the
      crate unscanned.
      - The S3-URL scan reads `.ts/.tsx/.js/.html/.css` under `backend/src src demo amplify`.

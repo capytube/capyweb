@@ -34,7 +34,13 @@ pub fn Modal(
     let title_id = format!("modal-title-{}", NEXT_ID.fetch_add(1, Ordering::Relaxed));
     let labelled_by = title_id.clone();
     view! {
-        <dialog class="modal" node_ref=dialog on:close=move |_| open.set(false) aria-labelledby=labelled_by>
+        // The browser queues the close event, so it can arrive after the dialog has been opened
+        // again for another action: then it is stale, and must not close the new one.
+        <dialog class="modal" node_ref=dialog aria-labelledby=labelled_by on:close=move |_| {
+            if !dialog.get_untracked().is_some_and(|d| d.open()) {
+                open.set(false);
+            }
+        }>
             <h2 id=title_id>{title}</h2>
             <div class="mb-4">{children()}</div>
             <form method="dialog" class="actions justify-end">
