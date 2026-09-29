@@ -177,7 +177,8 @@ Both are inside the trial, so a token would work today.
 
 To join, register the origin, get a token, and send it on each page (a
 `<meta http-equiv="origin-trial">` tag or an `Origin-Trial` header). Joining is a production decision
-and goes through capyweb-manager. A token would also need adding to the CSP work in W12.
+and goes through capyweb-manager. The token itself is a deployment step (the tag in `index.html` or a
+header from the W12 site work); no CSP directive governs it.
 
 ## 3. Agents that call it
 
@@ -276,11 +277,11 @@ Three mechanisms. They test different things.
    W10 with installed Chrome (`channel: 'chrome'`), not the bundled Chromium:
 
    ```js
-   const context = await chromium.launchPersistentContext('', {
+   const browser = await chromium.launch({
      channel: 'chrome',
      args: ['--enable-features=WebMCP'],
    });
-   const page = await context.newPage();
+   const page = await browser.newPage();
    await page.goto(url);
    const names = await page.evaluate(async () => {
      const mc = document.modelContext;
@@ -301,8 +302,11 @@ Three mechanisms. They test different things.
    - the registration signal removes the tool but does not cancel a running call;
    - `navigator` is a deprecated fallback.
 
-   Keep the call itself as it is.
-3. **Set `untrustedContentHint` on `read_chat`.** Leave `debugging` and `exposedTo` unset everywhere.
+   Keep the call itself as it is. Then remove the `{ unregister() }` branch, so the code and the
+   comment describe one draft.
+3. **Set `untrustedContentHint` on `read_chat`.** `Effect::annotations()` in `web/src/webmcp.rs`
+   emits only `readOnlyHint` and `consequentialHint`, so it needs a third field. Leave `debugging`
+   and `exposedTo` unset everywhere.
 4. **Consequential tools keep the page's own confirm inside `execute`.** A test must show that `execute`
    does not resolve without the on-page click.
 5. **Sign-out:** abort the registration controllers. Also abort any tool call in flight, if calls should
