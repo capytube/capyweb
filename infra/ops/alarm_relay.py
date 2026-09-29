@@ -5,7 +5,8 @@ Run by infra/ops/alarm-relay-job.sh on Mac mini 3 every 5 minutes, with only the
 the environment. Reads the queue until it is empty (10 at a time, at most MAX_MESSAGES a run), makes one
 line per alarm that went to ALARM or came back to OK from ALARM, posts all of a run's lines in one
 `herdr-ask --project capyweb --post`, and deletes the messages only after the post succeeded. A failed run
-leaves them for the next one (the queue keeps them 4 days).
+leaves them for the next one (the queue keeps them 4 days). Delivery is at least once: if herdr-ask
+delivers the post but still exits non-zero, the next run posts the same lines again.
 
 Every room is read by people outside the team, so a line holds no account id, ARN, hostname, e-mail
 address, IP address or queue URL: the alarm's reason is sanitised, and anything that is not an alarm is
@@ -31,10 +32,11 @@ REASON_MAX = 120
 # Order matters: a URL holds a hostname, an ARN holds an account id.
 _SANITISE = [
     re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s)\]>\"']*", re.I),     # URLs, queue URLs included
-    re.compile(r"\barn:[^\s)\]>\"']*", re.I),                       # ARNs
+    re.compile(r"arn:[a-z0-9-]*:[^\s)\]>\"']*", re.I),               # ARNs, glued to a word too ("Warn: x" is kept)
     re.compile(r"\S+@\S+"),                                          # e-mail addresses
-    re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b"),                      # IPv4
-    re.compile(r"(?<![\w:])(?:[0-9a-f]{0,4}:){3,7}[0-9a-f]{0,4}(?![\w:])", re.I),  # IPv6 (3+ colons; not a time)
+    re.compile(r"(?<![\d.])\d{1,3}(?:\.\d{1,3}){3}(?!\.?\d)"),          # IPv4, glued to a word too
+    re.compile(r"(?<![0-9a-f:])[0-9a-f]*::[0-9a-f:]*(?:%\w+)?", re.I),  # IPv6 with "::" (::1, fe80::1%eth0)
+    re.compile(r"(?<![0-9a-f:])(?:[0-9a-f]{0,4}:){3,7}[0-9a-f]{0,4}(?![0-9a-f:])", re.I),  # IPv6, 3+ colons (a time has 2)
     re.compile(r"\b(?:[a-z0-9-]+\.)+[a-z]{2,}\b", re.I),             # hostnames
     re.compile(r"\d{12,}"),                                          # account ids (any run of 12+ digits)
 ]
@@ -104,11 +106,13 @@ def decide(body: str):
         when = _when({}, envelope)
         return "post", when, f"[capyweb] notice on {short_topic(topic)}"
     new, old = alarm.get("NewStateValue"), alarm.get("OldStateValue")
+    name = alarm["AlarmName"] if isinstance(alarm["AlarmName"], str) else ""
+    reason = alarm.get("NewStateReason") if isinstance(alarm.get("NewStateReason"), str) else ""
     if not (new == "ALARM" or (new == "OK" and old == "ALARM")):
         return "skip", None, f"{old} -> {new}"
     when = _when(alarm, envelope)
-    line = f"{tag} {short_alarm(str(alarm['AlarmName']), stage)}: {new} at {when.astimezone(BANGKOK):%H:%M} +07"
-    reason = sanitise(str(alarm.get("NewStateReason", "")))
+    line = f"{tag} {short_alarm(name, stage)}: {new} at {when.astimezone(BANGKOK):%H:%M} +07"
+    reason = sanitise(reason)
     return "post", when, f"{line} — {reason}" if reason else line
 
 
@@ -184,8 +188,9 @@ def run(queue_url: str, dry_run: bool, receive=receive, post=post, delete=delete
         if lines:
             post("\n".join(lines))
         delete(queue_url, list(seen.values()))
-    except RelayError as e:
-        out(f"alarm-relay: FAILED after {len(seen)} message(s): {e}; nothing deleted that was not posted")
+    except Exception as e:   # a timeout, a reply that is not JSON, ...: the same safe failure
+        why = str(e) if isinstance(e, RelayError) else sanitise(f"{type(e).__name__}: {e}", 160)
+        out(f"alarm-relay: FAILED after {len(seen)} message(s): {why}; nothing deleted that was not posted")
         return 1
     out(f"alarm-relay: {len(seen)} message(s), {len(lines)} line(s) posted, {skipped} skipped, all deleted")
     return 0

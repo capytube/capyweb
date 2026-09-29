@@ -47,6 +47,18 @@ class Sanitise(unittest.TestCase):
         self.assertEqual(r.sanitise(f"from us-east-1 (account {ACCT})"), "from us-east-1 (account)")
         self.assertEqual(r.sanitise(f"x (arn:aws:foo) y [https://a.b/c] z, {ACCT}."), "x y z,.")
 
+    def test_identifiers_glued_to_words_go_too(self):
+        # review rv headless 2026-09-30 (Kimi): these survived the first version
+        for dirty in ("x10.0.12.7", "10.0.12.7x", "z2001:db8::1", f"xarn:aws:sns:x:{ACCT}:y", "::1", "fe80::1%eth0",
+                      "ip 10.0.12.7.", "host [2001:db8::1]:443"):
+            clean = r.sanitise(f"a {dirty} b", 500)
+            for bad in ("10.0", "2001", "db8", "arn:", "::", "fe80", ACCT):
+                self.assertNotIn(bad, clean, f"{dirty!r} -> {clean!r}")
+
+    def test_ordinary_words_and_times_stay(self):
+        for keep in ("Warn: disk", "at 18:23:05", "version 1.2.3", "(29/09/26 18:18:00)", "Learn: x"):
+            self.assertEqual(r.sanitise(keep, 500), keep)
+
     def test_cut_to_120(self):
         cut = r.sanitise("x" * 300)
         self.assertEqual(len(cut), 120)
@@ -88,6 +100,11 @@ class Decide(unittest.TestCase):
         self.assertEqual(r.decide(budget)[1:], (r.decide(budget)[1], "[capyweb] notice on alerts"))
         self.assertEqual(r.decide("not json")[2], "[capyweb] notice on an unknown topic")
         self.assertEqual(r.decide(json.dumps({"TopicArn": 5}))[0], "post")
+
+    def test_fields_that_are_not_strings_show_nothing_odd(self):
+        weird = {"AlarmName": {"x": 1}, "NewStateValue": "ALARM", "OldStateValue": "OK", "NewStateReason": ["u"],
+                 "StateChangeTime": "2026-09-29T18:23:00.000+0000"}
+        self.assertEqual(r.decide(envelope("capyapp-capyweb-prod-alarms", weird))[2], "[capyweb prod] an alarm: ALARM at 01:23 +07")
 
     def test_no_reason_no_dash(self):
         self.assertEqual(r.decide(envelope("capyapp-capyweb-prod-alarms",
@@ -136,6 +153,16 @@ class Run(unittest.TestCase):
         self.assertEqual(self.go(dry_run=True), 0)
         self.assertEqual((self.posted, self.deleted), ([], []))
         self.assertEqual(len(self.printed), 3)
+
+    def test_a_timeout_is_a_clean_failure(self):
+        import subprocess
+        def slow(_url):
+            raise subprocess.TimeoutExpired(["aws", "sqs", "https://sqs.ap-southeast-1.amazonaws.com/%s/q" % ACCT], 60)
+        rc = r.run("u", False, receive=slow, post=self.posted.append,
+                   delete=lambda _u, ms: self.deleted.extend(ms), out=self.printed.append)
+        self.assertEqual((rc, self.posted, self.deleted), (1, [], []))
+        self.assertIn("FAILED", self.printed[-1])
+        self.assertNotIn(ACCT, self.printed[-1])
 
     def test_nothing_waiting_posts_nothing(self):
         self.queue = []
