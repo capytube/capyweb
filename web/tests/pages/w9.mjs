@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 const routes = [
   ['/robot', 'Watch now. Drive when your hour begins.'],
-  ['/about-us', 'CapyCoin'],
+  ['/about-us', 'About CapyTube'],
   ['/privacy-policy', 'Privacy policy'],
   ['/terms-of-service', 'Terms of Service'],
   ['/deletion', 'Account Deletion Instructions'],

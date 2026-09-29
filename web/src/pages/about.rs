@@ -7,20 +7,20 @@ use leptos::prelude::*;
 pub fn About() -> impl IntoView {
     view! {
         <article class="static-page">
-            <PageHead title="CapyCoin"/>
+            <PageHead title="About CapyTube"/>
             <section>
                 <h4>" Your Gateway to CapyTube "</h4>
                 <p>
                     " Welcome to "
-                    <strong>"CapyCoin"</strong>
-                    ", your exclusive entry into the charming world of capybara live streams! "
+                    <strong>"CapyTube"</strong>
+                    ", your window into the charming world of capybara live streams! "
                 </p>
                 <p>
                     " Here, you can watch your favorite capybara, "
                     <strong>"Magnus"</strong>
-                    ", and participate in his everyday adventures. Our platform allows you to tip Magnus or even vote on tasks for him to complete using "
+                    ", and take part in his everyday adventures. Vote on tasks for him to complete, or bid on what he does next, using "
                     <strong>"CapyCoins"</strong>
-                    ", our unique currency. "
+                    ", the play coins of this site. Play coins are not money: they have no cash value and cannot be cashed out. "
                 </p>
                 <p>
                     " On "

@@ -189,8 +189,12 @@ the cap starts to bite — so the cap is well-calibrated as an early-warning lin
 if this account's free tier includes the 1 TB/month allowance; if it does not, that line is about
 $14/month on its own — more than the whole cap. Everything else in the table is small enough that
 being wrong about it barely matters; this one is not. The `capyapp-capyweb-dev-cloudfront-egress`
-alarm exists precisely so the budget does not rest on an unverified assumption. Confirming the
-account's actual free-tier status needs billing access (`capyweb-0v3`).
+alarm exists precisely so the budget does not rest on an unverified assumption.
+
+**Confirmed 2026-09-29 (capyweb-manager, from the admin side):** September to date used about 4.7 GB
+out and about 260,000 requests, and the gross CloudFront usage charge was $0.0025 against about $0.50
+at list price. The always-free CloudFront allowance applies on this account, so the row above stands
+(`capyweb-0v3`, closed). The egress alarm stays as the guard for the 1 TB line.
 
 ### The five ways this budget actually gets blown
 
@@ -428,4 +432,6 @@ Instinct was asked to QA it. The apex `capytube.xyz` may still be claimed by the
 Amplify `capyweb` app in autonomous-lab. Remove that domain association (admin `al`
 profile) before putting CloudFront on the apex.
 
-Still true: billing (`budgets:*`, `ce:*`) is not granted (`capyweb-0v3`).
+Billing read is now granted, but only to the new deploy identity. The CloudFront free tier was confirmed on
+2026-09-29 (section 3). The tag-scoped budget, the cost-allocation tag and anomaly detection (A1, A2, A4)
+still wait for that identity (`capyweb-m52`).
