@@ -235,12 +235,47 @@ export async function check({ browser, BASE, SHOTS }) {
   await dialog(page).getByRole('button', { name: 'Cancel' }).click();
   assert.equal(api.balance, 38);
 
+  // -- more interleavings (review rv-1790677842-12583): every lost answer keeps its own key ---
+  const ready = () => page.waitForFunction(() => document.querySelector('[data-testid=confirm-sum]')?.innerText.includes('After'));
+  const lose = async (option, votes) => {
+    await openVote(page, option, votes);
+    await ready();
+    api.loseNext = true;
+    await page.locator('[data-testid=confirm]').click();
+    await dialog(page).getByText('No answer from CapyTube').waitFor();
+    const key = api.posts.at(-1).key;
+    await dialog(page).getByRole('button', { name: 'Cancel' }).click();
+    return key;
+  };
+  const again = async (option, votes) => {
+    const n = api.posts.length;
+    await openVote(page, option, votes);
+    await ready();
+    await page.locator('[data-testid=confirm]').click();
+    await until(page, () => api.posts.length === n + 1, `${option} sent again`);
+    await dialog(page).waitFor({ state: 'detached' });
+    return api.posts.at(-1).key;
+  };
+  // A's answer is lost; B is confirmed and charged; asking for A again reuses A's key.
+  const keyA = await lose('Carrots', 1);
+  const keyB = await again('Pandan', 1);
+  assert.notEqual(keyB, keyA);
+  assert.equal(await again('Carrots', 1), keyA, "A again: A's key, not a new one");
+  assert.equal(api.balance, 36, 'A and B charged once each');
+  // Two lost answers, then both asked again: each keeps its own key.
+  const keyC = await lose('Carrots', 2);
+  const keyD = await lose('Pandan', 2);
+  assert.notEqual(keyC, keyD);
+  assert.equal(await again('Carrots', 2), keyC);
+  assert.equal(await again('Pandan', 2), keyD);
+  assert.equal(api.balance, 32, 'C and D charged once each');
+
   // -- refusals: plain messages, nothing charged ------------------------------------------------
   const before = api.balance;
   api.refuse = { error: 'not enough coins', code: 'insufficient_coins' };
   await openVote(page, 'Pandan', 1);
   await page.locator('[data-testid=confirm]').click();
-  await dialog(page).getByText('Not enough play coins: this costs 1 play coin and you have 38 play coins. Nothing was spent.').waitFor();
+  await dialog(page).getByText('Not enough play coins: this costs 1 play coin and you have 32 play coins. Nothing was spent.').waitFor();
   assert.equal(await page.isVisible('[data-testid=confirm]'), false, 'no Confirm after a refusal');
   await dialog(page).getByRole('button', { name: 'Cancel' }).click();
   api.refuse = { error: 'this interaction is closed', code: 'interaction_closed' };
