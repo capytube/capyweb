@@ -329,11 +329,13 @@ else
   beads_problem=""
   beads_extra=$(git ls-files .beads | grep -v -E '^\.beads/(\.gitignore|README\.md|config\.yaml|metadata\.json|hooks/[A-Za-z-]+)$')
   [ -n "$beads_extra" ] && beads_problem="$beads_problem tracked:$(echo $beads_extra | tr ' ' ',')"
-  jsonl_hits=$(git ls-files | grep -E '\.jsonl$')
+  jsonl_hits=$(git ls-files | grep -i -E '\.jsonl$')
   [ -n "$jsonl_hits" ] && beads_problem="$beads_problem jsonl:$(echo $jsonl_hits | tr ' ' ',')"
   grep -qE '^no-push:[[:space:]]*true[[:space:]]*$' .beads/config.yaml 2>/dev/null ||
     beads_problem="$beads_problem no-push-missing"
-  grep -qE '^[[:space:]]*(sync\.)?remote[[:space:]]*:' .beads/config.yaml 2>/dev/null &&
+  # Any uncommented "remote" key, quoted or not, flat (sync.remote) or nested, block or flow style.
+  grep -v -E '^[[:space:]]*#' .beads/config.yaml 2>/dev/null |
+    grep -qE "(^|[{,[:space:]])[\"']?(sync\\.)?remote[\"']?[[:space:]]*:" &&
     beads_problem="$beads_problem sync-remote-set"
   if [ -n "$beads_problem" ]; then
     fail "beads data stays out of git" "the repo is public; untrack it or restore .beads/config.yaml -$beads_problem"

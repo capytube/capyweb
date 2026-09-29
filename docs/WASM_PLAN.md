@@ -518,7 +518,7 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
    `/api` through CloudFront (W12), and `trunk serve` proxies to it (section 5).
 6. **Done on 2026-09-30:** `scripts/guard.sh` fails if beads data would reach git: anything tracked under
    `.beads/` beyond its config, README, metadata and hooks, any tracked `*.jsonl`, a config without
-   `no-push: true`, or a config that names a sync remote. Six self-test cases.
+   `no-push: true`, or a config that names a sync remote. Eight self-test cases.
 7. **Open: a private remote for the beads database.** It needs a private repository, which is
    capyweb-manager's call. Until then the only copies are this Mac's database and beads' own backups
    in `.beads/backup/` (ignored by git).

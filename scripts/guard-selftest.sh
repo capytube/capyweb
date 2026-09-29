@@ -145,6 +145,10 @@ expect_fail "beads config with a sync remote" "sync-remote-set" \
   "sed -i '' 's|^# sync.remote:|sync.remote:|' .beads/config.yaml"
 expect_fail "beads config with a nested sync remote" "sync-remote-set" \
   "printf 'sync:\n  remote: git+https://example.test/r\n' >> .beads/config.yaml"
+expect_fail "beads config with a quoted, flow-style sync remote" "sync-remote-set" \
+  "printf 'sync: {\"remote\": git+https://example.test/r}\n' >> .beads/config.yaml"
+expect_fail "an issue export with an upper-case extension" "jsonl:web/issues.JSONL" \
+  "echo '{\"id\":\"x-1\"}' > web/issues.JSONL && git add web/issues.JSONL"
 
 # B4: an unanchored baseline entry for :66 used to swallow a real violation at :660.
 expect_fail "baseline must not swallow a nearby line" "no direct S3 URLs" \
