@@ -24,6 +24,24 @@ pub fn base_url() -> &'static str {
     option_env!("CAPYWEB_API_BASE").unwrap_or(FIXTURES)
 }
 
+/// Refuse locators and nested paths: pass images must stay on our media origin.
+pub fn media_src(key: &str) -> Option<String> {
+    let name = key.strip_prefix("media/")?;
+    if name.is_empty()
+        || name.contains("..")
+        || !name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+    {
+        return None;
+    }
+    Some(if base_url() == FIXTURES {
+        format!("/fixtures/{key}")
+    } else {
+        format!("/{key}")
+    })
+}
+
 /// A non-2xx response, or a 2xx that was not JSON (usually the SPA's index.html).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ApiError {
@@ -330,6 +348,32 @@ pub async fn list_activity(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn media_keys_stay_on_our_origin() {
+        for key in ["media/pass-chalk.png", "media/A_1-z.webp", "media/.a"] {
+            let prefix = if base_url() == FIXTURES {
+                "/fixtures"
+            } else {
+                ""
+            };
+            assert_eq!(media_src(key), Some(format!("{prefix}/{key}")));
+        }
+        for key in [
+            "https://example.com/a",
+            "//host/x",
+            "media/../x",
+            "media/a/b",
+            "",
+            "media/",
+            "/media/a",
+            "media/a..png",
+            "media/a?x",
+            "media/é.png",
+        ] {
+            assert_eq!(media_src(key), None, "{key}");
+        }
+    }
 
     #[test]
     fn fixture_urls() {
