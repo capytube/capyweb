@@ -2,21 +2,6 @@
 # Format: <rule> <file>:<line> <issue> <why>   (rule scopes the entry; matching is anchored)
 # Nothing goes in here without an issue id.
 
-# Frontend still streams video straight from S3, bypassing CloudFront's free 1TB/month
-# egress tier. Cleared by capyweb-2gx (media via CloudFront /media/*), which is on hold
-# until the S3 object-ARN grant lands (capyweb-083). Tracked as capyweb-c24.
-s3-url src/utils/mockData.ts:66 capyweb-c24 direct S3 video URL
-s3-url src/utils/mockData.ts:75 capyweb-c24 direct S3 video URL
-s3-url src/utils/mockData.ts:84 capyweb-c24 direct S3 video URL
-s3-url src/components/RobotExperience/RobotExperience.tsx:8 capyweb-c24 direct S3 video URL
-s3-url src/components/Play/index.tsx:159 capyweb-c24 direct S3 video URL
-
-# The clickable prototype also streams video straight from S3. Same fix as the frontend
-# (capyweb-2gx serves media through CloudFront); demo/ is a static page with no build step.
-s3-url demo/index.html:170 capyweb-c24 direct S3 video URL
-s3-url demo/app.js:2 capyweb-c24 direct S3 video URL
-
-# A build webhook of the Amplify app capyweb-admin (webhook 78ec49c3-613d-4bd5-8393-98f69f40c561),
-# in the React-era build file. The admin deleted the webhook on 2026-09-30, so the value is dead; the
-# file goes with W16.
-secret amplify.yml:13 capyweb-b6e.16 Amplify build webhook
+# Empty since W16 (capyweb-b6e.16): the React app's five direct S3 video URLs went with src/,
+# demo/'s two now play the site's own /media/capytube-stream.mp4 (capyweb-c24), and the
+# amplify.yml entry went with that file.

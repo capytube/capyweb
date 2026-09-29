@@ -47,7 +47,7 @@ filter_baseline() {
 src_grep() {
   grep -rnE "$1" --include='*.ts' --include='*.tsx' \
     --exclude-dir=node_modules --exclude-dir=.aws-sam --exclude-dir=dist \
-    ${2:-backend/src src} 2>/dev/null | grep -v 'scripts/guard-selftest.sh'
+    ${2:-backend/src} 2>/dev/null | grep -v 'scripts/guard-selftest.sh'
 }
 
 head "Cost guards"
@@ -116,7 +116,7 @@ BUILD_OUT_DIRS="--exclude-dir=node_modules --exclude-dir=.aws-sam --exclude-dir=
 s3_hits=$(grep -rnE '["'"'"'`][^"'"'"'`]*\.s3[.-][a-z0-9-]*\.amazonaws\.com' \
   --include='*.ts' --include='*.tsx' --include='*.js' --include='*.mjs' --include='*.cjs' \
   --include='*.html' --include='*.css' --include='*.rs' --include='*.toml' $BUILD_OUT_DIRS \
-  backend/src src demo amplify web 2>/dev/null \
+  backend/src demo web 2>/dev/null \
   | grep -v '\.test\.ts:' | grep -v 'scripts/guard-selftest.sh' | filter_baseline s3-url)
 if [ -n "$s3_hits" ]; then
   echo "$s3_hits"
@@ -166,7 +166,7 @@ fi
 # inside the public .wasm (docs/WASM_PLAN.md section 5, rule 3). *.mjs and *.cjs too: the
 # crate's tests and tooling are ES modules (web/tests/*.mjs), and a review found a key id and an
 # S3 URL in one passed every scan.
-SECRET_SCAN_DIRS="backend infra src demo amplify docs scripts web"
+SECRET_SCAN_DIRS="backend infra demo docs scripts web"
 SECRET_FILES="--include=*.ts --include=*.tsx --include=*.js --include=*.mjs --include=*.cjs --include=*.json --include=*.yaml --include=*.yml --include=*.sh --include=*.html --include=*.md --include=*.rs --include=*.toml"
 # Exclude only a direct env read, not any line that merely mentions process.env - the
 # `process.env.X || "<literal fallback>"` idiom was slipping through.
@@ -199,7 +199,7 @@ if [ -n "$akia" ] || [ -n "$literals" ] || [ -n "$urlcreds" ]; then
   printf '%s\n' "$akia" "$literals" "$urlcreds" | grep -v '^$' | cut -d: -f1,2 | sed 's/$/: (value not shown)/'
   fail "no hardcoded secrets" "use SSM SecureString and read it at runtime"
 else
-  pass "no hardcoded secrets (source, templates, scripts, demo, amplify, web, root files)"
+  pass "no hardcoded secrets (backend, infra, demo, docs, scripts, web, root files)"
 fi
 
 # The repo is public, so no real AWS account id (capyweb-manager, 2026-09-30): not in an ARN, at the end
@@ -304,7 +304,7 @@ done
 if [ -n "$loopback_problem" ]; then
   fail "dev servers bind loopback only" "use 127.0.0.1 or ::1 -$loopback_problem"
 else
-  pass "dev servers bind loopback only (web/Trunk.toml, vite.config.ts, package.json)"
+  pass "dev servers bind loopback only (web/Trunk.toml; a root vite.config.ts or package.json if one comes back)"
 fi
 
 head "Build guards"

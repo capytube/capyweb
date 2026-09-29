@@ -556,7 +556,7 @@ everything else can start now.
 | W13 | Guards and tests: the 8 new guard rules + self-tests, pre-push cargo checks, size budget, a headless browser smoke test | 5% | — |
 | W14 | Accessibility and performance pass, parity check against `demo/` and React, and QA of dev by a headless helper (not Instinct, capyweb-manager 2026-09-29 21:30): every route at phone and desktop widths, signed out and signed in; vote, bid, chat, react and the profile name; the free and paid cameras with a fresh test user (the old one deleted); then one reviewer pass over the QA results | 5% | W12 |
 | W15 | Carry-over: rebuild beads here, private Dolt remote, backend `npm ci`, record `ApiUrl`, lent-Mac clean-up when it returns. Done here: the rebuild, `npm ci`, the tools, `ApiUrl`, the beads guard (section 6). Left: the private remote (a private repository), and everything under "Needs the lent Mac" | 3% | the Mac; a private repository |
-| W16 | Retire React after cutover: remove `src/`, `vite.config.ts`, `amplify/`, `amplify.yml` and the npm dependencies; update the guard baseline | 1% | W14 |
+| W16 | Retire React after cutover: remove `src/`, `vite.config.ts`, `amplify/`, `amplify.yml` and the npm dependencies; update the guard baseline. Plan and branch ready (`docs/W16_PLAN.md`, `feat/wasm-frontend-w16`); merges after G3 and the soak | 1% | W14 |
 | | **Total** | **100%** | |
 
 The prototype covers roughly 4 points of this: most of W2's client, part of W1, and part of W10.

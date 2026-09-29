@@ -1,5 +1,5 @@
 /* Design tokens and element defaults. The look follows demo/ (the approved UX reference,
-   docs/PLAN.md 1f); the variable names also keep the React app's, which tailwind.config.js maps
+   docs/PLAN.md 1f); the variable names also keep the React app's, which web/tailwind.config.cjs maps
    to colour utilities (bg-chocoBrown and so on). */
 :root {
   --grass-green: #d0e591;

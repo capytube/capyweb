@@ -1,5 +1,5 @@
 const VIDEO_URL =
-  "https://magnus-video-public.s3.ap-southeast-1.amazonaws.com/capytube-stream.mp4";
+  "/media/capytube-stream.mp4";
 const STORAGE_KEY = "capytube-friend-demo";
 
 const CAPY_NAMES = {
