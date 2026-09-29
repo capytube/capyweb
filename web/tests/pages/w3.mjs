@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+
+export async function check({ open, browser, BASE, SHOTS }) {
+  for (const [width, height] of [[390, 844], [1280, 800]]) {
+    const { page } = await open('/', { width, height });
+    await page.waitForSelector('[data-testid="gang-list"] li');
+    assert.equal(await page.locator('main h1').count(), 1);
+    for (const id of ['now-title', 'how-title', 'cast-title']) {
+      assert.equal(await page.locator(`#${id}`).count(), 1);
+    }
+    assert.equal(await page.locator('.home-steps li').count(), 3);
+    const cards = page.locator('[data-testid="gang-list"] > li');
+    assert.deepEqual(await cards.locator('h3').allTextContents(), ['Einstein', 'Elon', 'Magnus']);
+    assert.deepEqual(await cards.locator('a').evaluateAll(as => as.map(a => a.getAttribute('href'))),
+      ['/stream/einstein', '/stream/elon', '/stream/magnus']);
+    for (const card of await cards.all()) assert.equal(await card.locator('img').count(), 1);
+    assert.match(await cards.nth(2).innerText(), /Awake 08:00–11:00/);
+    for (const label of ['Personality', 'Fun fact', 'Favourite activities']) {
+      assert.equal(await cards.locator('dt').filter({ hasText: label }).count(), 3);
+    }
+    assert.equal(await page.locator('.home-now a').getAttribute('href'), '/stream/einstein');
+    assert.equal(await page.locator('.home-now h3').innerText(), 'Food cam');
+    assert.equal(await page.locator('main video, main button').count(), 0);
+    assert.equal(await page.locator('.home-film a[href="/watch"]').count(), 3);
+    for (const img of await page.locator('main img').all()) {
+      assert.notEqual(await img.getAttribute('alt'), null);
+      assert.ok(Number(await img.getAttribute('width')) > 0);
+      assert.ok(Number(await img.getAttribute('height')) > 0);
+      await img.scrollIntoViewIfNeeded();
+      await img.evaluate(el => el.decode());
+      assert.equal(await img.evaluate(el => el.naturalWidth > 0), true);
+    }
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    if (width === 390) {
+      const strip = page.locator('.home-film');
+      assert.ok(await strip.evaluate(el => el.scrollWidth > el.clientWidth));
+      await strip.evaluate(el => el.scrollTo({ left: el.scrollWidth, behavior: 'instant' }));
+      await page.waitForFunction(() => document.querySelector('.home-film').scrollLeft > 0);
+      await strip.evaluate(el => el.scrollTo({ left: 0, behavior: 'instant' }));
+    }
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/w3-${width}.png`, fullPage: true });
+    await page.close();
+  }
+
+  // Missing data must not invent a photo, awake hours, or a public room.
+  const page = await browser.newPage();
+  await page.route('**/fixtures/streams.json', route => route.fulfill({
+    json: { items: [{ id: 'private', title: 'Private room', access_type: 'private' }], count: 1 },
+  }));
+  await page.route('**/fixtures/capybaras.json', route => route.fulfill({
+    json: { items: [{ id: 'new-friend', name: 'New friend' }], count: 1 },
+  }));
+  await page.goto(BASE + '/');
+  await page.waitForSelector('[data-testid="gang-list"] li');
+  assert.equal(await page.locator('.home-capy img, .home-awake, .home-now a').count(), 0);
+  assert.match(await page.locator('.home-now').innerText(), /No public room/);
+  await page.route('**/fixtures/capybaras.json', route => route.fulfill({ json: { items: [], count: 0 } }));
+  await page.reload();
+  await page.getByText('The gang will be here soon.').waitFor();
+  // A malformed successful response exercises the error branch without a browser 500 log.
+  await page.route('**/fixtures/capybaras.json', route => route.fulfill({ json: { invalid: true } }));
+  await page.reload();
+  await page.getByRole('alert').filter({ hasText: 'Could not load the gang' }).waitFor();
+  await page.close();
+}
