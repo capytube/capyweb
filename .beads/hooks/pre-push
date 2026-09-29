@@ -77,9 +77,12 @@ if [ -d "$capyweb_root/backend/src/node_modules" ]; then
 else
   echo "note: backend/src/node_modules missing, skipping tests (npm install there to enable)"
 fi
-# The frontend client tests need no dependencies - they stub fetch and run on plain Node.
-node --test --experimental-strip-types "$capyweb_root/src/api/" >/dev/null 2>&1 || {
-  echo "frontend api tests failed"; exit 1; }
+# The React client tests need no dependencies - they stub fetch and run on plain Node. They run
+# only where src/api/ exists: the W16 branch retires it, and this hook is shared by every worktree.
+if [ -d "$capyweb_root/src/api" ]; then
+  node --test --experimental-strip-types "$capyweb_root/src/api/" >/dev/null 2>&1 || {
+    echo "frontend api tests failed"; exit 1; }
+fi
 # The WASM front end (web/): fmt, clippy for wasm32 and host, tests, release build, the
 # 300,000-byte brotli budget and a headless smoke test. Slow (~20 s warm), so last, and only
 # when the push changes web/. No CI runs these: this hook is the gate.
