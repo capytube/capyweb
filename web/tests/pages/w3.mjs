@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 export async function check({ open, browser, BASE, SHOTS }) {
-  for (const [width, height] of [[390, 844], [1280, 800]]) {
+  for (const [width, height] of [[390, 844], [1000, 800], [1280, 800]]) {
     const { page } = await open('/', { width, height });
     await page.waitForSelector('[data-testid="gang-list"] li');
     assert.equal(await page.locator('main h1').count(), 1);
@@ -50,7 +50,7 @@ export async function check({ open, browser, BASE, SHOTS }) {
 
   // While the list loads, the cameras and the Now showing photo keep their places: nothing below
   // jumps when they come (review rv-1790682691-81087 measured 0.31 before).
-  for (const [width, height] of [[390, 844], [1280, 800]]) {
+  for (const [width, height] of [[390, 844], [1000, 800], [1280, 800]]) {
     const page = await browser.newPage({ viewport: { width, height } });
     await page.addInitScript(() => {
       window.__shift = 0;
@@ -64,13 +64,60 @@ export async function check({ open, browser, BASE, SHOTS }) {
     await page.locator('.home-now-slot').waitFor();
     assert.equal(await page.locator('.cam-slot').count(), 3);
     assert.equal(await page.getByRole('status').filter({ hasText: 'Loading cameras…' }).count(), 1);
+    await page.evaluate(() => document.fonts.ready);
     const before = await page.locator('.home-now').evaluate((e) => e.getBoundingClientRect().height);
+    const headingTop = await page.locator('#now-title').evaluate((e) => e.getBoundingClientRect().top);
+    const lineTop = await page.locator('.home-now [role=status]').evaluate((e) => e.getBoundingClientRect().top);
+    const photoBox = await page.locator('.home-now-slot').boundingBox();
+    await page.waitForTimeout(300); // let the first layout settle before measuring the arrival
+    const early = await page.evaluate(() => window.__shift);
     release();
     await page.locator('.home-now > img').waitFor();
     await page.locator('.home-now > img').evaluate((el) => el.decode());
     assert.equal(await page.locator('.home-now').evaluate((e) => e.getBoundingClientRect().height), before);
+    assert.equal(await page.locator('#now-title').evaluate((e) => e.getBoundingClientRect().top), headingTop,
+      `Now showing heading stays put at ${width}px`);
+    assert.equal(await page.locator('.home-now h3').evaluate((e) => e.getBoundingClientRect().top), lineTop,
+      `the room title replaces the loading line at the same top at ${width}px`);
+    assert.deepEqual(await page.locator('.home-now > img').boundingBox(), photoBox,
+      `the photo keeps its loading box at ${width}px`);
+    // The arrival moves nothing; the whole load stays well inside a good CLS (0.1). The first
+    // settle, before any data, is about 0.05 between 700 and 1000 px.
     const shift = await page.evaluate(() => window.__shift);
-    assert.ok(shift < 0.02, `layout shift ${shift.toFixed(3)} at ${width}px`);
+    assert.ok(shift - early < 0.02, `layout shift ${(shift - early).toFixed(3)} when the list arrives at ${width}px`);
+    assert.ok(shift < 0.1, `layout shift ${shift.toFixed(3)} for the whole load at ${width}px`);
+    await page.close();
+  }
+
+  // A resolved empty or failed list needs only its text, not the phone's loading reserve.
+  for (const status of [200, 500]) {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await page.route('**/fixtures/streams.json', route => route.fulfill({
+      status, json: status === 200 ? { items: [], count: 0 } : { error: 'unavailable' },
+    }));
+    await page.goto(BASE + '/');
+    const now = page.locator('.home-now.home-now-text');
+    await now.waitFor();
+    await now.getByText(status === 200
+      ? 'No public room is available right now.'
+      : 'Could not load the public room. Please try again later.').waitFor();
+    if (status === 200) {
+      await page.getByRole('status').filter({ hasText: 'No cameras are available right now.' }).waitFor();
+      assert.equal(await page.locator('[aria-labelledby=cams-heading] ul').count(), 0);
+    }
+    assert.equal(await now.locator('img, .home-now-slot').count(), 0);
+    const height = await now.evaluate(e => {
+      const style = getComputedStyle(e);
+      const text = e.querySelector(':scope > div');
+      const content = text.lastElementChild.getBoundingClientRect().bottom - text.getBoundingClientRect().top;
+      return {
+        actual: e.getBoundingClientRect().height,
+        needed: content + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+          + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth),
+      };
+    });
+    assert.ok(Math.abs(height.actual - height.needed) <= 1,
+      `HTTP ${status}: card uses ${height.actual}px for ${height.needed}px of content and padding`);
     await page.close();
   }
 

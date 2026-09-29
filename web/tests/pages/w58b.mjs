@@ -20,6 +20,8 @@ async function fakeApi(context, cognito) {
     loseNext: false,
     refuse: null,
     txCalls: 0,
+    meCalls: 0,
+    meFail: false,
     // GET /me waits while this is set (a promise); with meGateOnce, only the next one waits.
     meGate: null,
     meGateOnce: false,
@@ -37,11 +39,13 @@ async function fakeApi(context, cognito) {
     const req = route.request();
     bearer(req);
     if (req.method() === 'GET') {
+      api.meCalls += 1;
       const gate = api.meGate;
       if (gate) {
         if (api.meGateOnce) api.meGate = null;
         await gate;
       }
+      if (api.meFail) return json(route, 500, { error: 'unavailable' });
       return json(route, 200, me());
     }
     assert.equal(req.method(), 'PUT');
@@ -161,6 +165,44 @@ export async function check({ browser, BASE, SHOTS }) {
   await dialog(page).getByRole('button', { name: 'Cancel' }).click();
   await dialog(page).waitFor({ state: 'detached' });
   assert.equal(api.posts.length, 0, 'Cancel sends no POST');
+
+  // -- a failed balance has a GET-only retry; loading and failure never offer Confirm --------
+  api.meFail = true;
+  const initialMeCalls = api.meCalls;
+  const releaseBalance = api.hold(false);
+  await page.reload();
+  await openVote(page, 'Watermelon', 3);
+  await dialog(page).getByRole('status').getByText('Loading your play coins…').waitFor();
+  assert.equal(await page.isVisible('[data-testid=confirm]'), false, 'unknown balance: no Confirm');
+  assert.equal(await page.isVisible('[data-testid=balance-retry]'), false, 'wait for the balance request');
+  await until(page, () => api.meCalls === initialMeCalls + 2, 'sign-in and the dialog to load /me');
+  releaseBalance();
+  const balanceError = dialog(page).getByText('Could not load your play coins. Check your connection and try again.');
+  await balanceError.waitFor();
+  const retry = page.locator('[data-testid=balance-retry]');
+  assert.equal(await retry.innerText(), 'Check again');
+  assert.equal(await retry.isVisible(), true);
+  assert.equal(await page.isVisible('[data-testid=confirm]'), false, 'failed balance: no Confirm');
+  assert.equal(api.posts.length, 0, 'balance failure sends no spending POST');
+  // A failed retry still explains the problem and allows another check.
+  await retry.click();
+  await until(page, () => api.meCalls === initialMeCalls + 3, 'the failed balance retry');
+  await balanceError.waitFor();
+  api.meFail = false;
+  const releaseRetry = api.hold(false);
+  await retry.click();
+  await dialog(page).getByRole('status').getByText('Loading your play coins…').waitFor();
+  assert.equal(await retry.isVisible(), false, 'no duplicate retry while loading');
+  assert.equal(await page.isVisible('[data-testid=confirm]'), false, 'retry waits for a known balance');
+  await until(page, () => api.meCalls === initialMeCalls + 4, 'one GET /me for the successful retry');
+  assert.equal(api.posts.length, 0, 'Check again sends no spending POST');
+  releaseRetry();
+  await page.locator('[data-testid=confirm]').waitFor();
+  assert.equal(await page.innerText('[data-testid=confirm-sum]'), 'Cost: 3 play coins\nYour balance: 50 play coins\nAfter: 47 play coins');
+  assert.equal(await balanceError.isVisible(), false);
+  assert.equal(await retry.isVisible(), false);
+  assert.equal(api.posts.length, 0, 'loading the balance does not confirm the vote');
+  await dialog(page).getByRole('button', { name: 'Cancel' }).click();
 
   // -- Confirm: one POST, even on a double click; thanks with the new balance ----------------
   await openVote(page, 'Carrots', 2);

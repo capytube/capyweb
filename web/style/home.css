@@ -8,6 +8,8 @@
   background: var(--babycorn-yellow);
 }
 .home-now-text { grid-template-columns: minmax(0, 1fr); }
+/* Keep the heading and first line still as the room copy arrives. */
+.home-now > div:not(.home-now-slot) { align-self: start; }
 /* The capybara photos are 211px wide: a portrait box, never stretched to the column. The loading
    slot has the same box, so the photo arriving moves nothing. */
 .home-now > img, .home-now-slot {
@@ -49,6 +51,7 @@
   .home-now > img, .home-now-slot { width: 156px; height: 260px; justify-self: center; }
   /* Below the photo, the room's lines replace "Loading…": keep their height steady too. */
   .home-now > div { min-height: 11.5rem; }
+  .home-now-text > div { min-height: 0; }
   .home-cast-grid { gap: 1.8rem; }
   .home-film { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 85%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: .4rem; }
   .home-film a { scroll-snap-align: start; }

@@ -108,6 +108,19 @@ pub fn use_auth() -> Auth {
     expect_context::<Auth>()
 }
 
+/// Share the balance and its failure state between sign-in and the confirm dialog.
+pub async fn load_balance(auth: Auth, session: Session) -> Option<u64> {
+    session.coins_failed.set(false);
+    let coins = crate::api::get_me(auth)
+        .await
+        .ok()
+        .flatten()
+        .and_then(|me| me.balance);
+    session.coins.set(coins);
+    session.coins_failed.set(coins.is_none());
+    coins
+}
+
 impl Auth {
     /// Provide the context and start: load `/config.json`, then resume a stored session.
     /// Call once in `App`, after `Session` and `Toasts` are provided.
@@ -285,9 +298,7 @@ impl Auth {
         if !was_signed_in {
             let auth = *self;
             spawn_local(async move {
-                if let Ok(Some(me)) = crate::api::get_me(auth).await {
-                    auth.session.coins.set(me.balance);
-                }
+                load_balance(auth, auth.session).await;
             });
         }
         true
@@ -323,6 +334,7 @@ impl Auth {
         });
         self.session.signed_in.set(false);
         self.session.coins.set(None);
+        self.session.coins_failed.set(false);
     }
 
     /// Signed out, and the refresh token is gone from storage.
