@@ -39,12 +39,22 @@ let M: Mods;
 async function call(m: string, target: string, sub: string, body?: unknown, key?: string) {
   const [p, search] = target.split("?");
   const r = await M.writes.handler({
-    requestContext: { http: { method: m, path: `/dev${p}` }, stage: "dev", authorizer: { jwt: { claims: { sub } } } },
+    requestContext: { http: { method: m, path: `/dev${p}` }, stage: "dev", authorizer: { jwt: { claims: { sub, token_use: "access" } } } },
     queryStringParameters: search ? Object.fromEntries(new URLSearchParams(search)) : undefined,
     headers: key ? { "idempotency-key": key } : {},
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return { status: r.statusCode, body: JSON.parse(r.body) };
+}
+
+/** The public chat read: no authorizer context at all, as API Gateway sends it. */
+async function publicGet(target: string) {
+  const [p, search] = target.split("?");
+  const r = await M.writes.handler({
+    requestContext: { http: { method: "GET", path: `/dev${p}` }, stage: "dev" },
+    queryStringParameters: search ? Object.fromEntries(new URLSearchParams(search)) : undefined,
+  });
+  return { status: r.statusCode, body: JSON.parse(r.body), headers: r.headers };
 }
 
 const put = (Item: Record<string, unknown>) =>
@@ -108,6 +118,8 @@ before(async () => {
   const { pk, sk, gsi1, META } = M.keys;
   const now = new Date().toISOString();
   await put({ PK: pk.stream("s1"), SK: META, entity: "LiveStream", id: "s1", title: "Main cam", access_type: "public", ...gsi1.streamsByAccess("public", now, "s1") });
+  await put({ PK: pk.stream("s-priv"), SK: META, entity: "LiveStream", id: "s-priv", title: "Wall cam", access_type: "private", ...gsi1.streamsByAccess("private", now, "s-priv") });
+  await put({ PK: pk.stream("s-none"), SK: META, entity: "LiveStream", id: "s-none", title: "No access type" });
   const ixn = (id: string, type: string, extra: Record<string, unknown>) => put({
     PK: pk.capy("c1"), SK: sk.interaction(type, "2026-10-01", id), entity: "Interaction", id, capybara_id: "c1",
     interaction_type: type, title: id, session_date: "2026-10-01", ...extra, ...gsi1.interactionById(id),
@@ -294,7 +306,7 @@ test("a user cannot read or write another user's items", { skip }, async () => {
   assert.equal(tb.body.count, 0, "b sees none of a's entries");
   // a's cursor is bound to a's partition: b cannot page through a's history with it.
   const r = await M.writes.handler({
-    requestContext: { http: { method: "GET", path: "/dev/me/transactions" }, stage: "dev", authorizer: { jwt: { claims: { sub: b } } } },
+    requestContext: { http: { method: "GET", path: "/dev/me/transactions" }, stage: "dev", authorizer: { jwt: { claims: { sub: b, token_use: "access" } } } },
     queryStringParameters: { cursor: ta.body.cursor },
   });
   assert.ok(ta.body.cursor, "a has a second page");
@@ -310,35 +322,62 @@ test("a user cannot read or write another user's items", { skip }, async () => {
   assert.equal(await balance(a), 2);
 });
 
-test("chat: length limits, a display name first, newest first, no user ids, and reaction counts", { skip }, async () => {
+test("chat: length limits, a display name first, one post per 2 s, newest first, public read without ids", { skip }, async () => {
   const u = newUser();
   const w = newUser();
+  const x = newUser();
   const noName = await call("POST", "/streams/s1/chat", u, { text: "hi" });
   assert.equal(noName.status, 409);
   assert.equal(noName.body.code, "display_name_required");
-  await call("PUT", "/me", u, { display_name: "Ursula" });
-  await call("PUT", "/me", w, { display_name: "Walt" });
+  for (const [who, name] of [[u, "Ursula"], [w, "Walt"], [x, "Xena"]]) await call("PUT", "/me", who, { display_name: name });
   assert.equal((await call("POST", "/streams/s1/chat", u, { text: "x".repeat(281) })).status, 400);
   assert.equal((await call("POST", "/streams/s1/chat", u, { text: "" })).status, 400);
-  assert.equal((await call("POST", "/streams/s1/chat", u, { text: "x".repeat(280) })).status, 201);
   assert.equal((await call("POST", "/streams/nope/chat", u, { text: "hi" })).status, 404);
-  await call("POST", "/streams/s1/chat", u, { text: "first" });
+
+  const long = await call("POST", "/streams/s1/chat", u, { text: "x".repeat(280) });
+  assert.equal(long.status, 201);
+  assert.ok(long.body.message.id, "the poster gets the id, to mark its own line");
+  const tooSoon = await call("POST", "/streams/s1/chat", u, { text: "again" });
+  assert.equal(tooSoon.status, 429);
+  assert.equal(tooSoon.body.code, "slow_down");
+  const first = await call("POST", "/streams/s1/chat", w, { text: "first" }); // other users are not held up
+  assert.equal(first.status, 201);
   await new Promise((r) => setTimeout(r, 5));
-  await call("POST", "/streams/s1/chat", w, { text: "second" });
+  assert.equal((await call("POST", "/streams/s1/chat", x, { text: "second" })).status, 201);
+  await new Promise((r) => setTimeout(r, 2_050));
+  assert.equal((await call("POST", "/streams/s1/chat", u, { text: "after the wait" })).status, 201);
+
   assert.equal((await call("POST", "/streams/s1/reactions", u, { reaction: "capylove" })).body.reactions.capylove, 1);
-  const r2 = await call("POST", "/streams/s1/reactions", w, { reaction: "capylove" });
-  assert.equal(r2.body.reactions.capylove, 2);
+  assert.equal((await call("POST", "/streams/s1/reactions", w, { reaction: "capylove" })).body.reactions.capylove, 2);
   assert.equal((await call("POST", "/streams/nope/reactions", u, { reaction: "capylove" })).status, 404);
 
-  const list = await call("GET", "/streams/s1/chat?limit=2", u);
-  assert.deepEqual(list.body.items.map((m: { text: string }) => m.text), ["second", "first"]);
-  assert.deepEqual(list.body.items.map((m: { mine: boolean }) => m.mine), [false, true]);
-  assert.equal(list.body.items[0].display_name, "Walt");
-  assert.ok(list.body.items.every((m: Record<string, unknown>) => !("user_id" in m)), "no Cognito sub reaches other users");
+  // Reading is public: no token, a short shared cache, display names only.
+  const list = await publicGet("/streams/s1/chat?limit=3");
+  assert.equal(list.status, 200);
+  assert.equal(list.headers["cache-control"], "public, max-age=5");
+  assert.deepEqual(list.body.items.map((m: { text: string }) => m.text), ["after the wait", "second", "first"]);
+  assert.equal(list.body.items[2].display_name, "Walt");
+  for (const m of list.body.items) assert.deepEqual(Object.keys(m).sort(), ["createdAt", "display_name", "id", "stream_id", "text"]);
   assert.equal(list.body.reactions.capylove, 2);
-  const next = await call("GET", `/streams/s1/chat?limit=2&cursor=${encodeURIComponent(list.body.cursor)}`, u);
+  const next = await publicGet(`/streams/s1/chat?limit=3&cursor=${encodeURIComponent(list.body.cursor)}`);
   assert.equal(next.body.items[0].text.length, 280);
   assert.equal(next.body.reactions, undefined, "counts ride on the first page only");
-  // Chat is free by default: no ledger entries.
-  assert.equal((await entries(u)).length, 0);
+  assert.equal((await entries(u)).length, 0, "chat is free by default: no ledger entries");
+});
+
+test("streams that are not explicitly public refuse chat reads, posts and reactions with 403", { skip }, async () => {
+  const u = newUser();
+  await call("PUT", "/me", u, { display_name: "Priya" });
+  for (const s of ["s-priv", "s-none"]) {
+    const read = await publicGet(`/streams/${s}/chat`);
+    assert.equal(read.status, 403, `read ${s}`);
+    assert.equal(read.body.code, "private_stream");
+    assert.equal(read.headers["cache-control"], "no-store", "a refusal is not cached");
+    assert.equal((await call("POST", `/streams/${s}/chat`, u, { text: "hi" })).body.code, "private_stream", `post ${s}`);
+    assert.equal((await call("POST", `/streams/${s}/reactions`, u, { reaction: "capywow" })).body.code, "private_stream", `react ${s}`);
+  }
+  const { pk, sk } = M.keys;
+  const leftovers = await M.ddb.doc.send(new M.lib.GetCommand({ TableName: M.ddb.TABLE, Key: { PK: pk.stream("s-priv"), SK: sk.reactions() } }));
+  assert.equal(leftovers.Item, undefined, "nothing was written");
+  assert.equal((await publicGet("/streams/nope/chat")).status, 404);
 });

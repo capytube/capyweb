@@ -17,8 +17,8 @@ const { matchRoute, handler, isOpen } = await import("./writes.ts");
 const seg = (p: string) => p.split("/").filter(Boolean);
 const SUB = "0b6e2f7a-1c3d-4e5f-8a9b-0c1d2e3f4a5b";
 
-function ev(m: string, p: string, opts: { sub?: string | null; body?: unknown; headers?: Record<string, string> } = {}) {
-  const claims = opts.sub === null ? undefined : { sub: opts.sub ?? SUB };
+function ev(m: string, p: string, opts: { sub?: string | null; tokenUse?: string; body?: unknown; headers?: Record<string, string> } = {}) {
+  const claims = opts.sub === null ? undefined : { sub: opts.sub ?? SUB, token_use: opts.tokenUse ?? "access" };
   return {
     requestContext: { http: { method: m, path: `/dev${p}` }, stage: "dev", ...(claims && { authorizer: { jwt: { claims } } }) },
     headers: opts.headers ?? {},
@@ -67,6 +67,10 @@ test("no route takes a user id: the caller comes only from the verified token", 
     assert.equal(r.status, 401, `${m} ${p}`);
     assert.equal(r.body.code, "unauthorized");
   }
+  // An ID token is not an API grant, even though the authorizer lets it through.
+  const idTok = await call("GET", "/me", { tokenUse: "id" });
+  assert.equal(idTok.status, 401);
+  assert.equal(idTok.body.code, "unauthorized");
   // A sub that could smuggle a key delimiter is refused.
   assert.equal((await call("GET", "/me", { sub: "u#1" })).status, 401);
 });

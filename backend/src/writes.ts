@@ -1,9 +1,12 @@
 // Authenticated API (capyweb-7hj, docs/PLAN.md B5): the caller's account, the play-coin ledger,
-// votes, bids, chat and reactions. Every route sits behind the HTTP API's Cognito JWT authorizer,
-// and the caller is ALWAYS callerId(e) - the verified `sub` claim - never anything the client sends.
+// votes, bids, chat and reactions. Every route but the chat READ sits behind the HTTP API's Cognito
+// JWT authorizer, and the caller is ALWAYS callerId(e) - the verified `sub` of an access token -
+// never anything the client sends. Reading chat is public (docs/WASM_PLAN.md section 4: read_chat
+// needs no sign-in) and carries no user ids.
 // Routes are declared in infra/backend/template.yaml and documented in docs/DATA_MODEL.md "Write API".
 
 import { randomUUID } from "node:crypto";
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { doc, TABLE, query, type Item } from "./lib/ddb.ts";
 import { pk, sk, gsi1, gsi2, prefix, META, ts, ttl } from "./lib/keys.ts";
@@ -13,7 +16,7 @@ import {
 } from "./lib/http.ts";
 import * as v from "./lib/validate.ts";
 import {
-  run, ensureAccount, getAccount, derivedId, fingerprint, type LedgerRequest, type Posting, type WriteItem,
+  run, replayIfDone, ensureAccount, derivedId, fingerprint, type LedgerRequest, type Posting, type WriteItem,
 } from "./lib/ledger.ts";
 import {
   CHAT_COST, REACTION_COST, MAX_VOTES_PER_REQUEST, BID_MIN_INCREMENT, MAX_BID, REFUND_OUTBID,
@@ -21,6 +24,10 @@ import {
 
 /** Chat deletes itself (DynamoDB TTL on expiresAt): the highest-volume, lowest-value data we keep. */
 export const CHAT_TTL_DAYS = 30;
+/** At most one chat post per user per this many milliseconds (429 slow_down). */
+export const CHAT_MIN_INTERVAL_MS = 2_000;
+/** The public chat read: short enough to feel live, long enough for CloudFront to absorb a crowd. */
+export const CACHE_CHAT = "public, max-age=5";
 
 // -- routing ------------------------------------------------------------------------------------
 
@@ -324,25 +331,30 @@ async function bid(e: Event, user: string, ixnId: string): Promise<Response> {
 
 // -- chat and reactions (the hot path: keep each one to a single cheap write) --------------------
 
-/** Positive-only cache of "this stream exists", so a busy chat does not re-read the stream item. */
-const streamSeen = new Map<string, number>();
+/**
+ * Chat and reactions exist only on streams that are explicitly public, until private playback and
+ * payment exist (capyweb-0m7): anything else - private, unknown access type, no access type - is
+ * 403 private_stream. A public verdict is cached for 60 s per container so a busy chat does not
+ * re-read the stream item; a stream switched to private is refused within a minute.
+ */
+const publicSeen = new Map<string, number>();
 const STREAM_CACHE_MS = 60_000;
 
-async function requireStream(id: string): Promise<void> {
-  const until = streamSeen.get(id);
+async function requirePublicStream(id: string): Promise<void> {
+  const until = publicSeen.get(id);
   if (until && until > Date.now()) return;
   const out = await doc.send(new GetCommand({
-    TableName: TABLE, Key: { PK: pk.stream(id), SK: META }, ProjectionExpression: "PK",
+    TableName: TABLE, Key: { PK: pk.stream(id), SK: META }, ProjectionExpression: "access_type",
   }));
   if (!out.Item) throw new HttpError(404, "stream not found", "not_found");
-  if (streamSeen.size > 1000) streamSeen.clear();
-  streamSeen.set(id, Date.now() + STREAM_CACHE_MS);
+  if (out.Item.access_type !== "public") throw new HttpError(403, "chat and reactions are for public streams only", "private_stream");
+  if (publicSeen.size > 1000) publicSeen.clear();
+  publicSeen.set(id, Date.now() + STREAM_CACHE_MS);
 }
 
-/** Public shape of a chat line. user_id (the Cognito sub) stays on the server; `mine` replaces it. */
-const chatOut = (i: Item, viewer: string) => ({
+/** Public shape of a chat line: the display name only. No user id, no `mine` (the read is shared). */
+const chatOut = (i: Item) => ({
   id: i.id, stream_id: i.stream_id, display_name: i.display_name, text: i.text, createdAt: i.createdAt,
-  mine: i.user_id === viewer,
 });
 
 function reactionCounts(item: Item | undefined): Record<string, number> {
@@ -351,37 +363,75 @@ function reactionCounts(item: Item | undefined): Record<string, number> {
   return out;
 }
 
-async function listChat(e: Event, user: string, streamId: string): Promise<Response> {
+async function listChat(e: Event, streamId: string): Promise<Response> {
   const cursor = qs(e, "cursor");
+  const limit = parseLimit(qs(e, "limit"));
+  await requirePublicStream(streamId);
   // One poll = one request: the first page carries the reaction counts too (docs/PLAN.md section 3
   // budgets one request per viewer per 5 s for chat AND reactions).
   const [page, counts] = await Promise.all([
-    query({ pk: pk.stream(streamId), skPrefix: prefix.chat(), limit: parseLimit(qs(e, "limit")), cursor, ascending: false }),
+    query({ pk: pk.stream(streamId), skPrefix: prefix.chat(), limit, cursor, ascending: false }),
     cursor ? Promise.resolve(undefined) : doc.send(new GetCommand({ TableName: TABLE, Key: { PK: pk.stream(streamId), SK: sk.reactions() } })),
   ]);
-  const items = page.items.map((i) => chatOut(i, user));
-  return okPrivate({
+  const items = page.items.map(chatOut);
+  return json(200, {
     items, count: items.length, cursor: page.cursor,
     ...(counts && { reactions: reactionCounts(counts.Item as Item | undefined) }),
-  });
+  }, CACHE_CHAT);
+}
+
+/**
+ * The per-user chat limit, folded into the user-item access chat already needed (it used to read
+ * the display name from there): one conditional UpdateItem stamps last_chat_at and returns the name.
+ * The user item is small and unindexed, so this is 1 write unit instead of the 0.5 read unit it
+ * replaces. Not in a transaction with the chat Put on purpose: a transaction would double both
+ * writes, and the only cost of the gap is that a failed Put still makes the user wait 2 s.
+ */
+async function claimChatSlot(user: string, now: string): Promise<string> {
+  const cutoff = ts(Date.parse(now) - CHAT_MIN_INTERVAL_MS);
+  try {
+    const out = await doc.send(new UpdateCommand({
+      TableName: TABLE,
+      Key: { PK: pk.user(user), SK: META },
+      UpdateExpression: "SET last_chat_at = :now",
+      ConditionExpression:
+        "attribute_exists(PK) AND attribute_exists(display_name) AND (attribute_not_exists(last_chat_at) OR last_chat_at <= :cutoff)",
+      ExpressionAttributeValues: { ":now": now, ":cutoff": cutoff },
+      ReturnValues: "ALL_NEW",
+    }));
+    return String(out.Attributes?.display_name);
+  } catch (err) {
+    if (!(err instanceof ConditionalCheckFailedException) && (err as { name?: string }).name !== "ConditionalCheckFailedException") throw err;
+    // Rare path: find out which part of the condition failed.
+    const got = await doc.send(new GetCommand({ TableName: TABLE, Key: { PK: pk.user(user), SK: META } }));
+    if (typeof got.Item?.display_name !== "string") {
+      throw new HttpError(409, "choose a display name first (PUT /me)", "display_name_required");
+    }
+    throw new HttpError(429, "one message every 2 seconds, please", "slow_down");
+  }
 }
 
 async function postChat(e: Event, user: string, streamId: string): Promise<Response> {
   const body = jsonBody(e);
   onlyFields(body, ["text"]);
   const text = v.chatText(body.text);
-  const [account] = await Promise.all([getAccount(user, false), requireStream(streamId)]);
-  if (!account?.display_name) throw new HttpError(409, "choose a display name first (PUT /me)", "display_name_required");
-
-  const now = ts();
   const paidKey = CHAT_COST > 0 ? v.idempotencyKey(header(e, "idempotency-key")) : undefined;
+  await requirePublicStream(streamId);
+  if (paidKey) {
+    // A retry of a paid post must replay, not hit the 2-second limit its own first attempt set.
+    const done = await replayIfDone(user, paidKey, fingerprint("chat", streamId, text));
+    if (done) return okPrivate({ ...done.result, replayed: true });
+  }
+  const now = ts();
+  const displayName = await claimChatSlot(user, now);
+
   const id = paidKey ? derivedId(user, paidKey, "chat") : randomUUID();
   const item: Item = {
     PK: pk.stream(streamId), SK: sk.chat(now, id), entity: "ChatComment",
-    id, stream_id: streamId, user_id: user, display_name: account.display_name, text, createdAt: now,
+    id, stream_id: streamId, user_id: user, display_name: displayName, text, createdAt: now,
     expiresAt: ttl(Date.now() + CHAT_TTL_DAYS * 86_400_000),
   };
-  const message = chatOut(item, user);
+  const message = chatOut(item); // its id lets the client mark its own lines for the session
 
   if (!paidKey) {
     await doc.send(new PutCommand({ TableName: TABLE, Item: item, ConditionExpression: "attribute_not_exists(PK)" }));
@@ -401,7 +451,7 @@ async function react(e: Event, user: string, streamId: string): Promise<Response
   const body = jsonBody(e);
   onlyFields(body, ["reaction"]);
   const r = v.reaction(body.reaction);
-  await requireStream(streamId);
+  await requirePublicStream(streamId);
   const update = {
     TableName: TABLE,
     Key: { PK: pk.stream(streamId), SK: sk.reactions() },
@@ -430,6 +480,8 @@ export const handler = guard(async (e: Event): Promise<Response> => {
   const route = matchRoute(method(e), pathSegments(e));
   if (route === null) return notFound("unknown route");
   if (route === "method") return json(405, { error: "method not allowed" });
+  // The one public route: no authorizer, no caller, a shared cacheable answer.
+  if (route.kind === "listChat") return listChat(e, requireId(route.id, "stream id"));
   const user = callerId(e); // 401 before any read if the authorizer did not run
 
   switch (route.kind) {
@@ -438,7 +490,6 @@ export const handler = guard(async (e: Event): Promise<Response> => {
     case "listTransactions": return listTransactions(e, user);
     case "vote":             return vote(e, user, requireId(route.id, "interaction id"));
     case "bid":              return bid(e, user, requireId(route.id, "interaction id"));
-    case "listChat":         return listChat(e, user, requireId(route.id, "stream id"));
     case "postChat":         return postChat(e, user, requireId(route.id, "stream id"));
     case "react":            return react(e, user, requireId(route.id, "stream id"));
   }

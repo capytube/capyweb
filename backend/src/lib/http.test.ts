@@ -102,12 +102,19 @@ test("pathSegments strips the API Gateway stage prefix", () => {
 
 test("callerId reads only the verified sub claim and fails closed", async () => {
   const { callerId, HttpError } = await import("./http.ts");
-  const withSub = (sub: unknown) => ({ requestContext: { authorizer: { jwt: { claims: { sub } } } } });
+  const withSub = (sub: unknown, token_use: unknown = "access") =>
+    ({ requestContext: { authorizer: { jwt: { claims: { sub, token_use } } } } });
   assert.equal(callerId(withSub("0b6e2f7a-1c3d-4e5f-8a9b-0c1d2e3f4a5b")), "0b6e2f7a-1c3d-4e5f-8a9b-0c1d2e3f4a5b");
   for (const bad of [undefined, "", 42, "USER#x", "a/b", "x".repeat(129)]) {
     assert.throws(() => callerId(withSub(bad)), HttpError, String(bad));
   }
   assert.throws(() => callerId({}), HttpError, "no authorizer context at all");
+  // A valid ID token passes the authorizer (aud = client id) but is not a grant to call the API.
+  const id = "0b6e2f7a-1c3d-4e5f-8a9b-0c1d2e3f4a5b";
+  for (const tu of ["id", null, "ACCESS", "refresh"]) {
+    assert.throws(() => callerId(withSub(id, tu)), HttpError, `token_use ${String(tu)}`);
+  }
+  assert.throws(() => callerId({ requestContext: { authorizer: { jwt: { claims: { sub: id } } } } }), HttpError, "no token_use");
 });
 
 test("jsonBody accepts only a small JSON object; onlyFields names what is not allowed", async () => {

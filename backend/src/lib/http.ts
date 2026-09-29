@@ -131,9 +131,14 @@ export const header = (e: Event, name: string): string | undefined => e.headers?
  * the API Gateway JWT authorizer has already checked signature, issuer, audience and expiry
  * before the Lambda runs, and `sub` is the one claim a client cannot choose.
  * No claims at all means the route was deployed without the authorizer - fail closed.
+ * Only access tokens are accepted (`token_use: access`); an ID token is 401.
  */
 export function callerId(e: Event): string {
-  const sub = e.requestContext?.authorizer?.jwt?.claims?.sub;
+  const claims = e.requestContext?.authorizer?.jwt?.claims;
+  // Access tokens only. Cognito ID tokens also pass the authorizer (their aud is the client id), but
+  // they are identity statements for the client, not grants to call the API.
+  if (claims?.token_use !== "access") throw new HttpError(401, "sign in required", "unauthorized");
+  const sub = claims.sub;
   if (typeof sub !== "string" || !ID_RE.test(sub)) throw new HttpError(401, "sign in required", "unauthorized");
   return sub;
 }

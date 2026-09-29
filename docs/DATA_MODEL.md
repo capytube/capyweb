@@ -71,6 +71,7 @@ Added with the ledger (lane 4, `capyweb-3ge`/`capyweb-7hj`), no existing key cha
 - **User `#META` carries `balance` and is written only by `backend/src/lib/ledger.ts`.** It must stay
   out of both indexes: every coin change rewrites it, and each index would add a write unit per change.
   `GSI1`/`GSI2` on the user (wallet, email) stay unset until a feature needs them.
+  It also holds `last_chat_at`, the per-user chat limit (see "Write API").
 - **Idempotency marker** `IDEM#{key}`: the client's `Idempotency-Key` header, in the caller's own
   partition, put with `attribute_not_exists` in the same transaction as the balance update. It holds a
   fingerprint of the request and the response, so a retry replays the first answer. TTL 24 h.
@@ -180,10 +181,12 @@ which needs a temporary grant since `capyapp-macbook-pro-14` cannot read `capywe
 
 ## 6. Write API
 
-Implemented in `backend/src/writes.ts` (function `capyapp-capyweb-<stage>-writes`). Every route sits
-behind the HTTP API's Cognito JWT authorizer (`CognitoJwt`). The caller is **only** the token's
+Implemented in `backend/src/writes.ts` (function `capyapp-capyweb-<stage>-writes`). Every route but
+the chat read sits behind the HTTP API's Cognito JWT authorizer (`CognitoJwt`), and only **access
+tokens** are accepted (`token_use: access`; an ID token is 401). The caller is **only** the token's
 `sub` claim; no route takes a user id, and every body is checked against an allow-list of fields, so a
-`user_id`, `balance`, `cost` or `price` in a body is a 400. Responses are `no-store`. Errors are
+`user_id`, `balance`, `cost` or `price` in a body is a 400. Responses are `no-store`, except the
+public chat read (`public, max-age=5`). Errors are
 `{"error": "...", "code": "..."}`; `code` is stable for clients to switch on. Coin numbers (starting
 balance, chat and reaction costs, caps) are named constants in `backend/src/lib/economy.ts`, all
 "free and no grants" until decided.
@@ -199,13 +202,31 @@ a different request: `409 idempotency_mismatch`.
 | `GET /me/transactions?limit&cursor` | the caller's ledger, newest first | 200 | 400 bad cursor |
 | `POST /interactions/{id}/votes` | vote; cost = `number_of_votes × vote_cost` (+ `custom_request_cost`) from the interaction item | 201 | 404, 409 `interaction_closed` `wrong_type` `not_priced` `no_custom` `insufficient_coins` |
 | `POST /interactions/{id}/bids` | bid `amount` ≥ `current_bid + 1`; the outbid bidder is refunded | 201 | 404, 409 `interaction_closed` `bid_too_low` `insufficient_coins` |
-| `GET /streams/{id}/chat?limit&cursor` | chat, newest first; the first page also carries `reactions` | 200 | 400 |
-| `POST /streams/{id}/chat` | post one line (≤ 280 characters, ≤ 800 bytes) | 201 | 404, 409 `display_name_required` |
-| `POST /streams/{id}/reactions` | one of `capylove capylike capywow capyangry capyfire` | 200 | 400, 404 |
+| `GET /streams/{id}/chat?limit&cursor` | **public, no sign-in**: chat newest first, display names only; the first page also carries `reactions` | 200 | 400, 403 `private_stream`, 404 |
+| `POST /streams/{id}/chat` | post one line (≤ 280 characters, ≤ 800 bytes), at most one per user per 2 s | 201 | 403 `private_stream`, 404, 409 `display_name_required`, 429 `slow_down` |
+| `POST /streams/{id}/reactions` | one of `capylove capylike capywow capyangry capyfire` | 200 | 400, 403 `private_stream`, 404 |
+
+Chat and reactions work only on streams whose `access_type` is exactly `public`. Anything else
+(private, missing, unknown) is `403 private_stream` for reads, posts and reactions, until private
+playback and payment exist (`capyweb-0m7`). A public verdict is cached 60 s per warm container.
+
+The chat limit is folded into the user-item access posting already needed: one conditional
+`UpdateItem` on `USER#{id}/#META` sets `last_chat_at` only if it is 2 s old or absent (and a display
+name exists), and returns the display name. A post costs 2 write units (that update plus the chat
+`Put`, both under 1 KB with no index) instead of 1 write + 0.5 read unit before. The two writes are not
+in one transaction, which would double both; a failed `Put` only makes the user wait 2 s.
+
+Reactions have **no per-user limit in v1**: only the HTTP API route throttle (10 rps, burst 20,
+shared by all callers) and the function's reserved concurrency of 5 bound them. Each is 1 write unit.
 
 An interaction is open unless `status` is set to anything but `open`, a `result` is declared, or
 `closes_at` (ISO time) has passed. The same rule is re-checked inside the transaction, together with
 the price, so closing or re-pricing an interaction mid-request refuses it instead of charging.
+`session_date` does **not** close an interaction: staff close one with `status`, `result` or `closes_at`,
+so seeded interactions with none of those stay open.
+Reactions are counted on their own `REACTIONS` item; the seed's `ratingCounts` map on the stream's
+`#META` is not read or written by the API.
+Display names are **not unique**; only the reserved staff-like names are refused.
 
 Examples (`Authorization: Bearer <access token>` on every request):
 
@@ -233,18 +254,20 @@ POST /interactions/wall-bid-1/bids      Idempotency-Key: 9a7e…   {"amount":21}
 
 POST /streams/main-cam/chat              {"text":"hello capy"}
 201 {"message":{"id":"…","stream_id":"main-cam","display_name":"Capy Fan","text":"hello capy",
-     "createdAt":"…","mine":true}}
+     "createdAt":"…"}}                  the id lets the client mark its own lines for the session
+429 {"error":"one message every 2 seconds, please","code":"slow_down"}
 
-GET /streams/main-cam/chat?limit=50
-200 {"items":[{"id":"…","display_name":"Capy Fan","text":"hello capy","mine":true,…}],"count":1,
+GET /streams/main-cam/chat?limit=50      no Authorization; Cache-Control: public, max-age=5
+200 {"items":[{"id":"…","stream_id":"main-cam","display_name":"Capy Fan","text":"hello capy",
+     "createdAt":"…"}],"count":1,
      "reactions":{"capylove":3,"capylike":0,"capywow":1,"capyangry":0,"capyfire":0}}
 
 POST /streams/main-cam/reactions         {"reaction":"capylove"}
 200 {"reaction":"capylove","reactions":{"capylove":4,"capylike":0,"capywow":1,"capyangry":0,"capyfire":0}}
 ```
 
-Chat lines never carry the author's `user_id` (their Cognito `sub`); `mine` tells the viewer which
-lines are theirs.
+Chat lines never carry the author's `user_id` (their Cognito `sub`), and the shared read has no
+per-viewer fields.
 
 ### The ledger transaction
 

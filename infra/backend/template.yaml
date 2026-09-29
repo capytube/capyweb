@@ -129,10 +129,13 @@ Resources:
         - {Key: Project, Value: capyweb}
 
   # Authenticated API (capyweb-7hj) and the play-coin ledger (capyweb-3ge). One warm function for
-  # every signed-in route. The caller is the JWT's `sub`, verified by CognitoJwt before the Lambda
-  # runs; balances are written only here. Chat and reactions are the hot path: one write each.
-  # DynamoDBCrudPolicy is scoped to this one table and its indexes (it includes ConditionCheckItem,
-  # which TransactWriteItems needs).
+  # the signed-in routes plus the public chat read. The caller is the access token's `sub`, verified
+  # by CognitoJwt before the Lambda runs; balances are written only here.
+  # IAM lists only what writes.ts and lib/ledger.ts call. TransactWriteItems has no action of its
+  # own: each item needs its operation's (PutItem, UpdateItem, ConditionCheckItem). Query on GSI1
+  # finds an interaction by id. No Scan, DeleteItem, BatchGetItem or BatchWriteItem: nothing
+  # deletes (chat and idempotency markers expire by TTL, which needs no permission) and nothing
+  # batches.
   WritesFunction:
     Type: AWS::Serverless::Function
     Metadata: {BuildMethod: esbuild, BuildProperties: {EntryPoints: [writes.ts], Target: es2022, Minify: true, Format: esm, OutExtension: [".js=.mjs"], External: ["@aws-sdk/*"]}}
@@ -144,15 +147,22 @@ Resources:
       # 20-request burst DefaultRouteSettings allows without letting a flood fan out.
       ReservedConcurrentExecutions: 5
       Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref MainTable
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:Query, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:ConditionCheckItem]
+              Resource: !GetAtt MainTable.Arn
+            - Effect: Allow
+              Action: [dynamodb:Query]
+              Resource: !Sub "${MainTable.Arn}/index/GSI1"
       Events:
         GetMe:            {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /me, Method: GET, Auth: {Authorizer: CognitoJwt}}}
         PutMe:            {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /me, Method: PUT, Auth: {Authorizer: CognitoJwt}}}
         ListTransactions: {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: /me/transactions, Method: GET, Auth: {Authorizer: CognitoJwt}}}
         Vote:             {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/interactions/{id}/votes", Method: POST, Auth: {Authorizer: CognitoJwt}}}
         Bid:              {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/interactions/{id}/bids", Method: POST, Auth: {Authorizer: CognitoJwt}}}
-        ListChat:         {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}/chat", Method: GET, Auth: {Authorizer: CognitoJwt}}}
+        # Public: reading chat needs no sign-in (docs/WASM_PLAN.md section 4). Answers carry
+        # Cache-Control public, max-age=5 and display names only.
+        ListChat:         {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}/chat", Method: GET}}
         PostChat:         {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}/chat", Method: POST, Auth: {Authorizer: CognitoJwt}}}
         React:            {Type: HttpApi, Properties: {ApiId: !Ref HttpApi, Path: "/streams/{id}/reactions", Method: POST, Auth: {Authorizer: CognitoJwt}}}
 
@@ -297,7 +307,7 @@ Resources:
 
 Outputs:
   ApiUrl:
-    Description: HTTP API base URL. Public catalog /capybaras, /streams, /nfts; signed-in /me, /interactions/{id}/votes|bids, /streams/{id}/chat|reactions.
+    Description: HTTP API base URL. Public catalog /capybaras, /streams, /nfts; signed-in /me, /interactions/{id}/votes|bids, POST /streams/{id}/chat|reactions; public GET /streams/{id}/chat.
     Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
   MainTableName:
     Value: !Ref MainTable
