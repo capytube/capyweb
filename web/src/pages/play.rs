@@ -19,7 +19,7 @@ use leptos_router::{
 
 use crate::{
     api::{self, ApiError, CodedError, Paging, VoteChoice},
-    auth::{use_auth, Auth},
+    auth::{load_balance as balance, use_auth, Auth},
     components::{chrome::PageHead, modal::Modal},
     domain::{Capybara, Interaction, InteractionType, Page, VoteOption},
     oauth::PendingAction,
@@ -351,13 +351,6 @@ impl Spend {
     }
 }
 
-/// Reload the balance from `GET /me` into the header's coin count.
-async fn balance(auth: Auth, session: Session) -> Option<u64> {
-    let coins = api::get_me(auth).await.ok().flatten()?.balance;
-    session.coins.set(coins);
-    coins
-}
-
 /// A card's form: what the user has picked and typed so far.
 struct Card {
     ixn: Interaction,
@@ -508,17 +501,15 @@ fn InteractionCard(interaction: Interaction, spend: Spend) -> impl IntoView {
 
 /// The cost and the balance before and after, one per line (`white-space: pre-line`).
 fn summary(a: &Ask, coins: Option<u64>) -> String {
-    let mut s = "Cost: ".to_string() + &coin_label(a.cost) + "\nYour balance: ";
-    match coins {
-        Some(b) => {
-            s.push_str(&coin_label(b));
-            s.push_str("\nAfter: ");
-            s.push_str(&match b.checked_sub(a.cost) {
-                Some(left) => coin_label(left),
-                None => "not enough play coins".into(),
-            });
-        }
-        None => s.push('…'),
+    let mut s = "Cost: ".to_string() + &coin_label(a.cost);
+    if let Some(b) = coins {
+        s.push_str("\nYour balance: ");
+        s.push_str(&coin_label(b));
+        s.push_str("\nAfter: ");
+        s.push_str(&match b.checked_sub(a.cost) {
+            Some(left) => coin_label(left),
+            None => "not enough play coins".into(),
+        });
     }
     s
 }
@@ -555,6 +546,18 @@ fn confirm_dialog(spend: Spend, auth: Auth) -> impl IntoView {
             }.into_any())>
             <p data-testid="confirm-what">{t(|d, c| ask_line(d, c, |a, _| a.what.clone()))}</p>
             <p class="play-sum" data-testid="confirm-sum">{t(|d, c| ask_line(d, c, summary))}</p>
+            <p class="play-hint" role="status" hidden=move || spend.session.coins.get().is_some()>
+                {move || if spend.session.coins_failed.get() {
+                    "Could not load your play coins. Check your connection and try again."
+                } else {
+                    "Loading your play coins…"
+                }}
+            </p>
+            <button type="button" class="btn btn-small" data-testid="balance-retry"
+                hidden=move || spend.session.coins.get().is_some() || !spend.session.coins_failed.get()
+                on:click=move |_| {
+                    spawn_local(async move { balance(auth, spend.session).await; });
+                }>"Check again"</button>
             <p class="play-hint">{t(|d, c| ask_line(d, c, |a, _| if a.draft.vote {
                 String::new()
             } else {

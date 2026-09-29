@@ -56,6 +56,9 @@ pub fn Home() -> impl IntoView {
             }>
                 {move || streams.get().map(|r| match r {
                     Err(e) => view! { <p class="text-alertRed">{format!("Could not load cameras: {e}")}</p> }.into_any(),
+                    Ok(page) if page.items.is_empty() => view! {
+                        <p role="status">"No cameras are available right now."</p>
+                    }.into_any(),
                     Ok(page) => view! {
                         <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="stream-list">
                             {page.items.into_iter().map(|s| {

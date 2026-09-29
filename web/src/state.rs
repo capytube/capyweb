@@ -10,6 +10,8 @@ pub struct Session {
     pub signed_in: RwSignal<bool>,
     /// Play-coin balance from the server ledger. `None` until known.
     pub coins: RwSignal<Option<u64>>,
+    /// An unknown balance needs a retry after `/me` fails, rather than a loading line.
+    pub coins_failed: RwSignal<bool>,
 }
 
 impl Default for Session {
@@ -17,6 +19,7 @@ impl Default for Session {
         Self {
             signed_in: RwSignal::new(false),
             coins: RwSignal::new(None),
+            coins_failed: RwSignal::new(false),
         }
     }
 }
