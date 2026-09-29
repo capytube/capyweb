@@ -373,7 +373,7 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
 |---|---|---|
 | **The beads database** | Here `.beads/` holds an embedded Dolt DB with **0 issues**. `bd create` fails with "issue_prefix config is missing". `git ls-remote origin` shows **no `refs/dolt/data`**, and no commit ever contained `.beads/issues.jsonl` | **Partly.** 25 ids are known:<br>• 23 named in tracked files on `feat/serverless-capyapp-backend` (before this plan): `083 0c8 0v3 19a 1iz 1nh 1td 1w5 2gx 2pj 3ge 7hj 962 c24 eh4 py9 qu7 s6d umh w26 x7w xfp zlb`<br>• `sz5`, until this plan only in a commit message ("Closes capyweb-sz5.", 113796b)<br>• `0m7`, only in the brief<br>Each has a line of context. Descriptions, status, dependencies and comments are lost until the Mac returns |
 | capyweb-lead's notes under `~/.cache/herdr-manager/` | This Mac's copy has only this brief and unrelated projects' files | No |
-| AWS profile `capy` (IAM user `capyapp-macbook-pro-14`; key deactivated while lent) | `docs/PLAN.md` §8, `infra/README.md` | Replaced by a new identity (below) |
+| AWS profile `capy` on the lent Mac (IAM user `capyapp-macbook-pro-14`; key deactivated while lent) | `docs/PLAN.md` §8 | Not needed: profile `capy` on this Mac is its own user, `capyapp-mac-pro-japan-16` (below) |
 | AWS profile `capytube-dns` (assumes `capyapp-capytube-dns` in autonomous-lab) and the admin `al` profile | `docs/PLAN.md` §8 | Needs a trust change (below). `al` is nic's own admin; not needed for this work |
 | The live API base URL (`ApiUrl` output of `capyapp-capyweb-backend-dev`) | Not in the repo, the KB, or local notes. `infra/README.md` lists only the older Function URLs | Readable by the new identity with one `describe-stacks`. It is needed to point the app at the API |
 | Anything unpushed in its clone (branches, stashes, untracked files) | Unknown | When it is back |
@@ -407,7 +407,10 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
    playback-locator check.
 3. `brew install aws-sam-cli` and `npm i -g esbuild@0.21` for backend deploys (only once there is an
    identity).
-4. **New deploy identity for this Mac: an access decision, now with herdr-master (Q3).** The request:
+4. **Deploy identity for this Mac: it exists** (corrected by capyweb-manager, 2026-09-29 ~15:00). Profile `capy`
+   here is IAM user `capyapp-mac-pro-japan-16`, in group `capyapp-deployers` only, with an active key made on
+   24 Sep. herdr-master's go: **the dev stack only**. Going public (the `capytube-dns` role, the apex, W12)
+   needs its own go through capyweb-manager. What was asked for, and granted since:
    - **IAM user `capyapp-mac-pro-japan-16`** in account 619071347239, member of the group
      **`capyapp-deployers`** and nothing else. It inherits exactly what `capyapp-macbook-pro-14` had: the
      group's five policies, including `capyapp-deploy-core` and `capyapp-deploy-apigw`, scoped to

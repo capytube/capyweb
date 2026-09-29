@@ -1,8 +1,9 @@
 # capyweb infra
 
-Deploy identity is the `capy` AWS profile: IAM user `capyapp-macbook-pro-14`, group
-`capyapp-deployers`. It is scoped to the **`capyapp-*`** naming prefix and to the regions
-ap-southeast-1 and us-east-1. Read `docs/AGENT_LEARNINGS.md` before changing anything here.
+Deploy identity is the `capy` AWS profile. On mac-pro-japan-16 it is IAM user `capyapp-mac-pro-japan-16`
+(on the lent MacBook Pro it was `capyapp-macbook-pro-14`, whose key is deactivated), group
+`capyapp-deployers`. Dev stack only until capyweb-manager gives the go for production. It is scoped to
+the **`capyapp-*`** naming prefix and to the regions ap-southeast-1 and us-east-1. Read `docs/AGENT_LEARNINGS.md` before changing anything here.
 
 - `backend/template.yaml`: SAM stack `capyapp-capyweb-backend-<stage>` in ap-southeast-1.
   On-demand only. API Gateway HTTP API (see `docs/PLAN.md` section 8).
