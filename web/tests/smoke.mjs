@@ -67,7 +67,7 @@ try {
   // cameras: three cards, private priced, each links to its capybara's watch room
   const cards = await page.$$eval('[data-testid=stream-list] li', (els) => els.map((e) => e.innerText));
   assert.equal(cards.length, 3);
-  assert.ok(cards.some((c) => c.includes('Climbing wall cam') && c.includes('1 coin / 10 s')));
+  assert.ok(cards.some((c) => c.includes('Climbing wall cam') && c.includes('6 play coins/min')));
   const hrefs = await page.$$eval('[data-testid=stream-list] a', (as) => as.map((a) => a.getAttribute('href')).sort());
   assert.deepEqual(hrefs, ['/stream/einstein', '/stream/elon', '/stream/magnus']);
 
