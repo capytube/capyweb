@@ -1,0 +1,97 @@
+/* Design tokens and element defaults. The look follows demo/ (the approved UX reference,
+   docs/PLAN.md 1f); the variable names also keep the React app's, which tailwind.config.js maps
+   to colour utilities (bg-chocoBrown and so on). */
+:root {
+  --grass-green: #d0e591;
+  --dark-green: #488029;
+  --choco-brown: #7a3f3e;
+  --babycorn-yellow: #fffcc8;
+  --dark-orange: #ca5000;
+  --site-green: #60a571;
+  --custard: #ffe3a2;
+  --cream: #ffeee2;
+  --persimmon: #ffb26f;
+  --tomato-red: #f23434;
+  --avacado-green: #d7e7c3;
+  --button-disabled: #b1b1b1;
+  --button-disabled-shadow: #909090;
+
+  --ink: #3d2424;
+  --line: rgba(122, 63, 62, 0.18);
+  --shadow: 4px 4px 0 var(--choco-brown);
+  --card-shadow: 10px 12px 0 var(--choco-brown);
+  --font-display: "Hanalei Fill", "Georgia", serif;
+  --font-body: "Commissioner", "Avenir Next", sans-serif;
+  --font-ui: "DynaPuff", "Commissioner", sans-serif;
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 420px at 10% -10%, rgba(208, 229, 145, 0.95), transparent 60%),
+    linear-gradient(180deg, var(--grass-green) 0, var(--cream) 280px);
+  background-repeat: no-repeat;
+  background-color: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--choco-brown);
+}
+
+h1 {
+  margin: 0 0 0.6rem;
+  font-size: clamp(2.6rem, 6vw, 4.6rem);
+  line-height: 1.05;
+}
+
+h2 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  line-height: 1.1;
+}
+
+a {
+  color: var(--choco-brown);
+}
+
+:focus-visible {
+  outline: 3px solid var(--dark-green);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

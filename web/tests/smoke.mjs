@@ -1,4 +1,4 @@
-// Headless browser smoke test for the WASM prototype. Not a dependency of the crate.
+// Headless browser smoke test for the WASM front end. Not a dependency of the crate.
 //
 //   cd web && trunk serve --release &                       # http://127.0.0.1:8791/
 //   npm i --prefix /tmp/pw playwright@1 && PLAYWRIGHT_BROWSERS_PATH=/tmp/pw/browsers \
@@ -7,80 +7,134 @@
 //
 // Injects a stand-in for the 2026-09-28 WebMCP draft (document.modelContext) before the app
 // loads, so the tools registered from Rust can be called. Exits non-zero on the first failure.
+// Set SHOTS=<dir> to save screenshots.
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const BASE = process.env.BASE ?? 'http://127.0.0.1:8791';
+const SHOTS = process.env.SHOTS;
+
+const FAKE_WEBMCP = () => {
+  const tools = new Map();
+  window.__webmcpTools = tools;
+  document.modelContext = {
+    registerTool(tool, opts) {
+      tools.set(tool.name, tool);
+      opts?.signal?.addEventListener('abort', () => tools.delete(tool.name));
+      return Promise.resolve();
+    },
+  };
+};
 
 const browser = await chromium.launch();
-try {
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-  const errors = [];
+const errors = [];
+async function open(path, { width = 390, height = 844, init } = {}) {
+  const page = await browser.newPage({ viewport: { width, height } });
   const logs = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  page.on('console', (m) => logs.push(m.text()));
-  await page.addInitScript(() => {
-    const tools = new Map();
-    window.__webmcpTools = tools;
-    document.modelContext = {
-      registerTool(tool, opts) {
-        tools.set(tool.name, tool);
-        opts?.signal?.addEventListener('abort', () => tools.delete(tool.name));
-        return Promise.resolve();
-      },
-    };
+  page.on('pageerror', (e) => errors.push(`${path}: ${e.message}`));
+  page.on('console', (m) => {
+    logs.push(m.text());
+    if (m.type() === 'error') errors.push(`${path} console: ${m.text()}`);
   });
-
-  await page.goto(BASE + '/');
-  await page.waitForSelector('[data-testid=stream-list] li');
-  const cards = await page.$$eval('[data-testid=stream-list] li', (els) => els.map((e) => e.innerText));
-  assert.equal(cards.length, 3, 'three cameras listed');
-  assert.ok(cards.some((c) => c.includes('Climbing wall cam') && c.includes('1 coin / 10 s')), 'private stream shows its price');
-
-  const names = await page.evaluate(() => [...window.__webmcpTools.keys()].sort());
-  assert.deepEqual(names, ['list_streams', 'open_stream']);
-  const annotations = await page.evaluate(() => window.__webmcpTools.get('list_streams').annotations);
-  assert.equal(annotations.readOnlyHint, true);
-  const nav = await page.evaluate(() => window.__webmcpTools.get('open_stream').annotations);
-  assert.equal(nav.readOnlyHint, false, 'navigation is not read-only');
-  assert.equal(nav.consequentialHint, false);
-  await page.waitForFunction(() => true);
-  assert.ok(logs.includes('webmcp: 2 tool(s) registered'), 'both registrations counted');
-
-  const listed = await page.evaluate(() => window.__webmcpTools.get('list_streams').execute({}, {}));
-  const rows = JSON.parse(listed.content[0].text);
-  assert.equal(rows.length, 3);
-  for (const r of rows) {
-    assert.deepEqual(Object.keys(r).sort(), ['access', 'id', 'live', 'price_per_10_sec', 'title'], 'tool output carries no playback fields');
-  }
-
-  await page.evaluate(() => window.__webmcpTools.get('open_stream').execute({ id: 'wall-cam' }, {}));
-  await page.waitForURL('**/streams/wall-cam');
+  if (init) await page.addInitScript(init);
+  await page.goto(BASE + path);
   await page.waitForSelector('main h1');
-  assert.match(await page.innerText('main'), /Sign in and pay to watch this camera/);
+  return { page, logs };
+}
+const settle = () => new Promise((r) => setTimeout(r, 300));
 
+try {
+  // -- shell on a phone ------------------------------------------------------------
+  const { page, logs } = await open('/', { init: FAKE_WEBMCP });
+  await page.waitForSelector('[data-testid=stream-list] li');
+  assert.equal(await page.title(), 'Watch Magnus. Then pick his snack. · CapyTube');
+  assert.equal(await page.isVisible('.tabbar'), true, 'tab bar shows on a phone');
+  assert.equal(await page.isVisible('.nav'), false, 'top nav hides on a phone');
+  assert.deepEqual(await page.$$eval('.tabbar a', (as) => as.map((a) => a.textContent)), ['Home', 'Watch', 'Play', 'Shop', 'Me']);
+  assert.equal(await page.getAttribute('.tabbar a[href="/"]', 'aria-current'), 'page');
+  assert.equal(await page.isVisible('.beta'), true);
+  assert.equal(await page.isVisible('.account-link'), false, 'phone uses the tab bar for the account');
+  const gap = await page.evaluate(() => {
+    window.scrollTo({ top: 1e6, behavior: 'instant' });
+    return document.querySelector('.tabbar').getBoundingClientRect().top - document.querySelector('.footer').getBoundingClientRect().bottom;
+  });
+  assert.ok(gap >= 0, `footer clears the tab bar (gap ${gap}px)`);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/home-phone.png`, fullPage: true });
+
+  // cameras: three cards, private priced, each links to its capybara's watch room
+  const cards = await page.$$eval('[data-testid=stream-list] li', (els) => els.map((e) => e.innerText));
+  assert.equal(cards.length, 3);
+  assert.ok(cards.some((c) => c.includes('Climbing wall cam') && c.includes('1 coin / 10 s')));
+  const hrefs = await page.$$eval('[data-testid=stream-list] a', (as) => as.map((a) => a.getAttribute('href')).sort());
+  assert.deepEqual(hrefs, ['/stream/einstein', '/stream/elon', '/stream/magnus']);
+
+  // -- WebMCP ------------------------------------------------------------------------
+  assert.deepEqual(await page.evaluate(() => [...window.__webmcpTools.keys()].sort()), ['list_streams', 'open_page']);
+  await settle();
+  assert.ok(logs.includes('webmcp: 2 tool(s) registered'), 'both registrations counted');
+  const ann = await page.evaluate(() => ({
+    list: window.__webmcpTools.get('list_streams').annotations,
+    open: window.__webmcpTools.get('open_page').annotations,
+    pages: window.__webmcpTools.get('open_page').inputSchema.properties.page.enum,
+  }));
+  assert.equal(ann.list.readOnlyHint, true);
+  assert.equal(ann.open.readOnlyHint, false, 'navigation is not read-only');
+  assert.equal(ann.open.consequentialHint, false);
+  assert.equal(ann.pages.length, 10);
+  const listed = await page.evaluate(() => window.__webmcpTools.get('list_streams').execute({}, {}));
+  for (const r of JSON.parse(listed.content[0].text)) {
+    assert.deepEqual(Object.keys(r).sort(), ['access', 'id', 'live', 'price_per_10_sec', 'title'], 'no playback fields');
+  }
+  await page.evaluate(() => window.__webmcpTools.get('open_page').execute({ page: 'shop' }, {}));
+  await page.waitForURL('**/shop');
+  await page.waitForSelector('.toast');
+  assert.match(await page.innerText('.toasts'), /An assistant opened Shop/);
+  assert.equal(await page.title(), 'Shop · CapyTube');
   const bad = await page.evaluate(async () => {
-    try { await window.__webmcpTools.get('open_stream').execute({ id: '../admin' }, {}); return 'accepted'; }
+    try { await window.__webmcpTools.get('open_page').execute({ page: 'admin' }, {}); return 'accepted'; }
     catch (e) { return String(e); }
   });
-  assert.match(bad, /invalid stream id/);
+  assert.match(bad, /unknown page/);
 
-  // A browser that refuses registration: nothing may be counted as registered.
-  const refusing = await browser.newPage();
-  const refusedLogs = [];
-  refusing.on('console', (m) => refusedLogs.push(m.text()));
-  await refusing.addInitScript(() => {
-    document.modelContext = { registerTool: () => Promise.reject(new Error('refused')) };
+  // -- deep links and 404 ------------------------------------------------------------
+  for (const [path, title] of [['/watch', 'Watch'], ['/stream/magnus', 'Watch room'], ['/terms-of-service', 'Terms of service']]) {
+    const { page: p } = await open(path);
+    assert.equal(await p.innerText('main h1'), title, path);
+    await p.close();
+  }
+  const { page: missing } = await open('/no/such/page');
+  assert.equal(await missing.innerText('main h1'), 'Page not found');
+
+  // -- desktop: top nav, no tab bar; the play-coins dialog opens and Escape closes it --
+  const { page: desk } = await open('/watch', { width: 1280, height: 800 });
+  assert.equal(await desk.isVisible('.nav'), true);
+  assert.equal(await desk.isVisible('.tabbar'), false);
+  assert.equal(await desk.isVisible('.account-link'), true);
+  assert.deepEqual(await desk.$$eval('.nav a', (as) => as.map((a) => a.textContent)), ['Home', 'Watch', 'Play', 'Shop', 'Robot']);
+  assert.equal(await desk.getAttribute('.nav a[href="/watch"]', 'aria-current'), 'page');
+  assert.equal(await desk.getAttribute('.nav a[href="/"]', 'aria-current'), null, 'Home is not current on /watch');
+  await desk.click('text=Play coins are not money');
+  await desk.waitForSelector('dialog.modal[open]');
+  assert.equal(await desk.evaluate(() => document.activeElement.closest('dialog') !== null), true, 'focus moves into the dialog');
+  if (SHOTS) await desk.screenshot({ path: `${SHOTS}/dialog-desktop.png` });
+  await desk.keyboard.press('Escape');
+  await desk.waitForSelector('dialog.modal:not([open])', { state: 'attached' });
+  // reopen works after an Escape close (the open signal was reset)
+  await desk.click('text=Play coins are not money');
+  await desk.waitForSelector('dialog.modal[open]');
+  await desk.click('dialog.modal button[type=submit]');
+  await desk.waitForSelector('dialog.modal:not([open])', { state: 'attached' });
+
+  // -- a browser that refuses registration: nothing counted --------------------------
+  const { logs: refusedLogs } = await open('/', {
+    init: () => { document.modelContext = { registerTool: () => Promise.reject(new Error('refused')) }; },
   });
-  await refusing.goto(BASE + '/');
-  await refusing.waitForSelector('[data-testid=stream-list] li');
-  await refusing.waitForFunction(() => true);
-  await new Promise((r) => setTimeout(r, 300));
-  assert.ok(refusedLogs.includes('webmcp: 0 tool(s) registered'), 'rejected registrations are not counted: ' + refusedLogs.join(' | '));
+  await settle();
+  assert.ok(refusedLogs.includes('webmcp: 0 tool(s) registered'), refusedLogs.join(' | '));
 
-  // A private stream with no price reads "Private", never "0 coin".
+  // -- a private stream with no price reads "Private" --------------------------------
   const unpriced = await browser.newPage();
   await unpriced.route('**/fixtures/streams.json', (route) => route.fulfill({
     contentType: 'application/json',
@@ -88,16 +142,16 @@ try {
   }));
   await unpriced.goto(BASE + '/');
   await unpriced.waitForSelector('[data-testid=stream-list] li');
-  const unpricedCard = await unpriced.innerText('[data-testid=stream-list] li');
-  assert.match(unpricedCard, /Private/);
-  assert.doesNotMatch(unpricedCard, /0 coin/);
+  const card = await unpriced.innerText('[data-testid=stream-list] li');
+  assert.match(card, /Private/);
+  assert.doesNotMatch(card, /0 coin/);
 
-  const plain = await browser.newPage();
-  await plain.goto(BASE + '/');
+  // -- without WebMCP the app still works ------------------------------------------------
+  const { page: plain } = await open('/');
   await plain.waitForSelector('[data-testid=stream-list] li');
-  assert.equal(await plain.evaluate(() => 'modelContext' in document), false, 'no WebMCP host, app still works');
+  assert.equal(await plain.evaluate(() => 'modelContext' in document), false);
 
-  assert.deepEqual(errors, [], 'no page errors');
+  assert.deepEqual(errors, [], 'no page or console errors');
   console.log('smoke: ok');
 } finally {
   await browser.close();

@@ -13,6 +13,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{future_to_promise, JsFuture};
 
 use crate::api;
+use crate::routes::Page;
 
 #[wasm_bindgen(module = "/js/webmcp.js")]
 extern "C" {
@@ -109,9 +110,9 @@ fn str_arg(input: &JsValue, key: &str) -> Option<String> {
         .and_then(|v| v.as_string())
 }
 
-/// Register the catalog tools. `open` navigates the SPA (supplied by the router).
+/// Register the catalog tools. `open` navigates the SPA to a page (supplied by the router).
 /// Returns how many the browser accepted.
-pub async fn register_catalog_tools(open: impl Fn(String) + 'static) -> usize {
+pub async fn register_catalog_tools(open: impl Fn(Page) + 'static) -> usize {
     if !webmcp_available() {
         return 0;
     }
@@ -152,29 +153,28 @@ pub async fn register_catalog_tools(open: impl Fn(String) + 'static) -> usize {
     .await as usize;
 
     n += register(
-        "open_stream",
-        "Open a stream page",
-        "Show one stream's page in this tab. Use an id from list_streams.",
+        "open_page",
+        "Open a CapyTube page",
+        "Show one of the site's pages in this tab. The page names are fixed; anything else is \
+         refused.",
         json!({
             "type": "object",
-            "properties": { "id": { "type": "string", "description": "Stream id from list_streams" } },
-            "required": ["id"]
+            "properties": {
+                "page": {
+                    "type": "string",
+                    "enum": Page::ALL.iter().map(|p| p.name()).collect::<Vec<_>>(),
+                    "description": "Which page to open"
+                }
+            },
+            "required": ["page"]
         }),
         Effect::Ui,
-        move |input, _signal| {
-            let id = str_arg(&input, "id").unwrap_or_default();
-            // Same rule as the catalog's requireId (backend/src/lib/http.ts ID_RE).
-            let valid = !id.is_empty()
-                && id.len() <= 128
-                && id
-                    .chars()
-                    .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
-            if valid {
-                open(id.clone());
-                Promise::resolve(&text_result(format!("Opened /streams/{id}")))
-            } else {
-                Promise::reject(&JsValue::from_str("invalid stream id"))
+        move |input, _signal| match str_arg(&input, "page").as_deref().and_then(Page::from_name) {
+            Some(page) => {
+                open(page);
+                Promise::resolve(&text_result(format!("Opened {}", page.path())))
             }
+            None => Promise::reject(&JsValue::from_str("unknown page")),
         },
     )
     .await as usize;

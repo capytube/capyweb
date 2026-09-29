@@ -1,0 +1,322 @@
+/* Shared chrome: skip link, top bar, navigation, buttons, footer, tab bar, dialogs, toasts.
+   Ported from demo/styles.css. Page styles live next to their pages as Tailwind classes, or in
+   a per-page file here when a rule is shared. */
+
+.skip {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  background: white;
+  color: var(--choco-brown);
+  padding: 0.5rem 0.8rem;
+  z-index: 20;
+}
+
+.skip:focus {
+  top: 0.5rem;
+}
+
+.view {
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 1.5rem 0 4rem;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 0.6rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--babycorn-yellow);
+  color: var(--choco-brown);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+}
+
+.lede {
+  margin: 0;
+  max-width: 38rem;
+  font-size: 1.12rem;
+}
+
+/* -- top bar ----------------------------------------------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(255, 238, 226, 0.92);
+  border-bottom: 2px solid var(--choco-brown);
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+}
+
+.brand img {
+  height: 52px;
+  width: auto;
+}
+
+.beta {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: var(--tomato-red);
+  color: white;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.6;
+  padding: 0 0.45rem;
+  border-radius: 0 5px 5px 5px;
+}
+
+.beta::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 0;
+  border-bottom: 9px solid #8d0202;
+  border-left: 9px solid transparent;
+}
+
+.nav,
+.tabbar {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.nav a,
+.tabbar a {
+  color: var(--choco-brown);
+  text-decoration: none;
+  font-family: var(--font-ui);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+}
+
+.nav a[aria-current="page"],
+.tabbar a[aria-current="page"] {
+  background: var(--persimmon);
+  box-shadow: 2px 2px 0 var(--choco-brown);
+}
+
+.top-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.coin-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 2px solid var(--choco-brown);
+  background: var(--babycorn-yellow);
+  box-shadow: var(--shadow);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem 0.25rem 0.35rem;
+  color: var(--choco-brown);
+  font-family: var(--font-ui);
+  text-decoration: none;
+}
+
+.coin-pill img {
+  width: 28px;
+  height: 28px;
+}
+
+/* -- buttons ----------------------------------------------------------------- */
+
+.btn {
+  display: inline-block;
+  border: 2px solid var(--choco-brown);
+  background: var(--persimmon);
+  color: var(--choco-brown);
+  box-shadow: var(--shadow);
+  border-radius: 999px;
+  text-decoration: none;
+  font-family: var(--font-ui);
+  padding: 0.7rem 1.1rem;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  background: white;
+}
+
+.btn-small {
+  padding: 0.45rem 0.9rem;
+}
+
+.btn:hover {
+  transform: translate(-1px, -1px);
+}
+
+.btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--choco-brown);
+}
+
+.btn[disabled] {
+  background: var(--button-disabled);
+  box-shadow: 4px 4px 0 var(--button-disabled-shadow);
+  cursor: default;
+  transform: none;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+/* -- cards and notices --------------------------------------------------------- */
+
+.card {
+  background: var(--cream);
+  border: 2px solid var(--choco-brown);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 1rem 1.1rem;
+}
+
+.notice {
+  border: 2px dashed var(--choco-brown);
+  border-radius: 20px;
+  padding: 1.2rem 1.3rem;
+  background: rgba(255, 252, 200, 0.7);
+}
+
+/* -- footer and mobile tab bar --------------------------------------------------- */
+
+.footer {
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.6rem 1.2rem;
+  align-items: center;
+  color: var(--choco-brown);
+  font-size: 0.92rem;
+}
+
+.footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.9rem;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.tabbar {
+  display: none;
+}
+
+/* -- dialog and toasts ----------------------------------------------------------- */
+
+dialog.modal {
+  border: 3px solid var(--choco-brown);
+  border-radius: 20px;
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: var(--card-shadow);
+  padding: 1.2rem 1.3rem 1.3rem;
+  max-width: min(26rem, calc(100% - 2rem));
+}
+
+dialog.modal h2 {
+  margin: 0 0 0.4rem;
+  font-size: 2rem;
+}
+
+dialog.modal::backdrop {
+  background: rgba(61, 36, 36, 0.35);
+}
+
+.toasts {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  z-index: 6;
+}
+
+.toast {
+  background: var(--choco-brown);
+  color: var(--cream);
+  border-radius: 14px;
+  padding: 0.55rem 0.8rem;
+  box-shadow: var(--shadow);
+  max-width: 16rem;
+}
+
+/* -- small screens --------------------------------------------------------------- */
+
+@media (max-width: 860px) {
+  .nav {
+    display: none;
+  }
+
+  /* Room for the fixed tab bar. On body, not as a footer margin: a last child's bottom margin
+     is absorbed by body's min-height, which left the footer under the tab bar. */
+  body {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+
+  /* The tab bar has "Me"; the top-bar account button would say the same thing twice. */
+  .account-link {
+    display: none;
+  }
+
+  .tabbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    justify-content: space-around;
+    background: var(--choco-brown);
+    padding: 0.45rem 0.4rem calc(0.45rem + env(safe-area-inset-bottom));
+    z-index: 5;
+  }
+
+  .tabbar a {
+    color: var(--cream);
+    padding: 0.35rem 0.6rem;
+  }
+
+  .tabbar a[aria-current="page"] {
+    color: var(--choco-brown);
+  }
+
+  .brand img {
+    height: 42px;
+  }
+
+  .toasts {
+    bottom: 4.2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:hover {
+    transform: none;
+  }
+}

@@ -4,13 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CapyTube, live capy stream</title>
-    <meta name="description" content="Watch the capybaras live, then pick their snack." />
+    <meta name="description" content="Watch the capybaras live, then pick their snack. Play coins only, never real money." />
+    <meta property="og:title" content="CapyTube" />
+    <meta property="og:description" content="Watch the capybaras live, then pick their snack." />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#d0e591" />
+    <link data-trunk rel="icon" href="assets/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;600;700&family=DynaPuff:wght@500;700&family=Hanalei+Fill&display=swap"
+    />
     <link data-trunk rel="tailwind-css" href="input.css" />
+    <link data-trunk rel="copy-dir" href="assets" />
     <link data-trunk rel="copy-dir" href="fixtures" />
     <link data-trunk rel="rust" data-bin="capyweb-web" data-wasm-opt="z"
       data-wasm-opt-params="--enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue" />
   </head>
-  <body class="bg-babyCronYellow text-chocoBrown font-commissioner">
+  <body>
     <noscript>CapyTube needs JavaScript and WebAssembly to run.</noscript>
   </body>
 </html>

@@ -1,132 +1,84 @@
-//! Prototype pages: the stream list and one stream's page, from the public catalog API.
+//! The app shell and route table. Routes keep the React app's URLs (docs/WASM_PLAN.md
+//! section 2); pages not ported yet render a ComingSoon stand-in.
 
 use leptos::prelude::*;
-use leptos_router::components::{Route, Router, Routes, A};
-use leptos_router::hooks::{use_navigate, use_params_map};
+use leptos_router::components::{Route, Router, Routes};
+use leptos_router::hooks::use_navigate;
 use leptos_router::{path, NavigateOptions};
 
-use crate::api;
-use crate::domain::LiveStream;
+use crate::components::chrome::{Footer, Header, TabBar, ToastHost};
+use crate::pages::coming::ComingSoon;
+use crate::pages::home::Home;
+use crate::pages::not_found::NotFound;
+use crate::routes::Page;
+use crate::state::{use_toasts, Session, Toasts};
 use crate::webmcp;
 
 #[component]
 pub fn App() -> impl IntoView {
+    provide_context(Session::default());
+    provide_context(Toasts::default());
     view! {
         <Router>
             <Tools/>
-            <header class="flex items-center justify-between px-4 py-3 bg-grassGreen shadow-buttonShadow">
-                <A href="/">
-                    <span class="font-hanaleiFill text-2xl text-chocoBrown">"CapyTube"</span>
-                </A>
-                <span class="font-dynapuff text-sm bg-custard rounded-full px-3 py-1">"Beta · WASM prototype"</span>
-            </header>
-            <main class="max-w-3xl mx-auto px-4 py-6">
-                <Routes fallback=|| view! { <p>"Page not found."</p> }>
-                    <Route path=path!("/") view=StreamList/>
-                    <Route path=path!("/streams/:id") view=StreamPage/>
+            <Header/>
+            <main id="main" class="view" tabindex="-1">
+                <Routes fallback=NotFound>
+                    <Route path=path!("/") view=Home/>
+                    <Route path=path!("/watch") view=|| view! {
+                        <ComingSoon title="Watch" blurb="Pick a capybara and a camera. This page is being rebuilt."/>
+                    }/>
+                    <Route path=path!("/stream/:capyId") view=|| view! {
+                        <ComingSoon title="Watch room" blurb="Cameras, reactions and chat. This page is being rebuilt."/>
+                    }/>
+                    <Route path=path!("/play") view=|| view! {
+                        <ComingSoon title="Play" blurb="Snack votes and bids, paid in play coins. This page is being rebuilt."/>
+                    }/>
+                    <Route path=path!("/shop") view=|| view! {
+                        <ComingSoon title="Shop" blurb="Passes for the capy club. This page is being rebuilt."/>
+                    }/>
+                    <Route path=path!("/shop/:id") view=|| view! {
+                        <ComingSoon title="Pass" blurb="Pass details. This page is being rebuilt."/>
+                    }/>
+                    <Route path=path!("/profile") view=|| view! {
+                        <ComingSoon title="Your account" blurb="Sign-in is on its way. Until then you can watch without an account."/>
+                    }/>
+                    <Route path=path!("/robot") view=|| view! {
+                        <ComingSoon title="Robot" blurb="Drive the capy-cam robot. This page is being rebuilt."/>
+                    }/>
+                    <Route path=path!("/about-us") view=|| view! {
+                        <ComingSoon title="About us" blurb="The story of Magnus and CapyTube. This page is being rebuilt."/>
+                    }/>
+                    <Route path=path!("/privacy-policy") view=|| view! {
+                        <ComingSoon title="Privacy policy" blurb="This page is being rebuilt."/>
+                    }/>
+                    <Route path=path!("/terms-of-service") view=|| view! {
+                        <ComingSoon title="Terms of service" blurb="This page is being rebuilt."/>
+                    }/>
+                    <Route path=path!("/deletion") view=|| view! {
+                        <ComingSoon title="Delete my data" blurb="This page is being rebuilt."/>
+                    }/>
                 </Routes>
             </main>
+            <Footer/>
+            <TabBar/>
+            <ToastHost/>
         </Router>
     }
 }
 
-/// Registers the WebMCP tools once, inside the router so a tool can navigate.
+/// Registers the WebMCP tools once, inside the router so a tool can navigate. When an assistant
+/// moves the page, a toast says so: the person watching should never wonder why it changed.
 #[component]
 fn Tools() -> impl IntoView {
     let navigate = use_navigate();
+    let toasts = use_toasts();
     leptos::task::spawn_local(async move {
-        let count = webmcp::register_catalog_tools(move |id| {
-            navigate(&format!("/streams/{id}"), NavigateOptions::default());
+        let count = webmcp::register_catalog_tools(move |page: Page| {
+            navigate(page.path(), NavigateOptions::default());
+            toasts.show(format!("An assistant opened {}", page.label()));
         })
         .await;
         leptos::logging::log!("webmcp: {count} tool(s) registered");
     });
-}
-
-fn access_badge(s: &LiveStream) -> impl IntoView {
-    if s.is_public() {
-        view! { <span class="text-xs rounded-full px-2 py-0.5 bg-avacadoCream text-darkGreen">"Free"</span> }.into_any()
-    } else {
-        // A private stream with no price is still private, never "0 coins".
-        let label = match s.price_per_10_sec {
-            Some(p) => format!("{p} coin / 10 s"),
-            None => "Private".to_string(),
-        };
-        view! {
-            <span class="text-xs rounded-full px-2 py-0.5 bg-persimmon text-chocoBrown">
-                {label}
-            </span>
-        }
-        .into_any()
-    }
-}
-
-#[component]
-fn StreamList() -> impl IntoView {
-    let streams = LocalResource::new(|| api::list_streams(None));
-    view! {
-        <h1 class="font-hanaleiFill text-titleSizeSM mb-4">"Cameras"</h1>
-        <Suspense fallback=|| view! { <p>"Loading streams…"</p> }>
-            {move || streams.get().map(|r| match r {
-                Err(e) => view! { <p class="text-tomatoRed">{format!("Could not load streams: {e}")}</p> }.into_any(),
-                Ok(page) => view! {
-                    <ul class="grid gap-4 sm:grid-cols-2" data-testid="stream-list">
-                        {page.items.into_iter().map(|s| {
-                            let href = format!("/streams/{}", s.id);
-                            let live = s.is_live.unwrap_or(false);
-                            view! {
-                                <li class="bg-cream rounded-xl p-4 shadow-buttonShadow">
-                                    <A href=href>
-                                        <div class="flex items-center justify-between gap-2">
-                                            <span class="font-dynapuff text-lg">{s.title.clone()}</span>
-                                            {access_badge(&s)}
-                                        </div>
-                                        <p class="text-sm mt-1">
-                                            {if live { "Live now" } else { "Resting. Showing the reel." }}
-                                        </p>
-                                    </A>
-                                </li>
-                            }
-                        }).collect_view()}
-                    </ul>
-                }.into_any(),
-            })}
-        </Suspense>
-    }
-}
-
-#[component]
-fn StreamPage() -> impl IntoView {
-    let params = use_params_map();
-    let id = move || params.read().get("id").unwrap_or_default();
-    let stream = LocalResource::new(move || {
-        let id = id();
-        async move { api::get_stream(&id).await }
-    });
-    view! {
-        <A href="/"><span class="text-sm underline">"← All cameras"</span></A>
-        <Suspense fallback=|| view! { <p>"Loading…"</p> }>
-            {move || stream.get().map(|r| match r {
-                Err(e) => view! { <p class="text-tomatoRed">{format!("Could not load the stream: {e}")}</p> }.into_any(),
-                Ok(None) => view! { <p>"No such stream."</p> }.into_any(),
-                Ok(Some(s)) => view! {
-                    <h1 class="font-hanaleiFill text-titleSizeSM my-4">{s.title.clone()}</h1>
-                    {access_badge(&s)}
-                    <div class="mt-4 aspect-video rounded-xl bg-chocoBrown text-cream grid place-items-center p-4 text-center">
-                        {if s.is_public() {
-                            // The player (hls.js through a JS shim) is task W6 in the plan.
-                            match s.reel_key() {
-                                Some(reel) => format!("Player goes here. Nothing live, so it would show /media/{reel}."),
-                                None => "Player goes here. Nothing live and no reel.".to_string(),
-                            }
-                        } else {
-                            // Private: title and price only. Playback needs sign-in and payment,
-                            // and is resolved by GET /stream/{id} with a token, never from the catalog.
-                            "Sign in and pay to watch this camera.".to_string()
-                        }}
-                    </div>
-                }.into_any(),
-            })}
-        </Suspense>
-    }
 }
