@@ -72,16 +72,30 @@ try {
   assert.deepEqual(hrefs, ['/stream/einstein', '/stream/elon', '/stream/magnus']);
 
   // -- WebMCP ------------------------------------------------------------------------
-  assert.deepEqual(await page.evaluate(() => [...window.__webmcpTools.keys()].sort()), ['list_streams', 'open_page']);
+  assert.deepEqual(await page.evaluate(() => [...window.__webmcpTools.keys()].sort()), [
+    'get_capybara',
+    'get_interactions',
+    'list_capybaras',
+    'list_passes',
+    'list_streams',
+    'open_page',
+    'open_stream',
+    'read_chat',
+  ]);
   await settle();
-  assert.ok(logs.includes('webmcp: 2 tool(s) registered'), 'both registrations counted');
+  assert.ok(logs.includes('webmcp: 8 tool(s) registered'), 'all public tools counted');
   const ann = await page.evaluate(() => ({
     list: window.__webmcpTools.get('list_streams').annotations,
     open: window.__webmcpTools.get('open_page').annotations,
+    openStream: window.__webmcpTools.get('open_stream').annotations,
+    readChat: window.__webmcpTools.get('read_chat').annotations,
     pages: window.__webmcpTools.get('open_page').inputSchema.properties.page.enum,
   }));
   assert.equal(ann.list.readOnlyHint, true);
   assert.equal(ann.open.readOnlyHint, false, 'navigation is not read-only');
+  assert.equal(ann.openStream.readOnlyHint, false, 'navigation is not read-only');
+  assert.equal(ann.readChat.readOnlyHint, true);
+  assert.equal(ann.readChat.untrustedContentHint, true);
   assert.equal(ann.open.consequentialHint, false);
   assert.equal(ann.pages.length, 10);
   const listed = await page.evaluate(() => window.__webmcpTools.get('list_streams').execute({}, {}));
