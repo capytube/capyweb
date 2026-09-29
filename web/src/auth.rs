@@ -54,9 +54,18 @@ extern "C" {
 const REFRESH_KEY: &str = "capyweb.auth.refresh";
 /// sessionStorage: one redirect's PKCE verifier, state, return path and pending action.
 const FLOW_KEY: &str = "capyweb.auth.flow";
+const NAME_PROMPT_KEY: &str = "capyweb.auth.name-prompt-dismissed";
 
 const SESSION: bool = true;
 const LOCAL: bool = false;
+
+pub fn name_prompt_dismissed() -> bool {
+    store_get(SESSION, NAME_PROMPT_KEY).is_some()
+}
+
+pub fn dismiss_name_prompt() {
+    store_set(SESSION, NAME_PROMPT_KEY, "1");
+}
 
 /// The signed-in user, from the ID token. For display only: the API trusts the JWT, not this.
 #[derive(Clone, Debug, PartialEq)]
@@ -111,11 +120,15 @@ pub fn use_auth() -> Auth {
 /// Share the balance and its failure state between sign-in and the confirm dialog.
 pub async fn load_balance(auth: Auth, session: Session) -> Option<u64> {
     session.coins_failed.set(false);
-    let coins = crate::api::get_me(auth)
-        .await
-        .ok()
-        .flatten()
-        .and_then(|me| me.balance);
+    let me = crate::api::get_me(auth).await.ok().flatten();
+    // A response that arrives after sign-out must not restore account state.
+    if !session.signed_in.get_untracked() {
+        return None;
+    }
+    if let Some(me) = &me {
+        session.needs_name.set(me.display_name.is_none());
+    }
+    let coins = me.and_then(|me| me.balance);
     session.coins.set(coins);
     session.coins_failed.set(coins.is_none());
     coins
@@ -335,6 +348,7 @@ impl Auth {
         self.session.signed_in.set(false);
         self.session.coins.set(None);
         self.session.coins_failed.set(false);
+        self.session.needs_name.set(false);
     }
 
     /// Signed out, and the refresh token is gone from storage.
@@ -407,6 +421,8 @@ impl Auth {
         let body = oauth::code_body(&cfg, code, &redirect_uri(), &flow.verifier);
         match post_form(&oauth::token_url(&cfg), body).await {
             Some((200, body)) if self.accept(&body) => {
+                // A new sign-in may ask again; refreshing or reloading the tab must not.
+                store_del(SESSION, NAME_PROMPT_KEY);
                 self.inner
                     .update_value(|i| i.pending = oauth::clean_pending(flow.pending));
                 Ok(flow.return_to)

@@ -12,6 +12,8 @@ pub struct Session {
     pub coins: RwSignal<Option<u64>>,
     /// An unknown balance needs a retry after `/me` fails, rather than a loading line.
     pub coins_failed: RwSignal<bool>,
+    /// The account has no chat name yet; learned from the same `/me` as the balance.
+    pub needs_name: RwSignal<bool>,
 }
 
 impl Default for Session {
@@ -20,6 +22,7 @@ impl Default for Session {
             signed_in: RwSignal::new(false),
             coins: RwSignal::new(None),
             coins_failed: RwSignal::new(false),
+            needs_name: RwSignal::new(false),
         }
     }
 }

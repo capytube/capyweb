@@ -11,7 +11,7 @@ const hasHorizontalScroll = () => document.documentElement.scrollWidth > window.
 async function fakeApi(context, cognito) {
   const api = {
     balance: 50,
-    name: null,
+    name: 'Nok',
     posts: [],
     puts: [],
     seen: new Map(),
