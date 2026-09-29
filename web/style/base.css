@@ -15,6 +15,11 @@
   --avacado-green: #d7e7c3;
   --button-disabled: #b1b1b1;
   --button-disabled-shadow: #909090;
+  /* Darker text-safe shades (WCAG AA, 4.5:1) for small text, where the palette colours fall short:
+     leaf green on avacado 4.85:1 (dark green is 3.66:1); white on alert red 5.74:1, alert red on
+     cream 5.08:1 (tomato red is 3.95:1 and 3.49:1). */
+  --leaf-green: #3c6b22;
+  --alert-red: #c81e1e;
 
   --ink: #3d2424;
   --line: rgba(122, 63, 62, 0.18);

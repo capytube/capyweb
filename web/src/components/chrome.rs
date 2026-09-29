@@ -15,11 +15,26 @@ fn nav_link(p: Page) -> impl IntoView {
     }
 }
 
+/// The router takes over every same-origin link click, which stops the browser moving focus to
+/// the `#main` fragment target, so a keyboard user's next Tab would land back in the header.
+/// Preventing the default here makes the router skip this link; focusing `<main tabindex="-1">`
+/// does what the browser would have done.
+fn skip_to_main(ev: leptos::ev::MouseEvent) {
+    use wasm_bindgen::JsCast;
+    ev.prevent_default();
+    if let Some(main) = document()
+        .get_element_by_id("main")
+        .and_then(|el| el.dyn_into::<web_sys::HtmlElement>().ok())
+    {
+        let _ = main.focus();
+    }
+}
+
 #[component]
 pub fn Header() -> impl IntoView {
     let session = use_session();
     view! {
-        <a class="skip" href="#main">"Skip to content"</a>
+        <a class="skip" href="#main" on:click=skip_to_main>"Skip to content"</a>
         <header class="topbar">
             <A href="/" attr:class="brand" attr:aria-label="CapyTube home">
                 <img src="/assets/capytube.svg" alt="CapyTube" width="120" height="52"/>

@@ -115,6 +115,15 @@ try {
   assert.deepEqual(await desk.$$eval('.nav a', (as) => as.map((a) => a.textContent)), ['Home', 'Watch', 'Play', 'Shop', 'Robot']);
   assert.equal(await desk.getAttribute('.nav a[href="/watch"]', 'aria-current'), 'page');
   assert.equal(await desk.getAttribute('.nav a[href="/"]', 'aria-current'), null, 'Home is not current on /watch');
+  // the skip link moves keyboard focus to <main>, so the next Tab skips the header (the router
+  // intercepts link clicks, which used to leave focus on the skip link)
+  await desk.keyboard.press('Tab');
+  assert.equal(await desk.evaluate(() => document.activeElement.className), 'skip');
+  await desk.keyboard.press('Enter');
+  assert.equal(await desk.evaluate(() => document.activeElement.id), 'main', 'Enter on the skip link focuses main');
+  assert.equal(await desk.evaluate(() => location.pathname), '/watch', 'the skip link does not navigate');
+  await desk.keyboard.press('Tab');
+  assert.equal(await desk.evaluate(() => document.activeElement.closest('header.topbar')), null, 'next Tab is past the header');
   await desk.click('text=Play coins are not money');
   await desk.waitForSelector('dialog.modal[open]');
   assert.equal(await desk.evaluate(() => document.activeElement.closest('dialog') !== null), true, 'focus moves into the dialog');

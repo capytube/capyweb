@@ -70,7 +70,7 @@
   position: absolute;
   top: -6px;
   right: -8px;
-  background: var(--tomato-red);
+  background: var(--alert-red);
   color: white;
   font-family: var(--font-ui);
   font-size: 0.72rem;

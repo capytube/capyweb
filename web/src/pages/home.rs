@@ -9,7 +9,7 @@ use crate::domain::LiveStream;
 
 pub fn access_badge(s: &LiveStream) -> impl IntoView {
     if s.is_public() {
-        view! { <span class="text-xs rounded-full px-2 py-0.5 bg-avacadoCream text-darkGreen">"Free"</span> }.into_any()
+        view! { <span class="text-xs rounded-full px-2 py-0.5 bg-avacadoCream text-leafGreen">"Free"</span> }.into_any()
     } else {
         // A private stream with no price is still private, never "0 coins".
         let label = match s.price_per_10_sec {
@@ -41,7 +41,7 @@ pub fn Home() -> impl IntoView {
             <h2 id="cams-heading">"Cameras"</h2>
             <Suspense fallback=|| view! { <p>"Loading cameras…"</p> }>
                 {move || streams.get().map(|r| match r {
-                    Err(e) => view! { <p class="text-tomatoRed">{format!("Could not load cameras: {e}")}</p> }.into_any(),
+                    Err(e) => view! { <p class="text-alertRed">{format!("Could not load cameras: {e}")}</p> }.into_any(),
                     Ok(page) => view! {
                         <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="stream-list">
                             {page.items.into_iter().map(|s| {
