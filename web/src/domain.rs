@@ -285,7 +285,7 @@ mod tests {
             Some("capytube-stream.mp4")
         );
         for bad in [
-            "https://livepeer.studio/hls/abc/index.m3u8",
+            "https://video.example.com/hls/abc/index.m3u8",
             "../x.mp4",
             "a/b.mp4",
             "x.mp4?t=1",

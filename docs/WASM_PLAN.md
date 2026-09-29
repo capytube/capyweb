@@ -501,8 +501,6 @@ W8 against the auth seam → W10 → W12 and W11 as the grants land → W14 → 
    refresh-token rotation, short-lived access tokens kept in memory.
 9. **Lent Mac.** If it does not come back, the beads history and capyweb-lead's notes are gone. The ids
    and context in the repo are the floor.
-10. **Unrelated but still open:** both Livepeer keys are live and unrotated in the public history
-    (`capyweb-962`).
 
 ### Open questions (decided by capyweb-manager on 2026-09-29; see "Decisions" at the top)
 
