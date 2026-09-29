@@ -46,6 +46,22 @@ pub fn media_src(key: &str) -> Option<String> {
     })
 }
 
+/// A public camera's live HLS playlist: `/live/<id>/index.m3u8`, or `/fixtures/live/<id>/…` in
+/// fixture mode (docs/VIDEO_DESIGN.md, "Player contract"). `None` for anything not explicitly
+/// public: the browser never builds a media URL for a private camera. That URL will come from
+/// the playback route, with signed cookies, once sign-in and payment exist.
+pub fn live_src(stream: &LiveStream) -> Option<String> {
+    if !stream.is_public() || validate_id(&stream.id).is_err() {
+        return None;
+    }
+    let root = if base_url() == FIXTURES {
+        "/fixtures"
+    } else {
+        ""
+    };
+    Some(format!("{root}/live/{}/index.m3u8", stream.id))
+}
+
 /// A non-2xx response, or a 2xx that was not JSON (usually the SPA's index.html).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ApiError {
@@ -450,6 +466,34 @@ mod tests {
             "media/é.png",
         ] {
             assert_eq!(media_src(key), None, "{key}");
+        }
+    }
+
+    fn cam(id: &str, access: Option<AccessType>) -> LiveStream {
+        serde_json::from_value(serde_json::json!({ "id": id, "title": "Cam" }))
+            .map(|s: LiveStream| LiveStream {
+                access_type: access,
+                ..s
+            })
+            .unwrap()
+    }
+
+    #[test]
+    fn live_src_only_for_public_cameras_with_safe_ids() {
+        let prefix = if base_url() == FIXTURES {
+            "/fixtures"
+        } else {
+            ""
+        };
+        assert_eq!(
+            live_src(&cam("main-cam", Some(AccessType::Public))),
+            Some(format!("{prefix}/live/main-cam/index.m3u8"))
+        );
+        for access in [Some(AccessType::Private), Some(AccessType::Unknown), None] {
+            assert_eq!(live_src(&cam("wall-cam", access)), None, "{access:?}");
+        }
+        for id in ["", "../x", "a/b", "a?b", "a.m3u8", &"x".repeat(129)] {
+            assert_eq!(live_src(&cam(id, Some(AccessType::Public))), None, "{id}");
         }
     }
 

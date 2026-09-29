@@ -10,6 +10,7 @@
 // - An unknown path WITH an extension gets 404. CloudFront would answer index.html there too,
 //   which is exactly how a missing .wasm turns into a blank page; the smoke test should see
 //   the missing file instead.
+// - Answers a single byte range (206), as S3 and CloudFront do, so video can seek.
 // - Refuses to start when something already answers on the port, rather than letting the
 //   smoke test run against another server (the dev server's 8791, for example).
 // Prints "listening http://127.0.0.1:<port>/" once ready. Stops on SIGTERM or SIGINT.
@@ -42,6 +43,8 @@ const TYPES = {
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
   '.mp4': 'video/mp4',
+  '.m3u8': 'application/vnd.apple.mpegurl',
+  '.m4s': 'video/iso.segment',
 };
 
 // Is something already listening? A connect that succeeds means yes.
@@ -65,8 +68,8 @@ async function fileAt(path) {
 }
 
 const server = createHttpServer(async (req, res) => {
-  const send = (status, type, body) => {
-    res.writeHead(status, { 'content-type': type, 'content-length': body.length, 'cache-control': 'no-store' });
+  const send = (status, type, body, extra = {}) => {
+    res.writeHead(status, { 'content-type': type, 'content-length': body.length, 'cache-control': 'no-store', ...extra });
     res.end(req.method === 'HEAD' ? undefined : body);
   };
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(405, 'text/plain', Buffer.from('method not allowed\n'));
@@ -82,7 +85,22 @@ const server = createHttpServer(async (req, res) => {
   if (!file && extname(path) === '') file = join(root, 'index.html'); // SPA fallback
   if (!file) return send(404, 'text/plain', Buffer.from('not found\n'));
   try {
-    send(200, TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream', await readFile(file));
+    const type = TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream';
+    const body = await readFile(file);
+    // One byte range, as S3 and CloudFront answer it. Without ranges a browser cannot seek in
+    // an MP4 it has not fully buffered, so the player's resume position could not be tested.
+    const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+    if (range && (range[1] || range[2])) {
+      const size = body.length;
+      const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+      const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+      if (start >= size || start > end) {
+        return send(416, 'text/plain', Buffer.alloc(0), { 'content-range': `bytes */${size}` });
+      }
+      return send(206, type, body.subarray(start, end + 1),
+        { 'accept-ranges': 'bytes', 'content-range': `bytes ${start}-${end}/${size}` });
+    }
+    send(200, type, body, { 'accept-ranges': 'bytes' });
   } catch (e) {
     send(500, 'text/plain', Buffer.from(`${e.message}\n`));
   }

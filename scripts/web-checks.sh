@@ -21,6 +21,7 @@ ROOT=$(pwd)
 # Release WASM + every first-load JS file (the wasm-bindgen glue at the dist root and each
 # snippet), brotli -q 11, in bytes ("KB" in the plan means 1,000 bytes). The budget is
 # docs/WASM_PLAN.md section 5, rule 2. The W1 shell measured ~145,000 bytes against it.
+# Files under dist/vendor/ (hls.js) load lazily: their size is printed, not counted.
 SIZE_BUDGET_BYTES=300000
 
 ALL_STEPS="fmt clippy-wasm clippy test fixtures build size smoke"
@@ -183,6 +184,13 @@ if wants size; then
   done < <( { find "$DIST" -maxdepth 1 -type f \( -name '*.wasm' -o -name '*.js' \) -print0
               [ -d "$DIST/snippets" ] && find "$DIST/snippets" -type f -print0; } )
   printf '       %9d  total, brotli -q 11 (budget %d)\n' "$total" "$SIZE_BUDGET_BYTES"
+  # Lazy files: fetched only by the page that needs them (hls.js by the video player), so they
+  # are shown for the record and not counted against the first-load budget.
+  if [ -d "$DIST/vendor" ]; then
+    while IFS= read -r -d '' f; do
+      printf '       %9d  %s (lazy, not counted)\n' "$(brotli -q 11 -c "$f" | wc -c | tr -d ' ')" "${f#"$DIST"/}"
+    done < <(find "$DIST/vendor" -type f \( -name '*.js' -o -name '*.mjs' \) -print0 | sort -z)
+  fi
   if [ "$total" -gt "$SIZE_BUDGET_BYTES" ]; then
     fail "size budget" "$total bytes is over the $SIZE_BUDGET_BYTES-byte first-load budget (docs/WASM_PLAN.md section 5)"
   fi
