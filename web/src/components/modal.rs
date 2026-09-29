@@ -12,6 +12,9 @@ static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 #[component]
 pub fn Modal(
     open: RwSignal<bool>,
+    /// The dialog element's id, for code that must tell this dialog apart.
+    #[prop(optional, into)]
+    id: Option<String>,
     #[prop(into)] title: String,
     #[prop(optional, into)] close_label: Option<String>,
     /// Buttons shown before the close button (e.g. Confirm); they must not submit the form.
@@ -36,7 +39,7 @@ pub fn Modal(
     view! {
         // The browser queues the close event, so it can arrive after the dialog has been opened
         // again for another action: then it is stale, and must not close the new one.
-        <dialog class="modal" node_ref=dialog aria-labelledby=labelled_by on:close=move |_| {
+        <dialog class="modal" id=id node_ref=dialog aria-labelledby=labelled_by on:close=move |_| {
             if !dialog.get_untracked().is_some_and(|d| d.open()) {
                 open.set(false);
             }

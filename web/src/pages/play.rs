@@ -537,7 +537,7 @@ fn can_confirm(d: &Dlg, coins: Option<u64>) -> bool {
 fn confirm_dialog(spend: Spend, auth: Auth) -> impl IntoView {
     let t = move |f| spend.text(f);
     view! {
-        <Modal open=spend.open title="Check and confirm" close_label="Cancel"
+        <Modal open=spend.open id="play-confirm" title="Check and confirm" close_label="Cancel"
             actions=Box::new(move || view! {
                 // No Confirm button at all until a user pool is configured.
                 {move || auth.ready().then(|| view! {

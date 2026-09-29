@@ -77,10 +77,14 @@ export async function check({ browser, BASE, FAKE_WEBMCP }) {
     assert.deepEqual([a.consequentialHint, a.readOnlyHint], [true, false], `${name} is consequential`);
   }
 
-  // -- a vote: Play's own dialog opens; nothing is sent until Confirm ---------------------------
+  // -- a vote: Play's own dialog opens (and it alone: another open dialog is closed first,
+  //    review rv-1790688216-35710); nothing is sent until Confirm ----------------------------------
+  await page.click('footer button:has-text("Play coins are not money")');
+  await dialog(page).waitFor();
   await start(page, 'cast_vote', { capybara: 'magnus', interaction: 'snack-vote-1', option: 'carrots', votes: 2 });
   await page.waitForURL(`${BASE}/play?capy=magnus`);
-  await dialog(page).waitFor();
+  await page.locator('#play-confirm[open]').waitFor();
+  assert.equal(await page.locator('dialog[open]').count(), 1, 'one dialog at a time');
   assert.equal(await page.innerText('[data-testid=confirm-what]'), '2 votes for Carrots in “Pick Magnus\'s snack”.');
   await sleep(2000);
   assert.equal(await outcome(page, 'cast_vote'), 'pending', 'the call waits for the person');
@@ -134,9 +138,12 @@ export async function check({ browser, BASE, FAKE_WEBMCP }) {
 
   // -- chat: the exact text above the chat; posted only on Post --------------------------------
   const line = 'Hello from an assistant 🦫';
+  await page.click('footer button:has-text("Play coins are not money")');
+  await dialog(page).waitFor();
   await start(page, 'send_chat', { stream: 'main-cam', text: line });
   await page.waitForURL(`${BASE}/stream/magnus?cam=main-cam`);
   await page.locator('[data-testid=agent-ask]').waitFor();
+  assert.equal(await page.locator('dialog[open]').count(), 0, 'no dialog left over the page, so Post can be pressed');
   assert.equal(await page.innerText('[data-testid=agent-ask-text]'), line);
   await sleep(2000);
   assert.equal(await outcome(page, 'send_chat'), 'pending');

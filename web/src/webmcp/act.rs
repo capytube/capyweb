@@ -140,6 +140,27 @@ fn schema(text: &str) -> serde_json::Value {
     serde_json::from_str(text).unwrap_or_default()
 }
 
+/// Close any other dialog the person has open, so the page's own confirm step (or the chat bar) is
+/// the one thing asking: two modal dialogs at once confuse, and an open modal leaves the page behind
+/// it inert (review rv-1790688216-35710). Nothing spends on close. Play's own confirm dialog stays:
+/// an assistant's ask takes it over in place.
+fn close_other_dialogs() {
+    let Some(doc) = web_sys::window().and_then(|w| w.document()) else {
+        return;
+    };
+    let Ok(open) = doc.query_selector_all("dialog[open]:not(#play-confirm)") else {
+        return;
+    };
+    for i in 0..open.length() {
+        if let Some(d) = open
+            .item(i)
+            .and_then(|n| n.dyn_into::<web_sys::HtmlDialogElement>().ok())
+        {
+            d.close();
+        }
+    }
+}
+
 /// A whole number argument within `range`.
 fn count_arg(input: &JsValue, key: &str, range: std::ops::RangeInclusive<u64>) -> Option<u64> {
     let n = Reflect::get(input, &key.into()).ok()?.as_f64()?;
@@ -218,6 +239,7 @@ pub(super) fn tools(ctx: Ctx) -> Vec<Tool> {
                 })();
                 match want {
                     Ok(want) => {
+                        close_other_dialogs();
                         c1.go(&play_path(&want), "Play");
                         asks.ask(want, signal)
                     }
@@ -254,6 +276,7 @@ pub(super) fn tools(ctx: Ctx) -> Vec<Tool> {
                 })();
                 match want {
                     Ok(want) => {
+                        close_other_dialogs();
                         c2.go(&play_path(&want), "Play");
                         asks.ask(want, signal)
                     }
@@ -355,6 +378,7 @@ fn post_tool(
                     done(Err("stream: not a public camera".into()));
                     return;
                 };
+                close_other_dialogs();
                 ctx.go(
                     &crate::pages::watch_room::cam_href(&capy, &stream),
                     "the watch room",
