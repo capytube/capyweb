@@ -37,7 +37,10 @@ function edgeChecks() {
     for (const path of ['/', '/watch', '/watch/', '/play', '/deletion', '/stream/magnus', '/stream/magnus/', '/shop/pass-1', '/auth/callback']) {
       assert.deepEqual(answer(path, seen), ['/index.html', 200], `${path} is a page (${seen})`);
     }
-    for (const path of ['/garbage', '/no/such/page', '/stream/a/b', '/admin', '/watch//']) {
+    // An encoded spelling of a route (/%77atch) is not a route either: the browser sends it as is
+    // and the app's router shows "Page not found" for it too, so the status and the page agree
+    // (review rv-1790689952-88135; docs/CRAWLERS_NOTES.md).
+    for (const path of ['/garbage', '/no/such/page', '/stream/a/b', '/admin', '/watch//', '/%77atch']) {
       assert.deepEqual(answer(path, seen), ['/index.html', 404], `${path} is not a page (${seen})`);
     }
     for (const path of ['/assets/cast/magnus.jpg', '/robots.txt', '/index.html', '/config.json']) {
@@ -75,7 +78,7 @@ export async function check({ open, browser, BASE }) {
   // noindex while a not-found view shows, gone once a real page shows. Raw pages: the missing
   // pass's 404 is logged to the console on purpose.
   const noindex = (page) => page.locator('meta[name=robots][content=noindex]').count();
-  for (const [path, h1] of [['/no/such/page', 'Page not found'], ['/shop/nope', 'Pass not found']]) {
+  for (const [path, h1] of [['/no/such/page', 'Page not found'], ['/%77atch', 'Page not found'], ['/shop/nope', 'Pass not found']]) {
     const page = await browser.newPage();
     await page.goto(BASE + path);
     await page.waitForFunction((h) => document.querySelector('main h1')?.textContent === h, h1);

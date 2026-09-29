@@ -159,6 +159,12 @@ wants otherwise.
    - `SpaFunction` marks paths that are not routes of the app.
    - `NotFoundFunction` (viewer response) answers 404 for them and keeps the shell's body.
    - Trailing slashes count as the route, as in the client router.
+   - A percent-encoded spelling of a route, such as `/%77atch`, is not a route: it answers 404. Review
+     rv-1790689952-88135 called this a false 404, but measured on dev, Chromium sends the path as is
+     and the app's router shows "Page not found" for it too, so the status and the page agree. No link
+     on the site produces such a URL. Decoding it at the edge alone would serve 200 for a page that
+     says "not found"; if it is ever wanted, the edge and the router must both decode (or the edge
+     redirects to the plain spelling).
    - A Rust test keeps both route lists equal to the app's routes (`edge_routes_match_the_app`).
    - Measured on dev:
      - `/garbage`, `/no/such/page` and `/stream/a/b` answer 404;
