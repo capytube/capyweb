@@ -349,8 +349,9 @@ fn refusal(e: &CodedError, per_minute: u32, have: Option<u64>) -> String {
 }
 
 /// One viewing: buy, play, and buy the next minute when the server says so, while the tab is
-/// visible. It ends when `gen` moves on (Stop, leaving the camera) or on a refusal. Each
-/// purchase has its own Idempotency-Key, reused only to ask again after a lost answer.
+/// visible. It ends when `gen` moves on (Stop, leaving the camera), on a refusal, or when the
+/// picture will not play even after one fresh start (`broken`, set by the player). Each purchase
+/// has its own Idempotency-Key, reused only to ask again after a lost answer.
 #[allow(clippy::too_many_arguments)]
 async fn watch_loop(
     auth: Auth,
@@ -360,11 +361,13 @@ async fn watch_loop(
     gen: StoredValue<u32>,
     state: RwSignal<Paid>,
     note: RwSignal<String>,
+    broken: RwSignal<bool>,
     per_minute: u32,
 ) {
     let current = move || gen.try_get_value() == Some(my);
     let mut first = true;
     let mut epoch = 0;
+    let mut restarted = false;
     loop {
         let key = crate::auth::random_key();
         let mut answer = api::buy_playback(auth, &id, &key).await;
@@ -416,10 +419,32 @@ async fn watch_loop(
             return;
         }
         if state.with_untracked(|s| *s != Paid::Watching(src.clone(), epoch)) {
+            broken.set(false);
             state.set(Paid::Watching(src, epoch));
         }
         first = false;
-        sleep_s(pass.renew_after_s).await;
+        // Wait for the next minute a second at a time, so a picture that will not play is noticed
+        // at once instead of being paid for again.
+        let mut waited = 0;
+        while current() && !broken.get_untracked() && waited < pass.renew_after_s {
+            sleep_s(1).await;
+            waited += 1;
+        }
+        if !current() {
+            return;
+        }
+        if broken.get_untracked() {
+            if restarted {
+                note.set("The recording would not play, so nothing more will be charged.".into());
+                state.set(Paid::Idle);
+                return;
+            }
+            // Once: fresh cookies (free while 30 s or more are paid) and a fresh player.
+            restarted = true;
+            epoch += 1;
+            continue;
+        }
+        restarted = false;
         // Hidden: the player has paused, so buy nothing until the viewer is back. After a long
         // spell the cookies may have run out: start the player again once the next minute is paid.
         let mut away = 0;
@@ -452,6 +477,21 @@ fn PaidCam(stream: LiveStream) -> impl IntoView {
     let sellable = per_minute.is_some() && (recorded || stream.is_live == Some(true));
     let state = RwSignal::new(Paid::Idle);
     let note = RwSignal::new(String::new());
+    let broken = RwSignal::new(false);
+    let stop_button = NodeRef::<html::Button>::new();
+    // Start unmounts the button that had focus: hand it to Stop, unless the viewer has moved on.
+    Effect::new(move |_| {
+        let Some(button) = stop_button.get() else {
+            return;
+        };
+        let lost = web_sys::window()
+            .and_then(|w| w.document())
+            .and_then(|d| d.active_element())
+            .is_none_or(|a| a.tag_name() == "BODY");
+        if lost {
+            let _ = button.focus();
+        }
+    });
     let gen = StoredValue::new(0u32);
     on_cleanup(move || gen.update_value(|g| *g += 1));
 
@@ -463,6 +503,10 @@ fn PaidCam(stream: LiveStream) -> impl IntoView {
         });
     };
     let start = move |_| {
+        // Two activations in one tick (assistive tech, scripts) must not start two viewings.
+        if matches!(state.get_untracked(), Paid::Busy | Paid::Watching(..)) {
+            return;
+        }
         let Some(p) = per_minute else { return };
         let my = gen.get_value() + 1;
         gen.set_value(my);
@@ -476,6 +520,7 @@ fn PaidCam(stream: LiveStream) -> impl IntoView {
             gen,
             state,
             note,
+            broken,
             p,
         ));
     };
@@ -515,9 +560,11 @@ fn PaidCam(stream: LiveStream) -> impl IntoView {
             {move || match state.get() {
                 Paid::Watching(src, _) => view! {
                     <VideoPlayer src=Signal::stored(Some(src)) poster=poster label=title.clone()
-                        recorded=recorded resume_key=id.get_value()/>
+                        recorded=recorded resume_key=id.get_value()
+                        on_offline=move |_| broken.set(true)/>
                     <p>"Taken each minute while you watch. Nothing is taken while the tab is hidden."</p>
-                    <button type="button" class="btn btn-ghost" data-testid="paid-stop" on:click=stop>
+                    <button type="button" class="btn btn-ghost" data-testid="paid-stop" node_ref=stop_button
+                        on:click=stop>
                         "Stop watching"</button>
                 }.into_any(),
                 Paid::Confirm => view! {
@@ -529,7 +576,7 @@ fn PaidCam(stream: LiveStream) -> impl IntoView {
                             "Cancel"</button>
                     </div>
                 }.into_any(),
-                Paid::Busy => view! { <p>"Starting…"</p> }.into_any(),
+                Paid::Busy => view! { <p role="status">"Starting…"</p> }.into_any(),
                 Paid::Idle if !sellable => view! {
                     <p>"This camera cannot be watched right now."</p>
                 }.into_any(),

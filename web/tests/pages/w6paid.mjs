@@ -101,6 +101,8 @@ export async function check({ browser, BASE, SHOTS }) {
   assert.equal(await page.getAttribute('[data-testid=player]', 'data-state'), 'recording');
   assert.equal(await page.innerText('[data-testid=recorded-badge]'), 'Recorded');
   await page.waitForFunction(() => document.querySelector('.coin-pill')?.textContent.includes('36'));
+  await page.waitForFunction(() => document.activeElement?.dataset.testid === 'paid-stop');
+  // (Start unmounted with focus on it: focus moved to Stop, not to the page body.)
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/w6-paid-watching.png`, fullPage: true });
 
   // -- the next minute: a new key; a lost answer is asked again with the same key -----------
@@ -126,6 +128,29 @@ export async function check({ browser, BASE, SHOTS }) {
   const stoppedAt = api.posts.length;
   await sleep(6000);
   assert.equal(api.posts.length, stoppedAt, 'nothing bought after Stop');
+
+  // -- two activations of Start in one tick start one viewing (review rv-1790679222-35297) ----
+  await page.click('[data-testid=paid-watch]');
+  await page.locator('[data-testid=paid-start]').waitFor();
+  const twice = api.posts.length;
+  await page.evaluate(() => { const b = document.querySelector('[data-testid=paid-start]'); b.click(); b.click(); });
+  await video.waitFor();
+  await sleep(1500);
+  assert.equal(api.posts.length, twice + 1, 'one purchase for a same-tick double Start');
+  await page.click('[data-testid=paid-stop]');
+
+  // -- a picture that will not play: one fresh start, then no more buying, and a message ------
+  await page.route('**/fixtures/paid/wall-cam/**', (r) => r.fulfill({ status: 403, body: 'no' }));
+  const dead = api.posts.length;
+  await page.click('[data-testid=paid-watch]');
+  await page.click('[data-testid=paid-start]');
+  await note.getByText('The recording would not play, so nothing more will be charged.').waitFor({ timeout: 30000 });
+  assert.ok(api.posts.length - dead <= 2, `the purchase and at most one fresh start (${api.posts.length - dead})`);
+  assert.equal(await video.count(), 0);
+  const gaveUp = api.posts.length;
+  await sleep(6000);
+  assert.equal(api.posts.length, gaveUp, 'nothing bought after giving up');
+  await page.unroute('**/fixtures/paid/wall-cam/**');
 
   // -- a refusal: a plain message, no player -------------------------------------------------
   api.refuse = { error: 'not enough coins', code: 'insufficient_coins' };

@@ -77,6 +77,10 @@ pub fn VideoPlayer(
     /// Played when the source fails. Never live.
     #[prop(optional_no_strip)]
     fallback: Option<String>,
+    /// Called once when there was a source and nothing could be played (the offline state). A
+    /// paid camera stops buying on it: nobody pays for a picture that does not come.
+    #[prop(optional, into)]
+    on_offline: Option<Callback<()>>,
 ) -> impl IntoView {
     let failed = RwSignal::new(Vec::<String>::new());
     let current = Memo::new(move |_| {
@@ -104,6 +108,13 @@ pub fn VideoPlayer(
         }
     });
     on_cleanup(stop);
+    if let Some(cb) = on_offline {
+        Effect::new(move |_| {
+            if current.with(Option::is_none) && src.with(Option::is_some) {
+                cb.run(());
+            }
+        });
+    }
 
     let state = move || match current.get() {
         Some((_, true)) => "live",
