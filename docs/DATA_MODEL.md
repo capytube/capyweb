@@ -187,9 +187,26 @@ tokens** are accepted (`token_use: access`; an ID token is 401). The caller is *
 `sub` claim; no route takes a user id, and every body is checked against an allow-list of fields, so a
 `user_id`, `balance`, `cost` or `price` in a body is a 400. Responses are `no-store`, except the
 public chat read (`public, max-age=5`). Errors are
-`{"error": "...", "code": "..."}`; `code` is stable for clients to switch on. Coin numbers (starting
-balance, chat and reaction costs, caps) are named constants in `backend/src/lib/economy.ts`, all
-"free and no grants" until decided.
+`{"error": "...", "code": "..."}`; `code` is stable for clients to switch on. Coin numbers are named
+constants in `backend/src/lib/economy.ts`, decided by capyweb-manager on 2026-09-29:
+
+| Constant | Value | Meaning |
+|---|---|---|
+| `STARTING_BALANCE` | 50 | one-time sign-up grant, one `signup_grant` ledger entry; **no daily grant** |
+| `CHAT_COST`, `REACTION_COST` | 0 | free: a plain write, no ledger entry |
+| `MAX_VOTES_PER_REQUEST` | 10 | votes one request may buy |
+| `BID_MIN_INCREMENT` | 1 | a bid must beat `current_bid` by at least this |
+| `MAX_BID` | 1,000,000 | ceiling on one bid |
+| `REFUND_OUTBID` | true | the outbid bidder gets their coins back in the same transaction |
+
+Votes cost `number_of_votes × vote_cost`, plus `custom_request_cost` for a custom request; an
+interaction without a `vote_cost` is refused (`not_priced`), never free.
+
+**The sign-up grant** is paid when the account is created, which happens on the caller's first
+`GET /me` or `PUT /me`: one transaction puts the user item (only if absent) together with the
+`signup_grant` entry, so repeated or concurrent first calls grant exactly once. An account that has
+never called `/me` does not exist yet, so a vote or bid from it is `409 insufficient_coins`; the
+client calls `GET /me` after sign-in.
 
 Anything that spends coins takes an `Idempotency-Key` header (8–64 of `A-Za-z0-9_-`, a UUID per user
 action). Same key and same request: the first answer again, `200` with `"replayed": true`. Same key and
@@ -197,7 +214,7 @@ a different request: `409 idempotency_mismatch`.
 
 | Route | Does | Success | Refusals |
 |---|---|---|---|
-| `GET /me` | the caller's account; creates it on first sight | 200 | 401 |
+| `GET /me` | the caller's account; creates it on first sight with the 50-coin sign-up grant | 200 | 401 |
 | `PUT /me` | set `display_name` (2–32 letters/digits, single `. _ - '` or space between; staff-like names reserved) | 200 | 400 |
 | `GET /me/transactions?limit&cursor` | the caller's ledger, newest first | 200 | 400 bad cursor |
 | `POST /interactions/{id}/votes` | vote; cost = `number_of_votes × vote_cost` (+ `custom_request_cost`) from the interaction item | 201 | 404, 409 `interaction_closed` `wrong_type` `not_priced` `no_custom` `insufficient_coins` |
@@ -232,14 +249,14 @@ Examples (`Authorization: Bearer <access token>` on every request):
 
 ```http
 GET /me
-200 {"id":"0b6e…","display_name":null,"balance":0,"createdAt":"2026-09-29T08:00:00.000Z"}
+200 {"id":"0b6e…","display_name":null,"balance":50,"createdAt":"2026-09-29T08:00:00.000Z"}
 
 PUT /me                         {"display_name":"Capy Fan"}
-200 {"id":"0b6e…","display_name":"Capy Fan","balance":0,"createdAt":"…"}
+200 {"id":"0b6e…","display_name":"Capy Fan","balance":50,"createdAt":"…"}
 
-GET /me/transactions?limit=2
+GET /me/transactions?limit=20        (after the vote below)
 200 {"items":[{"id":"q3…","type":"vote","amount":-2,"related_type":"vote","related_id":"Xy…",
-     "createdAt":"…"}],"count":1,"cursor":"WyJ…"}
+     "createdAt":"…"},{"id":"S9…","type":"signup_grant","amount":50,"createdAt":"…"}],"count":2}
 
 POST /interactions/snack-vote-1/votes   Idempotency-Key: 5d1c…   {"option_id":"carrots","number_of_votes":2}
 201 {"vote":{"id":"Xy…","interaction_id":"snack-vote-1","option_id":"carrots","number_of_votes":2,

@@ -1,10 +1,14 @@
 // Play-coin numbers. Play coins are NOT money: they cannot be bought, sold, cashed out or
-// transferred between people. Every number here is a product decision nobody has written down
-// yet, so each defaults to "no free coins, no charge" and is listed as an open question for
-// capyweb-lead (lane 4 report, capyweb-3ge / capyweb-7hj). Change them here and nowhere else.
+// transferred between people. Decided by capyweb-manager on 2026-09-29 (lane 4 questions):
+// a one-time sign-up grant of 50, no daily grant, chat and reactions free, the caps below, and
+// refunds for outbid bidders. Change them here and nowhere else, and update docs/DATA_MODEL.md.
 
-/** Coins a new account starts with. 0 = none. If raised, the grant is a ledger entry (type signup_grant). */
-export const STARTING_BALANCE = 0;
+/**
+ * Coins a new account starts with: a one-time grant of 50, written as one `signup_grant` ledger
+ * entry in the same transaction that creates the account, so it is paid exactly once per user.
+ * There is no daily grant.
+ */
+export const STARTING_BALANCE = 50;
 
 /** Coins charged per chat message. 0 = free (plain write, no ledger entry). */
 export const CHAT_COST = 0;
@@ -24,6 +28,6 @@ export const MAX_BID = 1_000_000;
 /**
  * When someone is outbid, their coins come back in the same transaction (a bid_refund entry),
  * so only the standing high bid is ever held. false = the old app's behaviour: every bid is spent
- * whether or not it wins. Open question for capyweb-lead.
+ * whether or not it wins. Decided: refund.
  */
 export const REFUND_OUTBID = true;

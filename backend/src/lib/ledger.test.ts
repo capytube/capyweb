@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildTransaction, classify, derivedId, fingerprint, IDEMPOTENCY_TTL_HOURS, type LedgerRequest } from "./ledger.ts";
-import { STARTING_BALANCE, CHAT_COST, REACTION_COST } from "./economy.ts";
+import {
+  STARTING_BALANCE, CHAT_COST, REACTION_COST, MAX_VOTES_PER_REQUEST, BID_MIN_INCREMENT, MAX_BID, REFUND_OUTBID,
+} from "./economy.ts";
 
 const NOW = "2026-09-29T08:00:00.000Z";
 
@@ -15,10 +17,14 @@ const req = (over: Partial<LedgerRequest> = {}): LedgerRequest => ({
   ...over,
 });
 
-test("money defaults: no free coins and no charges until someone decides otherwise", () => {
-  assert.equal(STARTING_BALANCE, 0);
+test("money values as decided by capyweb-manager: a 50-coin sign-up grant, free chat and reactions", () => {
+  assert.equal(STARTING_BALANCE, 50);
   assert.equal(CHAT_COST, 0);
   assert.equal(REACTION_COST, 0);
+  assert.equal(MAX_VOTES_PER_REQUEST, 10);
+  assert.equal(BID_MIN_INCREMENT, 1);
+  assert.equal(MAX_BID, 1_000_000);
+  assert.equal(REFUND_OUTBID, true);
 });
 
 test("the idempotency marker is first, in the caller's partition, conditional and expiring", () => {
