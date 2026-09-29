@@ -613,7 +613,7 @@ rendering, ~850 ms), `Cache-Control: immutable` on hashed files, brotli at the C
 `/assets/cast/*.jpg` (~261 KiB on /watch) with `srcset`.
 
 **Size.** With `erase_components` (section 5, rule 2) and everything W14 added, production is
-265,133 bytes brotli, the dev build with the WebMCP tools 288,388 of the 350,000 cap.
+265,133 bytes brotli, the dev build with the WebMCP tools 288,551 of the 350,000 cap (measured at cdf91bb by the W14 review).
 
 **Parity** (`docs/PARITY.md`): 37 rows, 28 the same, 4 deliberate drops, 5 gaps and none blocks
 cutover. The first-sign-in name prompt, which this plan promised, is built; the reaction bursts, the

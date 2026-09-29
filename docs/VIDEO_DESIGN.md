@@ -366,6 +366,14 @@ paid for. A live window (section 2) only ever holds the last few segments. With 
 are not money this is acceptable; with real payments, paid recordings would need per-segment
 URLs signed for a moving window.
 
+**Stop cannot recall a renewal already sent** (review rv-1790696475-7422). Stop ends the loop, but a
+renewal request already on its way when Stop is pressed still lands, so one more minute can be charged
+after the press; the note then says, truthfully, that nothing more will be. Accepted for play coins;
+a real-money pass would need a refund of a minute bought within a few seconds of Stop.
+
+**A paused, visible tab still pays**, as designed above. The paid player says so under the picture
+("Pausing does not stop the charge: press Stop watching to end it"; the same review).
+
 **Not exclusive yet** (review rv-1790676703-87081). wall-cam plays minutes 51:42 to 77:34 of
 `capytube-stream.mp4`, and that source file is still readable by anyone at its old S3 URL
 (`magnus-video-public`, the file today's site and `demo/` play; `capyweb-c24`). Seeking it to that

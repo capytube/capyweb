@@ -596,7 +596,9 @@ fn PaidCam(stream: LiveStream) -> impl IntoView {
                     <VideoPlayer src=Signal::stored(Some(src)) poster=poster label=title.clone()
                         recorded=recorded resume_key=id.get_value()
                         on_offline=move |_| broken.set(true) on_moving=move |m| moving.set(m)/>
-                    <p>"Taken each minute while you watch. Nothing is taken while the tab is hidden."</p>
+                    // A paused, visible tab still pays (docs/VIDEO_DESIGN.md section 8), so say so
+                    // (review rv-1790696475-7422).
+                    <p data-testid="paid-meter">"Taken each minute while you watch. Nothing is taken while the tab is hidden. Pausing does not stop the charge: press Stop watching to end it."</p>
                     <button type="button" class="btn btn-ghost" data-testid="paid-stop" node_ref=stop_button
                         on:click=stop>
                         "Stop watching"</button>

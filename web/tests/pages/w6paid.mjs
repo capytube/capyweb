@@ -103,6 +103,8 @@ export async function check({ browser, BASE, SHOTS }) {
   await page.waitForFunction(() => document.querySelector('.coin-pill')?.textContent.includes('36'));
   await page.waitForFunction(() => document.activeElement?.dataset.testid === 'paid-stop');
   // (Start unmounted with focus on it: focus moved to Stop, not to the page body.)
+  assert.match(await page.innerText('[data-testid=paid-meter]'), /Pausing does not stop the charge: press Stop watching to end it\./,
+    'a paused, visible tab still pays, and the page says so');
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/w6-paid-watching.png`, fullPage: true });
 
   // -- the next minute: a new key; a lost answer is asked again with the same key -----------
