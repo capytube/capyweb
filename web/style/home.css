@@ -1,14 +1,17 @@
 /* The approved demo's warm panels, alternating cast cards and captioned photos. */
 .home-now {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 1.5rem;
   margin-top: 2rem;
   background: var(--babycorn-yellow);
 }
+.home-now-text { grid-template-columns: minmax(0, 1fr); }
+/* The capybara photos are 211px wide: shown at their own shape, never stretched to the column. */
 .home-now > img {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   height: 300px;
   object-fit: cover;
   border-radius: 14px;
@@ -41,7 +44,7 @@
 .home-film span { position: absolute; left: .7rem; bottom: .7rem; background: rgba(61, 36, 36, .9); border-radius: 999px; padding: .2rem .65rem; font-family: var(--font-ui); }
 @media (max-width: 700px) {
   .home-now, .home-steps, .home-cast-grid { grid-template-columns: minmax(0, 1fr); }
-  .home-now > img { height: 260px; }
+  .home-now > img { height: 260px; justify-self: center; }
   .home-cast-grid { gap: 1.8rem; }
   .home-film { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 85%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: .4rem; }
   .home-film a { scroll-snap-align: start; }

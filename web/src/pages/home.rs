@@ -31,6 +31,14 @@ pub fn watch_href(s: &LiveStream) -> String {
 #[component]
 pub fn Home() -> impl IntoView {
     let streams = LocalResource::new(|| api::list_streams(None));
+    // The featured room's own capybara, never a stand-in: no photo while loading, without a
+    // public room, or for a capybara with no bundled photo.
+    let now_photo = move || {
+        streams
+            .get()
+            .and_then(Result::ok)
+            .and_then(|page| featured(&page.items).and_then(room_photo))
+    };
     view! {
         <PageHead
             title="Watch Magnus. Then pick his snack."
@@ -69,14 +77,20 @@ pub fn Home() -> impl IntoView {
                 })}
             </Suspense>
         </section>
-        <section class="home-now card" aria-labelledby="now-title">
-            <img src="/assets/posters/magnus-gym.webp" alt="Magnus in front of the climbing wall" width="457" height="618" loading="lazy"/>
+        <section
+            class="home-now card"
+            class:home-now-text=move || now_photo().is_none()
+            aria-labelledby="now-title"
+        >
+            {move || now_photo().map(|photo| view! {
+                <img src=photo.src alt=photo.alt width=photo.width height=photo.height/>
+            })}
             <div>
                 <h2 id="now-title">"Now showing"</h2>
                 <Suspense fallback=|| view! { <p role="status">"Loading the public room…"</p> }>
                     {move || streams.get().map(|r| match r {
                         Err(_) => view! { <p role="alert">"Could not load the public room. Please try again later."</p> }.into_any(),
-                        Ok(page) => match page.items.iter().find(|s| s.is_public()) {
+                        Ok(page) => match featured(&page.items) {
                             Some(stream) => view! {
                                 <h3>{stream.title.clone()}</h3>
                                 {stream.is_recording().then(|| view! {
@@ -95,6 +109,16 @@ pub fn Home() -> impl IntoView {
         <Gang/>
         <PhotoStrip/>
     }
+}
+
+/// The room "Now showing" features: the first public camera.
+fn featured(items: &[LiveStream]) -> Option<&LiveStream> {
+    items.iter().find(|s| s.is_public())
+}
+
+/// A room's picture: the photo of the capybara its Watch link opens.
+fn room_photo(s: &LiveStream) -> Option<Photo> {
+    s.capybara_ids.first().and_then(|c| capy_photo(c))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -268,5 +292,27 @@ mod tests {
         for id in ["unknown", "", "Magnus", "../magnus"] {
             assert_eq!(capy_photo(id), None);
         }
+    }
+
+    fn cam(id: &str, access: &str, capys: &[&str]) -> LiveStream {
+        serde_json::from_value(serde_json::json!({
+            "id": id, "title": id, "access_type": access, "capybara_ids": capys,
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn now_showing_pictures_the_featured_rooms_own_capybara() {
+        let items = [
+            cam("wall-cam", "private", &["elon"]),
+            cam("food-cam", "public", &["einstein"]),
+            cam("main-cam", "public", &["magnus"]),
+        ];
+        let room = featured(&items).unwrap();
+        assert_eq!(room.id, "food-cam");
+        assert_eq!(room_photo(room), capy_photo("einstein"));
+        assert_eq!(featured(&items[..1]).map(|s| s.id.as_str()), None);
+        assert_eq!(room_photo(&cam("new-cam", "public", &["new-friend"])), None);
+        assert_eq!(room_photo(&cam("empty-cam", "public", &[])), None);
     }
 }

@@ -20,6 +20,11 @@ export async function check({ open, browser, BASE, SHOTS }) {
     }
     assert.equal(await page.locator('.home-now a').getAttribute('href'), '/stream/einstein');
     assert.equal(await page.locator('.home-now h3').innerText(), 'Food cam');
+    // The picture is the featured room's own capybara (review rv-1790679953-48717).
+    const now = page.locator('.home-now > img');
+    assert.equal(await now.getAttribute('src'), '/assets/home/einstein.webp');
+    assert.equal(await now.getAttribute('alt'), 'Einstein standing on a bed');
+    assert.equal(await now.getAttribute('loading'), null, 'not lazy: it is near the top of the page');
     assert.equal(await page.locator('main video, main button').count(), 0);
     assert.equal(await page.locator('.home-film a[href="/watch"]').count(), 3);
     for (const img of await page.locator('main img').all()) {
@@ -53,8 +58,16 @@ export async function check({ open, browser, BASE, SHOTS }) {
   }));
   await page.goto(BASE + '/');
   await page.waitForSelector('[data-testid="gang-list"] li');
-  assert.equal(await page.locator('.home-capy img, .home-awake, .home-now a').count(), 0);
+  assert.equal(await page.locator('.home-capy img, .home-awake, .home-now a, .home-now img').count(), 0);
   assert.match(await page.locator('.home-now').innerText(), /No public room/);
+  // A public room whose capybara has no photo gets no stand-in picture, and one column.
+  await page.route('**/fixtures/streams.json', route => route.fulfill({
+    json: { items: [{ id: 'new-cam', title: 'New cam', access_type: 'public', capybara_ids: ['new-friend'] }], count: 1 },
+  }));
+  await page.reload();
+  await page.locator('.home-now h3').filter({ hasText: 'New cam' }).waitFor();
+  assert.equal(await page.locator('.home-now img').count(), 0);
+  assert.equal(await page.locator('.home-now.home-now-text').count(), 1);
   await page.route('**/fixtures/capybaras.json', route => route.fulfill({ json: { items: [], count: 0 } }));
   await page.reload();
   await page.getByText('The gang will be here soon.').waitFor();
