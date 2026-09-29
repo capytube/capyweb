@@ -71,4 +71,9 @@
 # - linear.api_key  → use LINEAR_API_KEY env var instead
 # - github.token    → use GITHUB_TOKEN env var instead
 
-sync.remote: "git+https://github.com/capytube/capyweb"
+# sync.remote: "git+https://github.com/capytube/capyweb"
+
+# This repo is PUBLIC (github.com/capytube/capyweb). Issues describe live leaked keys and attack
+# surface, so beads data must never be pushed to it (capyweb-manager, 2026-09-29). No Dolt remote
+# until a private one exists.
+no-push: true

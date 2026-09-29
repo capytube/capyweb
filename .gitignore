@@ -56,3 +56,6 @@ amplify_outputs.*.json
 
 # SAM build output
 .aws-sam/
+
+# Cursor agent session state (written by reviewer agents), never project content
+.cursor/hooks/state/
