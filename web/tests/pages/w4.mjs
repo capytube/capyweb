@@ -74,10 +74,10 @@ export async function check({ open, browser, BASE }) {
     assert.deepEqual(cards.map((c) => c.href), ['/stream/einstein', '/stream/elon', '/stream/magnus']);
     assert.match(cards[0].text, /Einstein/);
     assert.match(cards[0].text, /No private cameras/);
-    assert.equal(cards[0].img, '/assets/cast/einstein.jpg');
+    assert.equal(cards[0].img, '/assets/cast/einstein.webp');
     assert.match(cards[1].text, /Elon/);
     assert.match(cards[1].text, /1 private camera/);
-    assert.equal(cards[1].img, '/assets/cast/elon.jpg');
+    assert.equal(cards[1].img, '/assets/cast/elon.webp');
     assert.match(cards[2].text, /Magnus/);
     assert.match(cards[2].text, /No private cameras/);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

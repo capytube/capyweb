@@ -62,7 +62,7 @@ export async function check({ open, browser, settle, BASE, SHOTS }) {
     assert.doesNotMatch(await page.innerText('main'), /\blive\b/i, 'a recording never says live');
     assert.equal(await video(page).evaluate((v) => [v.muted, v.controls, v.hasAttribute('playsinline')].join()), 'true,true,true');
     assert.equal(await video(page).getAttribute('aria-label'), 'Main cam');
-    assert.match(await video(page).getAttribute('poster'), /\/assets\/cast\/magnus\.jpg$/, "the camera's own capybara");
+    assert.match(await video(page).getAttribute('poster'), /\/assets\/cast\/magnus\.webp$/, "the camera's own capybara");
 
     // hidden tab: paused; back: plays again
     await setHidden(page, true);
@@ -75,7 +75,7 @@ export async function check({ open, browser, settle, BASE, SHOTS }) {
     await page.waitForFunction(() => document.querySelector('main video')?.getAttribute('aria-label') === 'Food cam');
     await playing(page);
     assert.equal(paths.filter((p) => p.startsWith(HLS)).length, 1, 'still one hls.js request');
-    assert.match(await video(page).getAttribute('poster'), /einstein\.jpg$/);
+    assert.match(await video(page).getAttribute('poster'), /einstein\.webp$/);
 
     // navigating away destroys the player: no more playlist or segment requests
     await page.click('footer a[href="/about-us"]');

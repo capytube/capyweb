@@ -9,12 +9,14 @@ use crate::components::chrome::PageHead;
 use crate::domain::{Capybara, LiveStream};
 use crate::pages::watch_room::clip;
 
-/// Portrait stills from `demo/`. Unknown ids get no image.
+/// Portrait stills from `demo/`, re-encoded as WebP (quality 88, about a fifth of the JPEG bytes;
+/// capyweb-z14). Cards and posters always show them wider than their 211 px, so there is no
+/// smaller size for a `srcset` to offer. Unknown ids get no image.
 pub fn portrait(id: &str) -> Option<&'static str> {
     match id {
-        "magnus" => Some("/assets/cast/magnus.jpg"),
-        "elon" => Some("/assets/cast/elon.jpg"),
-        "einstein" => Some("/assets/cast/einstein.jpg"),
+        "magnus" => Some("/assets/cast/magnus.webp"),
+        "elon" => Some("/assets/cast/elon.webp"),
+        "einstein" => Some("/assets/cast/einstein.webp"),
         _ => None,
     }
 }
@@ -147,7 +149,7 @@ mod tests {
 
     #[test]
     fn portraits_are_local_stills() {
-        assert_eq!(portrait("magnus"), Some("/assets/cast/magnus.jpg"));
+        assert_eq!(portrait("magnus"), Some("/assets/cast/magnus.webp"));
         assert_eq!(portrait("nope"), None);
     }
 }

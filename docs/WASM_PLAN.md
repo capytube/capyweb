@@ -621,8 +621,12 @@ runs): mobile scores 80-93 and LCP 3.1-4.6 s; desktop 97-100 and LCP 0.7-1.2 s; 
 (the footer used to jump as data arrived: `min-height` on the view took mobile CLS from 0.085-0.196
 to 0.002 or less). W12 did three of the four fixes this found: the three font families are
 self-hosted (the Google Fonts stylesheet blocked rendering, ~850 ms), hashed files are
-`Cache-Control: immutable`, and CloudFront compresses. The fourth, recompressing `/assets/cast/*.jpg`
-(~261 KiB on /watch) with `srcset`, is bead `capyweb-z14`.
+`Cache-Control: immutable`, and CloudFront compresses. The fourth was `capyweb-z14` (2026-09-30): the
+three cast pictures are WebP at quality 88, 52,418 bytes instead of 283,752. On dev, `/watch` transfers
+509,964 bytes instead of 741,325, and its LCP (the first cast picture) with Lighthouse's mobile
+throttling fell from 5.8 s to 4.7 s, the median of five runs of each on the same deployment.
+Screenshots at 390 and 1280 px differ only inside the pictures (mean under 1 level of 255). There is no
+`srcset`: the pictures are 211 px wide and every card and poster shows them wider.
 
 **Size.** With `erase_components` (section 5, rule 2) and everything W14 added, production is
 265,133 bytes brotli, the dev build with the WebMCP tools 288,551 of the 350,000 cap (measured at cdf91bb by the W14 review).

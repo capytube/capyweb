@@ -44,7 +44,7 @@ function edgeChecks() {
     for (const path of ['/garbage', '/no/such/page', '/stream/a/b', '/admin', '/watch//', '/%77atch']) {
       assert.deepEqual(answer(path, seen), ['/index.html', 404], `${path} is not a page (${seen})`);
     }
-    for (const path of ['/assets/cast/magnus.jpg', '/robots.txt', '/index.html', '/config.json']) {
+    for (const path of ['/assets/cast/magnus.webp', '/robots.txt', '/index.html', '/config.json']) {
       assert.deepEqual(answer(path, seen), [path, 200], `${path} is a file, left alone (${seen})`);
     }
   }
