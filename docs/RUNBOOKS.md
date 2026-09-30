@@ -510,11 +510,18 @@ aws ses describe-active-receipt-rule-set --region ap-southeast-1 \
 
 It should show `opensign-test-inbox`, then `store` and `capyweb-contact`.
 
-**If `capyweb-contact` is missing**, and the set is still `opensign-test-inbox`:
-- Redeploy `capyapp-capyweb-contact-mail` through a change set, with the rule's logical id renamed (for
-  example `ContactRule` to `ContactRule2`).
-- CloudFormation still believes the old rule exists, so only a new logical id makes it create the rule
-  again.
+**If `capyweb-contact` is missing**, and the set is still `opensign-test-inbox`, recreate it with two
+updates of `capyapp-capyweb-contact-mail` (same template, change sets as in `infra/mail/README.md` step 1,
+`--change-set-type UPDATE`, every other parameter `UsePreviousValue=true`):
+1. `ReceiveMail=false`. CloudFormation still believes the rule exists, and this takes it out of the stack.
+   The rule is already gone, so its delete may fail in the cleanup phase; the stack still ends
+   `UPDATE_COMPLETE`. If it ends anywhere else, stop and tell capyweb-manager.
+2. `ReceiveMail=true`, with `AfterRule` set to the rule ours should follow. If `store` is no longer in the
+   set, ask capyweb-manager where ours goes before this step. It creates the rule afresh.
+3. Run the check again, then send a test mail as in the README's proof.
+
+Do not rename the rule's logical id instead: the rule's name is fixed, so the cleanup of the old logical id
+would delete the new rule by that name.
 
 **If the active set is gone or has another name:**
 - stop, and tell capyweb-manager;

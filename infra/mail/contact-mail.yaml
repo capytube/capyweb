@@ -26,8 +26,15 @@ Parameters:
     Default: ''
     AllowedPattern: '^(arn:aws:sns:[a-z0-9-]+:[0-9]{12}:[A-Za-z0-9_-]{1,256})?$'
     Description: SNS topic for the forwarder's error alarm, on ALARM and on OK. Empty = no alarm.
+  ReceiveMail:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: "'false' takes our receipt rule out of the shared set and leaves the rest of the stack.
+      docs/RUNBOOKS.md section 6 recreates a lost rule with false, then true."
 
 Conditions:
+  Receives: !Equals [!Ref ReceiveMail, 'true']
   HasAfterRule: !Not [!Equals [!Ref AfterRule, '']]
   HasAlarm: !Not [!Equals [!Ref AlarmTopicArn, '']]
 
@@ -102,8 +109,11 @@ Resources:
 
   # ---- The receipt rule ----------------------------------------------------------------------------------
   # SES checks the bucket policy and the Lambda permission when the rule is created, hence the DependsOn.
+  # The rule's name is fixed, so a new logical id would not recreate it safely (the cleanup of the old one
+  # deletes the new one by name); ReceiveMail false, then true, does (RUNBOOKS section 6).
   ContactRule:
     Type: AWS::SES::ReceiptRule
+    Condition: Receives
     DependsOn: [MailBucketPolicy, ForwarderSesPermission]
     Properties:
       RuleSetName: opensign-test-inbox

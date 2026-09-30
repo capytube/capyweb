@@ -26,6 +26,7 @@ apex never takes mail down. It adds no TXT: the apex keeps its one TXT (site ver
 | contact-mail | `AfterRule` | The rule in `opensign-test-inbox` that ours goes after. Default `store` (their only rule, one recipient on their own test domain, no Stop). Empty = ours goes first | manager: deploy with `store` |
 | contact-mail | `ForwardToParameterName` | Name of the SSM SecureString with the forward address. Default `/capyapp/capyweb/contact/forward-to` | manager: keep the default |
 | contact-mail | `AlarmTopicArn` | SNS topic for the forwarder's `Errors` alarm (ALARM and OK). Empty = no alarm. `capyapp-capyweb-prod-alarms` reaches the capyweb room through the alarm relay | manager |
+| contact-mail | `ReceiveMail` | `true` (default): our rule is in the shared set. `false` takes the rule out and leaves the rest of the stack; `docs/RUNBOOKS.md` section 6 recreates a lost rule with `false`, then `true` | manager: keep the default |
 | mail-dns | `DkimToken1`, `DkimToken2`, `DkimToken3` | The contact-mail stack's outputs of the same names, copied as they are. The template builds `<token>._domainkey.capytube.xyz` -> `<token>.dkim.amazonses.com` | manager, from the outputs |
 | (SSM) | `/capyapp/capyweb/contact/forward-to` | SecureString under the AWS managed key `aws/ssm`: the address mail goes to | manager, with the admin |
 
@@ -158,7 +159,10 @@ permissions boundary lacks a grant (see the design notes). The mail stays in S3 
 
 ## Rollback
 
-Delete the DNS stack first (mail stops arriving), then the mail stack:
+To stop receiving but keep the stack (the bucket, the forwarder, the identity), update it with
+`ReceiveMail=false`: only our rule leaves the shared set.
+
+To remove everything, delete the DNS stack first (mail stops arriving), then the mail stack:
 
 ```sh
 aws cloudformation delete-stack --profile "$DNSADMIN" --region ap-southeast-1 --stack-name capyapp-capyweb-mail-dns
