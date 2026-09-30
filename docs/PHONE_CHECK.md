@@ -42,7 +42,8 @@ Open https://dev.capytube.xyz. If a step fails, record it and continue where pos
 
 7. **Coin history.** Tap **Me**. On **Profile**, scroll to **Ledger**; tap **Load more** if shown.
    Find **Welcome grant**, **Snack vote**, **Bid** and **Paid camera minute**, with their amounts and dates.
-   On the first phone, expect **Bid returned (outbid)** once the second phone has bid.
+   On the first phone, **Bid returned (outbid)** appears only after the second phone bids in step 4:
+   if you test the phones one after the other, check for it on the first phone at the end.
    Expect two camera entries if the early renewal happened. Check the amounts against your spending.
 
 8. **Sign out.** Tap **Sign out** at the top. Expect the home page and **Sign in** back at the top.

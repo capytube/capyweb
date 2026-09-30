@@ -48,6 +48,7 @@ pub fn Privacy() -> impl IntoView {
                 <li>"The display name you choose."</li>
                 <li>"Your play-coin balance and every change to it, your votes and bids, and any short request you write with a vote."</li>
                 <li>"Your chat messages, with your display name."</li>
+                <li>"The reactions you tap on a camera, but only as totals for that camera: we do not keep who reacted."</li>
                 <li>"Which paid camera you paid to watch, and until when."</li>
                 <li>"The time of your last chat message, to allow one message every 2 seconds, and a short record of each coin action, so a repeated click cannot spend twice."</li>
             </ul>
@@ -80,6 +81,7 @@ pub fn Privacy() -> impl IntoView {
             <ul>
                 <li>"Your account and its data: until the account is deleted."</li>
                 <li>"Chat messages: 30 days, then they are deleted automatically."</li>
+                <li>"Reaction totals: as long as the camera exists. They hold no account id."</li>
                 <li>"The records that stop a click from spending twice: 24 hours."</li>
                 <li>"Server logs: 14 days. They hold no email address and no account id."</li>
                 <li>"Emails you send us: 90 days in our mail storage; the forwarded copy stays in our team's mailbox."</li>
