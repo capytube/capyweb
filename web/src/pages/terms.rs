@@ -1,5 +1,5 @@
-//! Terms of Service (W9), ported word for word from src/components/TermsOfService.tsx. The two
-//! `[Insert Date]` placeholders stay visible (`mark.todo-date`) until the owner supplies dates.
+//! Terms of Service (W9), ported word for word from src/components/TermsOfService.tsx. Dated
+//! 30 September 2026, with the contact mailbox (capyweb-bpk; capyweb-manager, 2026-09-30).
 
 use crate::components::chrome::PageHead;
 use leptos::prelude::*;
@@ -11,7 +11,7 @@ pub fn Terms() -> impl IntoView {
             <PageHead title="Terms of Service"/>
             <p>
                 "Effective Date: "
-                <mark class="todo-date">"[Insert Date]"</mark>
+                "30 September 2026"
             </p>
             <p>
                 " Welcome to CapyTube! By accessing or using our platform, you agree to comply with and be bound by the following terms and conditions. Please review them carefully. "
@@ -56,10 +56,10 @@ pub fn Terms() -> impl IntoView {
                 "7. Contact Us"
             </h2>
             <p>" If you have any questions about these Terms of Service, please contact us at: "</p>
-            <p>"Email: [Insert contact email]"</p>
+            <p>"Email: " <a href="mailto:contact@capytube.xyz">"contact@capytube.xyz"</a></p>
             <p>
                 "These Terms of Service were last updated on "
-                <mark class="todo-date">"[Insert Date]"</mark>
+                "30 September 2026"
                 "."
             </p>
         </article>

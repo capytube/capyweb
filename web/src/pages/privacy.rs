@@ -1,5 +1,6 @@
-//! Privacy policy (W9), ported word for word from src/components/PrivacyPolicy.tsx. The two
-//! `[Insert Date]` placeholders stay visible (`mark.todo-date`) until the owner supplies dates.
+//! Privacy policy (W9), ported word for word from src/components/PrivacyPolicy.tsx. Dated
+//! 30 September 2026, with the contact mailbox (capyweb-bpk; capyweb-manager, 2026-09-30). The company
+//! address stays a visible placeholder (`mark.todo`) until the owner supplies it.
 
 use crate::components::chrome::PageHead;
 use leptos::prelude::*;
@@ -11,7 +12,7 @@ pub fn Privacy() -> impl IntoView {
             <PageHead title="Privacy policy"/>
             <p>
                 <strong>"Effective Date: "</strong>
-                <mark class="todo-date">"[Insert Date]"</mark>
+                "30 September 2026"
             </p>
             <p>
                 " CapyTube (\"we,\" \"us,\" or \"our\") is committed to protecting your privacy. This Privacy Policy outlines how we collect, use, disclose, and safeguard your information when you visit our website or use our services. Please read this Privacy Policy carefully. By using CapyTube, you agree to the collection and use of information in accordance with this policy. "
@@ -90,7 +91,9 @@ pub fn Privacy() -> impl IntoView {
                         " Opt-Out of Communications: You can opt out of receiving marketing emails by following the unsubscribe instructions provided in our emails. "
                     </li>
                     <li>
-                        " Data Deletion: You can request that we delete your personal information by contacting us at [insert contact email]. We will process your request subject to applicable laws. "
+                        " Data Deletion: You can request that we delete your personal information by contacting us at "
+                        <a href="mailto:contact@capytube.xyz">"contact@capytube.xyz"</a>
+                        ". We will process your request subject to applicable laws. "
                     </li>
                 </ul>
             </div>
@@ -128,13 +131,15 @@ pub fn Privacy() -> impl IntoView {
                 </h2>
                 <p>" If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at: "</p>
                 <p>
-                    " Email: [insert contact email] "
+                    " Email: "
+                    <a href="mailto:contact@capytube.xyz">"contact@capytube.xyz"</a>
                     <br />
-                    " Address: [insert company address] "
+                    " Address: "
+                    <mark class="todo">"[insert company address]"</mark>
                 </p>
                 <p>
                     "This Privacy Policy was last updated on "
-                    <mark class="todo-date">"[Insert Date]"</mark>
+                    "30 September 2026"
                 </p>
             </div>
         </article>

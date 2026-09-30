@@ -15,9 +15,17 @@ export async function check({ open, browser, settle, BASE }) {
       assert.equal(await page.locator('main h1').count(), 1, path);
       assert.equal(await page.innerText('main h1'), title, path);
       assert.equal(await page.title(), `${title} · CapyTube`, path);
-      const dates = page.locator('mark.todo-date');
-      assert.equal(await dates.count(), /privacy|terms/.test(path) ? 2 : 0, path);
-      for (const date of await dates.allTextContents()) assert.equal(date, '[Insert Date]');
+      // bpk: dated, with the contact mailbox. Only Privacy's company address is still to come, and it
+      // stays marked (mark.todo) so nobody mistakes it for finished text.
+      const main = await page.locator('main').innerText();
+      if (/privacy|terms/.test(path)) {
+        assert.equal(main.split('30 September 2026').length - 1, 2, `${path}: both dates`);
+      }
+      const mails = { '/privacy-policy': 2, '/terms-of-service': 1, '/deletion': 1 }[path] ?? 0;
+      assert.equal(await page.locator('main a[href="mailto:contact@capytube.xyz"]').count(), mails, `${path}: contact links`);
+      const todo = await page.locator('main mark.todo').allTextContents();
+      assert.deepEqual(todo, path === '/privacy-policy' ? ['[insert company address]'] : [], `${path}: open placeholders`);
+      assert.equal(main.split(/\[insert/i).length - 1, todo.length, `${path}: no unmarked placeholder`);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path}: no horizontal scroll at ${width}px`);
       if (path === '/robot') {
         assert.equal(await page.locator('main button').count(), 0, 'booking and driving buttons are not rendered');
@@ -65,7 +73,7 @@ export async function check({ open, browser, settle, BASE }) {
   await about.close();
 
   // Deletion: the real process (a request by email, done by staff; docs/RUNBOOKS.md section 1),
-  // never the button the old page described. The contact placeholder stays until the owner fills it.
+  // never the button the old page described. The mailbox is contact@capytube.xyz (bpk).
   const { page: del } = await open('/deletion', { width: 1280, height: 800 });
   assert.deepEqual(await del.locator('main h2').allInnerTexts(), [
     "Step 1: Email us from your account's address",
@@ -79,7 +87,7 @@ export async function check({ open, browser, settle, BASE }) {
   assert.match(steps, /Within 30 days, we delete the account and its data/);
   assert.match(steps, /within 35 days after we delete it/);
   assert.match(steps, /Play coins have no cash value/);
-  assert.equal(steps.split('[Insert contact email]').length - 1, 1, 'the contact placeholder, once, unchanged');
+  assert.equal(steps.split('contact@capytube.xyz').length - 1, 1, 'the contact mailbox, once');
   assert.doesNotMatch(steps, /Delete My Account|Account Settings|24 hours|provide your password/i, 'no step the site cannot do');
   assert.equal(await del.locator('main button, main form, main input').count(), 0, 'no delete control on the page');
   await del.close();

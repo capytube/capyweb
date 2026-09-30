@@ -1,8 +1,8 @@
 //! Data deletion instructions (W9), ported from src/components/DeletionInstructions.tsx.
 //! W12: rewritten to the real process (capyweb-manager, 2026-09-29): a request by email, done by
 //! hand by staff (docs/RUNBOOKS.md section 1). There is no delete button, so the page names none.
-//! What "its data" covers matches docs/DATA_SHEET.md. `[Insert contact email]` stays visible until
-//! the owner supplies the mailbox.
+//! What "its data" covers matches docs/DATA_SHEET.md. The mailbox is contact@capytube.xyz
+//! (capyweb-bpk; capyweb-manager, 2026-09-30).
 
 use crate::components::chrome::PageHead;
 use leptos::prelude::*;
@@ -59,7 +59,7 @@ pub fn Deletion() -> impl IntoView {
             <p>
                 " If you have questions about deleting your account, write to us at: "
             </p>
-            <p>"Email: [Insert contact email]"</p>
+            <p>"Email: " <a href="mailto:contact@capytube.xyz">"contact@capytube.xyz"</a></p>
         </article>
     }
 }
