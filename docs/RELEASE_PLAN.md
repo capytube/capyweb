@@ -454,6 +454,8 @@ until G3.
   15 minutes (section 4), so if only the DNS lines fail, run it again after that.
 - Then the alarms, watched for an hour. They go OK within about 15 minutes, once the probe resolves the
   name.
+- An admin checks that the contact mail rule is still in the shared rule set: `capyweb-contact` after
+  `store` in `opensign-test-inbox` (`--alarms` prints the command; `docs/RUNBOOKS.md` section 6).
 - R3 stays ready.
 
 ### Why not a `staging` stage

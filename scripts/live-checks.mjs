@@ -8,8 +8,9 @@
 //                                                        dark test does (curl --connect-to, Chromium
 //                                                        --host-resolver-rules); the DNS checks are skipped
 //   node scripts/live-checks.mjs dev                     dev.capytube.xyz by its public DNS
-//   ... --alarms                                         also print the command that lists the stage's
-//                                                        alarms (printed, never run)
+//   ... --alarms                                         also print the by-hand AWS checks: the stage's
+//                                                        alarms, and (prod) the contact mail rule
+//                                                        (printed, never run)
 //
 // Signed out and read-only: GET and HEAD only, no sign-in, no form submitted, no POST. It needs no
 // credentials. Headless Chromium comes from $CAPYWEB_PW_DIR (default ~/.cache/capyweb/pw), as for
@@ -342,6 +343,12 @@ if (ALARMS) {
   console.log(`\nThe ${STAGE} alarms, to run by hand (AWS profile capy; this script makes no AWS call):`);
   console.log(`  aws cloudwatch describe-alarms --profile capy --region ap-southeast-1 --alarm-name-prefix capyapp-capyweb-${STAGE}- ${q}`);
   console.log(`  aws cloudwatch describe-alarms --profile capy --region us-east-1 --alarm-name-prefix capyapp-capyweb-${STAGE}- ${q}`);
+  if (STAGE === 'prod') {
+    // docs/RUNBOOKS.md section 6: our rule lives in another project's rule set.
+    console.log('\nThe contact mail rule, as an admin (the deploy user may not read receipt rules); expect');
+    console.log('opensign-test-inbox, then store and capyweb-contact:');
+    console.log("  aws ses describe-active-receipt-rule-set --region ap-southeast-1 --query '[Metadata.Name, Rules[].Name]' --output text");
+  }
 }
 
 const secs = Math.round((Date.now() - t0) / 1000);

@@ -1,6 +1,6 @@
 # CapyTube admin runbooks
 
-Five procedures an admin runs by hand until the admin console exists (beads `2pj`, `x7w`, `zlb`, `jji`,
+Six procedures an admin runs by hand until the admin console exists (beads `2pj`, `x7w`, `zlb`, `jji`,
 after the cutover):
 
 1. [Delete a user and their data](#1-delete-a-user-and-their-data) (the process the Deletion page describes)
@@ -8,6 +8,7 @@ after the cutover):
 3. [Disable a user](#3-disable-a-user)
 4. [Sign-up cap refusals](#4-sign-up-cap-refusals)
 5. [Alarms: where they land, reading the queue, pausing the relay](#5-alarms-where-they-land-reading-the-queue-pausing-the-relay)
+6. [The contact mailbox: its rule lives in a shared rule set](#6-the-contact-mailbox-its-rule-lives-in-a-shared-rule-set)
 
 Every key and item below is taken from the code, and each step names the file it comes from. If the code
 changes, check these commands against it before you run them. Written 2026-09-29 for W12
@@ -479,3 +480,43 @@ The job's log is one summary line per run. `FAILED` means nothing was deleted th
 template through the usual change set. Do not unsubscribe the queue from a topic. The relay is how every
 alarm reaches the team.
 
+## 6. The contact mailbox: its rule lives in a shared rule set
+
+Built in `capyweb-puq` (capyweb-manager, 2026-09-30). The stacks, the proof and the rollback are in
+`infra/mail/README.md`.
+
+**How mail to contact@capytube.xyz arrives.**
+- SES in ap-southeast-1 receives it through one rule, `capyweb-contact`, in our stack
+  `capyapp-capyweb-contact-mail`.
+- The rule sits in the account's one active receipt rule set, `opensign-test-inbox`, which belongs to another
+  project (its stack `opensign-serverless-test`, resource `InboxRuleSet`). Ours comes after their only rule,
+  `store`.
+- Our rule matches only contact@capytube.xyz and ends with a Stop, so their rules never see our mail.
+- It stores the raw mail in our bucket (90 days), and the forwarder sends it on to the address in SSM.
+  **Never print that address**, and never put it in a room, a commit or a bead.
+
+**The risk.**
+- If the other project deletes its stack or replaces the rule set, our rule goes with it. Mail to contact@
+  then bounces, and nothing of ours alarms.
+- The other project has promised to tell capyweb-manager first, and to move the set to a new owner.
+
+**The check**, as an admin; the deploy user may not read receipt rules. Run it at G3's +5 minutes
+(`node scripts/live-checks.mjs prod --alarms` prints it) and whenever contact mail seems quiet:
+
+```sh
+aws ses describe-active-receipt-rule-set --region ap-southeast-1 \
+  --query '[Metadata.Name, Rules[].Name]' --output text
+```
+
+It should show `opensign-test-inbox`, then `store` and `capyweb-contact`.
+
+**If `capyweb-contact` is missing**, and the set is still `opensign-test-inbox`:
+- Redeploy `capyapp-capyweb-contact-mail` through a change set, with the rule's logical id renamed (for
+  example `ContactRule` to `ContactRule2`).
+- CloudFormation still believes the old rule exists, so only a new logical id makes it create the rule
+  again.
+
+**If the active set is gone or has another name:**
+- stop, and tell capyweb-manager;
+- never create or activate a rule set yourself: the account has only one active set per region, and other
+  projects' mail depends on it.
