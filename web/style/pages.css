@@ -27,12 +27,6 @@
   margin: 2rem auto;
   border-radius: 20px;
 }
-.todo {
-  background: var(--babycorn-yellow);
-  color: var(--ink);
-  border: 1px dashed var(--choco-brown);
-  padding: 0.1rem 0.25rem;
-}
 .robot-page { display: grid; gap: 1.75rem; }
 .robot-page > header { margin-bottom: 0; }
 .robot-page p { margin-block: 0.6rem; }

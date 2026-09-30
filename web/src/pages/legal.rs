@@ -1,40 +1,44 @@
-//! Who runs CapyTube, as the legal pages name it (capyweb-bpk). The owner's answer is one line,
-//! `OPERATOR` below (capyweb-manager, 2026-09-30): until then Privacy shows a marked placeholder, and
-//! `scripts/live-checks.mjs` fails on it.
+//! Who runs CapyTube, as the legal pages name it (capyweb-bpk). nic's answer (Q197, 2026-09-30, through
+//! the master and capyweb-manager): no company and no postal address. The operator is "CapyTube", named
+//! with the on-chain address it is run from only if the project publishes one. The one line to change
+//! is `OPERATOR`.
+
+use leptos::prelude::*;
 
 /// The operator the legal pages name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Operator {
-    /// Not answered yet: Privacy shows `[insert company address]`, marked.
-    Pending,
-    /// A company, by its legal name and postal address.
-    Company {
-        name: &'static str,
+    /// "CapyTube" only, reached by email.
+    CapyTube,
+    /// "CapyTube", run from a published address, e.g. `OnChain { chain: "Solana", address: "…" }`.
+    OnChain {
+        chain: &'static str,
         address: &'static str,
     },
-    /// "CapyTube" only: contact by email, and no postal address.
-    CapyTubeOnly,
 }
 
-/// The one line to change: `Operator::Company { name: "…", address: "…" }` or
-/// `Operator::CapyTubeOnly`.
-pub const OPERATOR: Operator = Operator::Pending;
+/// The one line to change: `Operator::CapyTube` or `Operator::OnChain { chain: "…", address: "…" }`.
+pub const OPERATOR: Operator = Operator::CapyTube;
 
 impl Operator {
-    /// Privacy's address line, when there is one.
-    pub fn address_line(self) -> Option<String> {
+    /// The chain and address to name after "CapyTube runs the website at capytube.xyz", if any.
+    pub fn address(self) -> Option<(&'static str, &'static str)> {
         match self {
-            Operator::Company { name, address } => Some(format!("{name}, {address}")),
-            Operator::Pending | Operator::CapyTubeOnly => None,
+            Operator::CapyTube => None,
+            Operator::OnChain { chain, address } => Some((chain, address)),
         }
     }
+}
 
-    /// Who "we" are, for the first sentence of Privacy and Terms.
-    pub fn we(self) -> String {
-        match self {
-            Operator::Company { name, .. } => format!("CapyTube, run by {name}"),
-            Operator::Pending | Operator::CapyTubeOnly => "CapyTube".to_string(),
-        }
+/// The opening sentence of Terms and Privacy: who "we" are, with the address when there is one.
+#[component]
+pub fn WeAre() -> impl IntoView {
+    view! {
+        "CapyTube (\"we\", \"us\") runs the website at capytube.xyz"
+        {OPERATOR.address().map(|(chain, address)| view! {
+            ", from the " {chain} " address " <code class="addr">{address}</code>
+        })}
+        "."
     }
 }
 
@@ -43,23 +47,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_company_names_itself_and_its_address() {
-        let op = Operator::Company {
-            name: "Example Co., Ltd.",
-            address: "1 Example Road, Bangkok 10110, Thailand",
+    fn only_an_on_chain_operator_names_an_address() {
+        assert_eq!(Operator::CapyTube.address(), None);
+        let op = Operator::OnChain {
+            chain: "Example",
+            address: "ExampleAddress123",
         };
-        assert_eq!(
-            op.address_line().as_deref(),
-            Some("Example Co., Ltd., 1 Example Road, Bangkok 10110, Thailand")
-        );
-        assert_eq!(op.we(), "CapyTube, run by Example Co., Ltd.");
-    }
-
-    #[test]
-    fn capytube_only_and_pending_give_no_address() {
-        for op in [Operator::CapyTubeOnly, Operator::Pending] {
-            assert_eq!(op.address_line(), None);
-            assert_eq!(op.we(), "CapyTube");
-        }
+        assert_eq!(op.address(), Some(("Example", "ExampleAddress123")));
     }
 }

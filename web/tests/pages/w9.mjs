@@ -15,20 +15,17 @@ export async function check({ open, browser, settle, BASE }) {
       assert.equal(await page.locator('main h1').count(), 1, path);
       assert.equal(await page.innerText('main h1'), title, path);
       assert.equal(await page.title(), `${title} · CapyTube`, path);
-      // bpk: dated, with the contact mailbox. Only Privacy's company address is still to come, and it
-      // stays marked (mark.todo) so nobody mistakes it for finished text.
+      // bpk: dated, naming the operator (web/src/pages/legal.rs OPERATOR), with the contact mailbox.
       const main = await page.locator('main').innerText();
       if (/privacy|terms/.test(path)) {
         assert.equal(main.split('30 September 2026').length - 1, 2, `${path}: both dates`);
+        assert.match(main, /CapyTube \("we", "us"\) runs the website at capytube\.xyz/, `${path}: names the operator`);
       }
       const mails = { '/privacy-policy': 3, '/terms-of-service': 1, '/deletion': 1 }[path] ?? 0;
       assert.equal(await page.locator('main a[href="mailto:contact@capytube.xyz"]').count(), mails, `${path}: contact links`);
-      const todo = await page.locator('main mark.todo').allTextContents();
-      // Until the owner answers (web/src/pages/legal.rs OPERATOR), Privacy's address is the one open,
-      // marked placeholder; after the one-line answer there is none. live-checks.mjs fails on it for prod.
-      const allowed = path === '/privacy-policy' && todo.length ? ['[insert company address]'] : [];
-      assert.deepEqual(todo, allowed, `${path}: open placeholders`);
-      assert.equal(main.split(/\[insert/i).length - 1, todo.length, `${path}: no unmarked placeholder`);
+      // nic's answer (web/src/pages/legal.rs OPERATOR) left nothing to fill in: no page has a placeholder.
+      assert.equal(await page.locator('main mark.todo').count(), 0, `${path}: no marked placeholder`);
+      assert.ok(!/\[insert/i.test(main), `${path}: no unmarked placeholder`);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path}: no horizontal scroll at ${width}px`);
       if (path === '/robot') {
         assert.equal(await page.locator('main button').count(), 0, 'booking and driving buttons are not rendered');

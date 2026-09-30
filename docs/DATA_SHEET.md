@@ -134,9 +134,12 @@ carry no name and stay. Play coins are not refunded (they have no cash value).
 6. Staff keep an account's `sub` and the deletion date for 35 days after a deletion, only to re-apply the
    deletion if the database is restored from a backup. Is that acceptable, and should it be stated?
 
-**2026-09-30 (capyweb-bpk):** the dates and the contact mailbox are filled in. Terms and Privacy were
-rewritten from this sheet after an AI legal read (not a lawyer), which answered question 2 (those
-passages are gone) and asked for a minimum age (13, with a parent's or guardian's permission under 18:
-the owner's to confirm). Still to be supplied by the owner: who runs the site (a company name and
-address, or "CapyTube" with no postal address), which is one line in `web/src/pages/legal.rs`, and the
-governing law that follows from it.
+**2026-09-30 (capyweb-bpk):** Terms and Privacy were rewritten twice that day, each time checked by an
+AI legal read (not a lawyer). The first read answered question 2 (those passages are gone) and asked for a
+minimum age (13, with a parent's or guardian's permission under 18). Then the owner answered who runs the
+site (nic, Q197): no company and no postal address, no regional law, run like a web3 interface. So the
+operator is "CapyTube" (`web/src/pages/legal.rs` `OPERATOR`, one line if a published on-chain address is
+ever named), the pages make no regional-law compliance claims and have no governing-law clause, and Terms
+follow the web3 interface model: the site as is, nothing held for the user, users responsible for their
+accounts. Questions 1, 3 and 6 are answered by the pages as written (30 days plus 35 in backups, stated;
+13 and over; the retained `sub`, stated).

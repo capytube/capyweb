@@ -89,7 +89,9 @@ Every one of them needs `CAPYWEB_PROD_GO=1`.
 
 **The going-public blockers now:**
 - `kbq` is built (on dev).
-- `bpk` still waits for the owner's inputs and a legal read. The Deletion part is done.
+- `bpk`: the owner answered (nic, Q197): no company, no postal address, run like a web3 interface. Terms
+  and Privacy are rewritten to that, name the operator "CapyTube" (`web/src/pages/legal.rs`), and are
+  checked by an AI legal read (not a lawyer). The Deletion part is done.
 - `c6e` comes after launch, and is not needed for it: there is no announcement (herdr-master,
   2026-09-30).
 - Real phones: the phone check (`docs/PHONE_CHECK.md`, being written), with the tester the master
@@ -165,6 +167,8 @@ exit status 1 on any FAIL.
 
 **Run on 2026-09-30:**
 - **Dev:** 51 ok, 3 FAIL. The three legal pages hold their placeholders, as the source does (`bpk`).
+  Later that day, with the filled pages on dev: 53 ok, 1 FAIL (Privacy's company address, until the
+  owner's answer took it out).
 - **Production, dark:** 50 ok, 4 FAIL. The same three legal pages, and the cast pictures: the
   production bucket still has the G2 build, from before z14 made them WebP. The final build clears both.
 
