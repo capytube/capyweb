@@ -90,9 +90,11 @@ Every one of them needs `CAPYWEB_PROD_GO=1`.
 **The going-public blockers now:**
 - `kbq` is built (on dev).
 - `bpk` still waits for the owner's inputs and a legal read. The Deletion part is done.
-- `c6e` comes after launch.
-- Real phones: the master decides who. The WebKit pass on dev found one WebKit-only bug: a chat poll
-  failing CORS from WebKit's cache, fixed by the same-origin API.
+- `c6e` comes after launch, and is not needed for it: there is no announcement (herdr-master,
+  2026-09-30).
+- Real phones: the phone check (`docs/PHONE_CHECK.md`, being written), with the tester the master
+  names. The WebKit pass on dev found one WebKit-only bug: a chat poll failing CORS from WebKit's cache,
+  fixed by the same-origin API.
 - The chat and deletion runbooks are written.
 
 **G2 as built (2026-09-30, dark; the master's go through capyweb-manager at 00:35):**
@@ -122,14 +124,49 @@ opens with the 11 catalog items only.
 
 **For G3:**
 - `deploy.sh prod dns <name>` (D2);
+- about 5 minutes later, **`node scripts/live-checks.mjs prod`** (the +5-minute check, below), then the
+  alarms watched for an hour;
 - ~~the alarm relay deployed and its synthetic test passed~~ **Done 2026-09-30:**
   - `capyapp-capyweb-alarm-relay` CREATE_COMPLETE at 02:34, with all five topics on SQS;
   - the job `capyweb-alarm-relay` runs on Mac mini 3 every 300 s, pinned to 37b70c0;
   - the two synthetic alarms were posted as expected at 02:38, and the queue was left empty
     (`capyweb-b6e.12.6`; no clicks for anyone);
-- the `xqg` blockers above.
+- the `xqg` blockers above, and the open items below.
 
 The site-down alarm stays in ALARM until the apex resolves.
+
+**Still open for G3:**
+
+| Item | State |
+|---|---|
+| The contact mail: stacks `capyapp-capyweb-contact-mail` and `capyapp-capyweb-mail-dns` deployed, and proven by a test mail forwarded, with a delivery event. The mail records are their own DNS stack, apart from the apex stack `capyapp-capyweb-dns-prod`, so R3 never takes mail down | Open |
+| The phone check passed on a real iPhone and a real Android phone (`docs/PHONE_CHECK.md`, being written) | Open |
+| The final production build uploaded dark, with the filled legal pages (`bpk`). `node scripts/live-checks.mjs prod --via d3jz2uh04tmtrh.cloudfront.net` then has no FAIL | Open |
+| No confirmation clicks: alarms reach the capyweb room through the alarm relay, SES is out of the sandbox, and nobody has to click a subscription or verification link for launch | **Done:** the relay posts to the room (P10), and SES in ap-southeast-1 is out of the sandbox (capyweb-manager, 2026-09-30), so the contact forward needs no verification click |
+
+**The +5-minute check** (`scripts/live-checks.mjs`) is one command, signed out and read-only. It needs
+no credentials and takes under 3 minutes. It checks:
+- **DNS:** the apex and `www` resolve, with A and AAAA records (asked of 1.1.1.1 and 8.8.8.8), and the
+  certificate names both;
+- **pages:** every app route at 390 and 1280 px in headless Chromium, each with its h1, no console
+  error, no CSP violation and no failed request; the `www` 301; the edge 404; `robots.txt` and
+  `sitemap.xml`; every file of the checkout's `web/assets` served;
+- **headers:** each as `infra/site/headers-prod.json` (the CSP exactly), HSTS, `no-cache` on
+  `index.html` and `immutable` on hashed files;
+- **the API:** `/api/health` and `/api/streams` through the `/api/*` behaviour;
+- **the legal pages:** no `[Insert` placeholder on Terms, Privacy or Deletion;
+- **sign-in:** the "Sign in" button reaches production's managed-login page, and it loads (nothing
+  is typed);
+- **the build:** no WebMCP in the deployed files, and `/config.json` names production's Cognito domain.
+
+`--via <d….cloudfront.net>` runs the same checks through the resolver rule before D2, `dev` checks dev,
+and `--alarms` prints the `aws cloudwatch describe-alarms` commands to run by hand. One line per check;
+exit status 1 on any FAIL.
+
+**Run on 2026-09-30:**
+- **Dev:** 51 ok, 3 FAIL. The three legal pages hold their placeholders, as the source does (`bpk`).
+- **Production, dark:** 50 ok, 4 FAIL. The same three legal pages, and the cast pictures: the
+  production bucket still has the G2 build, from before z14 made them WebP. The final build clears both.
 
 ## 1. What changes, in order
 
@@ -257,12 +294,13 @@ Each item is a commit on `feat/wasm-frontend`, reviewed, then proven on dev (sec
 | D2 | **The apex switch (G3):** stack `capyapp-capyweb-dns-prod`, with A and AAAA alias records for `capytube.xyz` and `www.capytube.xyz` pointing at the production distribution. `infra/site/dns.yaml` takes one name today; it gets a second. | **Yes.** This is the only public step |
 
 The zone's other records do not change: the NS and SOA, and the Google site-verification TXT, which the
-role cannot change anyway.
+role cannot change anyway. The contact mail's records are their own stack, `capyapp-capyweb-mail-dns`,
+never part of D2.
 
 ### 1d. After the switch
 
-- Smoke test from outside, by public DNS: the section 5 checklist in short, and the alarms watched for
-  an hour.
+- Smoke test from outside, by public DNS: `node scripts/live-checks.mjs prod` about 5 minutes after D2,
+  then the alarms watched for an hour (`--alarms` prints the command).
 - W16 (`b6e.16`): retire React. That unblocks `c24` and `c8m` (making the public source video private),
   both through the manager.
 - `c6e` (email codes) as its own change with its own go, rehearsed on dev (section 3).
@@ -307,9 +345,9 @@ A simulator check of each row at the go is the manager's call.
 |---|---|---|---|---|
 | `0m7` private streams | **Closed** | — | — | — |
 | `bpk` legal pages | Open, and **wider than its title** (checked in `web/src/pages/`) | Terms and Privacy have **four** `[Insert Date]` placeholders. There are also **four** `[insert contact email]` (Terms, Privacy twice, Deletion) and **one** `[insert company address]` (Privacy). The **Deletion page describes a "Delete My Account" button in "Account Settings", with a confirmation email, and none of it exists.** Then a legal read against what the site collects: email, display name, chat messages, the play-coin ledger, the paid-camera cookies, Cognito, and AWS in Singapore. | The dates, address, contact mailbox and legal reader: nic or whoever he names, through the manager. The wording: me. | For launch, **rewrite the Deletion page to the real process** ("write to the contact address from your account's email; we delete the account and its data within N days"), backed by a written admin runbook: `AdminDeleteUser` on the production pool, plus the user's items. Self-service deletion (`DELETE /me`) comes later as its own spec, with the manager's yes. I can write a one-page data sheet for the legal reader from `docs/DATA_MODEL.md`. |
-| `c6e` email codes (SES) | Open | See permission row 13: the domain identity, DKIM records in the other account, SES production access for the shared account (AWS reviews a written use case), IAM, and a dev test. | The master (the account-wide SES change), then me | **Launch with password sign-in on Cognito's default sender, as dev runs, and do `c6e` right after the launch as its own change.** Reasons: it is tested end to end on dev; it keeps three outside dependencies (AWS's review, a new account-wide SES setting, new DNS records) off the launch path; and the later switch is in place (`EmailConfiguration` and the sign-in policy update the pool without replacing it, and existing users keep their passwords). The cost of waiting: the default sender allows 50 emails a day per account, shared with any other project's pool on it, and its sender address lands in spam more often. **Exception:** if the launch will be announced to an audience that could bring more than about 40 sign-ups in a day, do `c6e` first. |
+| `c6e` email codes (SES) | Open, and **not needed for launch** (herdr-master, 2026-09-30): there is no announcement, so the exception at the end of this row does not apply | See permission row 13: the domain identity, DKIM records in the other account, SES production access for the shared account (since granted: SES in ap-southeast-1 is out of the sandbox, capyweb-manager 2026-09-30), IAM, and a dev test. | The master (the account-wide SES change), then me | **Launch with password sign-in on Cognito's default sender, as dev runs, and do `c6e` right after the launch as its own change.** Reasons: it is tested end to end on dev; it keeps three outside dependencies (AWS's review, a new account-wide SES setting, new DNS records) off the launch path; and the later switch is in place (`EmailConfiguration` and the sign-in policy update the pool without replacing it, and existing users keep their passwords). The cost of waiting: the default sender allows 50 emails a day per account, shared with any other project's pool on it, and its sender address lands in spam more often. **Exception:** if the launch will be announced to an audience that could bring more than about 40 sign-ups in a day, do `c6e` first. |
 | `kbq` sign-up abuse | Open | Open sign-up, each account gets 50 play coins, and the default sender caps email at 50 a day, so a script can use up the sign-up emails for everyone. The grant already needs a confirmed email (Cognito issues no tokens before confirmation), and chat is rate-limited per user, but many accounts get around both. | The manager decides the option; I build it | **Minimum before the switch:** the pre-sign-up cap (1a item 11), for example 40 a day and 10 an hour, below what the sender can deliver, with an alarm when it refuses. It costs $0. **Not now:** Cognito Plus ($0.020 per MAU with no free tier; its threat protection targets risky sign-ins and leaked passwords more than bot sign-ups) and AWS WAF with CAPTCHA ($5 a month per web ACL, $1 per rule and $0.40 per 1,000 CAPTCHA attempts, over 60% of the budget before any traffic). Revisit if the cap's alarm fires. |
-| Real phones | Not done | WASM_PLAN risk mitigation: "test on a real iPhone and Android phone before cutover". The W14 QA ran headless Chromium only; iOS Safari uses the native HLS path. | A person with the phones: the manager decides who. I first run Playwright's WebKit on dev myself, which catches most Safari issues but is not iOS. | One real iPhone and one Android phone, 15 minutes each, on the dark production stack if the tester can map the name; otherwise on dev. |
+| Real phones | Planned: the phone check, `docs/PHONE_CHECK.md` (being written). The WebKit pass on dev is done | WASM_PLAN risk mitigation: "test on a real iPhone and Android phone before cutover". The W14 QA ran headless Chromium only; iOS Safari uses the native HLS path. The WebKit pass found one WebKit-only bug, fixed by the same-origin API, but it is not iOS. | The tester the master names, with the phones | One real iPhone and one Android phone through `docs/PHONE_CHECK.md`, on the dark production stack if the tester can map the name; otherwise on dev. Both passing is a G3 item ("Still open for G3"). |
 | Chat moderation | No tool | Public chat on a public site, and the admin beads (`2pj`, `x7w`, `zlb`, `jji`) wait until after cutover. Today a message can be removed only by an admin in DynamoDB. | The manager: is a runbook enough for launch? | A written runbook for launch: remove a chat item, and disable a user with `AdminDisableUser`. A moderation route follows with the admin beads, spec first. |
 | The Amplify domain association | Unknown | D0 | An admin in autonomous-lab | Check it before G2 |
 | Alarm route | **Done** (`capyweb-b6e.12.6`): deployed 02:34, synthetic test passed 02:38 | P10: the relay stack, the Mac mini 3 job and a synthetic alarm posted to the room | — | — |
@@ -333,7 +371,7 @@ build.
 |---|---|---|---|
 | R1 | Content: back to the previous release | `deploy.sh --web` keeps the previous release's hashed files. Upload that release's `index.html` and invalidate. | Minutes (dev's invalidations today finished within a few minutes) |
 | R2 | Stack settings, such as the headers policy | A change set from the previous template | Minutes, plus 5 to 15 minutes for CloudFront to spread the change |
-| R3 | **Take the apex off (back to today)** | Delete `capyapp-capyweb-dns-prod`, or update it with no records | Route 53 applies it in about a minute. Resolvers keep the alias answer for its 60 s TTL, so most visitors see it gone within about 2 minutes |
+| R3 | **Take the apex off (back to today)** | Delete `capyapp-capyweb-dns-prod`, or update it with no records. It leaves the mail records alone: they are in their own stack, `capyapp-capyweb-mail-dns` | Route 53 applies it in about a minute. Resolvers keep the alias answer for its 60 s TTL, so most visitors see it gone within about 2 minutes |
 | R4 | A React fallback on the apex | Not recommended. The React app needs the Amplify backend, whose data API is open to anyone with its public key (`docs/PLAN.md` 1e). The static `demo/` prototype could be uploaded to the production bucket in minutes (`deploy.sh prod content demo`), but it has no sign-in. | — |
 
 The switch itself shows up slowly: the SOA's negative-caching TTL is 900 s. A resolver that asked for
@@ -411,8 +449,11 @@ until G3.
 ### Stage 3: the switch (G3)
 
 - D2 only.
-- Then the smoke test by public DNS.
-- The alarms go OK within about 15 minutes, once the probe resolves the name.
+- About 5 minutes later, the smoke test by public DNS: `node scripts/live-checks.mjs prod`. Every line
+  should be ok. A resolver that asked for the apex just before D2 can keep "no such record" for up to
+  15 minutes (section 4), so if only the DNS lines fail, run it again after that.
+- Then the alarms, watched for an hour. They go OK within about 15 minutes, once the probe resolves the
+  name.
 - R3 stays ready.
 
 ### Why not a `staging` stage
