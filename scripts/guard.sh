@@ -203,11 +203,11 @@ else
 fi
 
 # The repo is public, so no real AWS account id (capyweb-manager, 2026-09-30): not in an ARN, at the end
-# of a bucket name, after the word "account", or quoted alone. Docs write <account-id>; commands read it
+# of a bucket name, after the word "account" or "account-id" (--account-id 1234…), or quoted alone. Docs write <account-id>; commands read it
 # with `aws sts get-caller-identity`; tests use AWS's documentation examples. Every tracked or new file but
 # the self-test, whose cases plant made-up ids on purpose.
 acct_hits=$(git grep -I -n -E --untracked \
-  'arn:aws[a-z-]*:[a-z0-9-]*:[a-z0-9-]*:[0-9]{12}|capy[a-z0-9-]*-[0-9]{12}([^0-9]|$)|[Aa]ccount[^0-9A-Za-z]{1,4}[0-9]{12}([^0-9]|$)|"[0-9]{12}"' \
+  'arn:aws[a-z-]*:[a-z0-9-]*:[a-z0-9-]*:[0-9]{12}|capy[a-z0-9-]*-[0-9]{12}([^0-9]|$)|[Aa]ccount[^0-9A-Za-z]{1,4}[0-9]{12}([^0-9]|$)|[Aa]ccount[-_]?[Ii][Dd][^0-9A-Za-z]{1,4}[0-9]{12}([^0-9]|$)|"[0-9]{12}"' \
   -- . ':!*.lock' ':!*package-lock.json' ':!scripts/guard-selftest.sh' 2>/dev/null \
   | grep -vE '111122223333|123456789012|000000000000')
 if [ -n "$acct_hits" ]; then

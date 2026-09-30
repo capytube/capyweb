@@ -124,6 +124,8 @@ expect_fail "account id after the word account" "no AWS account id in the repo" 
   "echo 'the DNS account 210987654321 holds the zone' > docs/oops.md"
 expect_fail "account id quoted in a test" "no AWS account id in the repo" \
   "echo 'ACCT = \"210987654321\"' >> infra/ops/test_alarm_relay.py"
+expect_fail "account id after --account-id" "no AWS account id in the repo" \
+  "echo 'aws s3control list-access-points --account-id=210987654321' >> docs/PLAN.md"
 # Root-level files, and a credential in a URL's query string (2026-09-30). A hit shows where,
 # never the value: each check exits 0 (a MISS) if the value reaches the output.
 NOSHOW='out=$(./scripts/guard.sh 2>&1); rc=$?; echo "$out" | grep -q Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2 && { echo VALUE PRINTED; exit 0; }; echo "$out"; exit $rc'

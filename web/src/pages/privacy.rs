@@ -32,7 +32,7 @@ pub fn Privacy() -> impl IntoView {
             </p>
 
             <h2>"2. What we collect"</h2>
-            <p>"You can watch the free cameras and read the chat without an account. We do not log visits: access logging is switched off on the website and on its server. When a request fails, our error log notes which page or camera it was for and what went wrong, not your email address or account id."</p>
+            <p>"You can watch the free cameras and read the chat without an account. We do not log visits: access logging is switched off on the website and on its server. When something goes wrong on our server, our error log notes which page or camera the request was for and the error, not your email address or account id."</p>
             <p>"If you create an account, we keep:"</p>
             <ul>
                 <li>"Your email address and password, for signing in. Amazon Cognito, our sign-in service, keeps them. You type the password on Cognito's page, never on ours, and our code never sees it."</li>
