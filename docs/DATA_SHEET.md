@@ -29,6 +29,7 @@ payment of any kind).
 | **Paid-camera time** | Which paid camera the person has paid for, and until when | Database, one small item per person and paid camera (`backend/src/playback.ts`) | Until the account is deleted |
 | **Request records** ("idempotency keys") | Stop a retried click from spending coins twice | Database, with the answer to that request (`ledger.ts`) | **24 hours**, then deleted automatically |
 | **Last chat time** | Limit chat to one message every 2 seconds per person | Database, user item (`writes.ts` `claimChatSlot`) | Until the account is deleted |
+| **Emails sent to contact@capytube.xyz** | Answering the person | SES receives it in Singapore and keeps the raw message in a private bucket; a function forwards it to the team's mailbox (`infra/mail/`, `capyweb-puq`) | **90 days** in the bucket (lifecycle rule); the forwarded copy, as long as the team's mailbox keeps it |
 
 The site does not ask for a real name, age, address, phone number or payment details: the sign-up form
 asks only for an email address and a password (`Schema` in the template). Sign-up is refused past a
@@ -133,5 +134,9 @@ carry no name and stay. Play coins are not refunded (they have no cash value).
 6. Staff keep an account's `sub` and the deletion date for 35 days after a deletion, only to re-apply the
    deletion if the database is restored from a backup. Is that acceptable, and should it be stated?
 
-Still to be supplied by the owner (placeholders left visible on the pages): the dates, the contact
-mailbox, the company address.
+**2026-09-30 (capyweb-bpk):** the dates and the contact mailbox are filled in. Terms and Privacy were
+rewritten from this sheet after an AI legal read (not a lawyer), which answered question 2 (those
+passages are gone) and asked for a minimum age (13, with a parent's or guardian's permission under 18:
+the owner's to confirm). Still to be supplied by the owner: who runs the site (a company name and
+address, or "CapyTube" with no postal address), which is one line in `web/src/pages/legal.rs`, and the
+governing law that follows from it.

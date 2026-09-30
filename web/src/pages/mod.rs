@@ -1,6 +1,7 @@
 pub mod about;
 pub mod deletion;
 pub mod home;
+pub mod legal;
 pub mod not_found;
 pub mod play;
 pub mod privacy;

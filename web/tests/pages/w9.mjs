@@ -21,10 +21,13 @@ export async function check({ open, browser, settle, BASE }) {
       if (/privacy|terms/.test(path)) {
         assert.equal(main.split('30 September 2026').length - 1, 2, `${path}: both dates`);
       }
-      const mails = { '/privacy-policy': 2, '/terms-of-service': 1, '/deletion': 1 }[path] ?? 0;
+      const mails = { '/privacy-policy': 3, '/terms-of-service': 1, '/deletion': 1 }[path] ?? 0;
       assert.equal(await page.locator('main a[href="mailto:contact@capytube.xyz"]').count(), mails, `${path}: contact links`);
       const todo = await page.locator('main mark.todo').allTextContents();
-      assert.deepEqual(todo, path === '/privacy-policy' ? ['[insert company address]'] : [], `${path}: open placeholders`);
+      // Until the owner answers (web/src/pages/legal.rs OPERATOR), Privacy's address is the one open,
+      // marked placeholder; after the one-line answer there is none. live-checks.mjs fails on it for prod.
+      const allowed = path === '/privacy-policy' && todo.length ? ['[insert company address]'] : [];
+      assert.deepEqual(todo, allowed, `${path}: open placeholders`);
       assert.equal(main.split(/\[insert/i).length - 1, todo.length, `${path}: no unmarked placeholder`);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path}: no horizontal scroll at ${width}px`);
       if (path === '/robot') {
