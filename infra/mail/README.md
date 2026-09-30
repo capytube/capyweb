@@ -141,9 +141,10 @@ aws sesv2 send-email --profile "$CAPY" --region ap-southeast-1 --from-email-addr
 Then, a minute later, show the three pieces. None of these prints an address.
 
 ```sh
-# a) the raw mail in S3 (the key is inbound/<SES messageId>)
+# a) the raw mail in S3 (the key is inbound/<SES messageId>); the bucket name ends in the account id
+ACCT=$(aws sts get-caller-identity --profile "$CAPY" --query Account --output text)
 aws s3api list-objects-v2 --profile "$CAPY" --region ap-southeast-1 \
-  --bucket capyapp-capyweb-contact-mail-619071347239 --prefix inbound/ \
+  --bucket "capyapp-capyweb-contact-mail-$ACCT" --prefix inbound/ \
   --query 'reverse(sort_by(Contents,&LastModified))[:3].[LastModified,Key,Size]' --output table
 
 # b) the forwarder's line: sesMessageId (the S3 key's id), verdicts, decision "forwarded", sentMessageId
@@ -198,7 +199,7 @@ aws cloudformation delete-stack --profile "$CAPY" --region ap-southeast-1 --stac
 - **Boundary:** the role is `capyapp-capyweb-contact-forwarder` and carries `capyapp-lambda-boundary`, like every
   backend function role. The boundary must allow `s3:GetObject` (it grants `s3:*` on `capyapp-*`),
   `ses:SendRawEmail`, `ssm:GetParameter` and `kms:Decrypt`. Whether it does can only be read in IAM:
-  `aws iam get-policy --policy-arn arn:aws:iam::619071347239:policy/capyapp-lambda-boundary`, then
+  `aws iam get-policy --policy-arn arn:aws:iam::<account-id>:policy/capyapp-lambda-boundary`, then
   `get-policy-version` with its default version.
 - **The boundary is admin-made and not in this repo.** Until 2026-09-30 it had no SES action, so the forwarder
   could not have sent. capyweb-manager made v5 the default that day (v4 kept): it adds `ses:SendRawEmail` on

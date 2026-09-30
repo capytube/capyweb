@@ -7,7 +7,7 @@ import unittest
 sys.path.insert(0, os.path.dirname(__file__))
 import alarm_relay as r  # noqa: E402
 
-ACCT = "619071347239"
+ACCT = "111122223333"  # AWS's documentation example id, not ours
 
 
 def envelope(topic, message, timestamp="2026-09-29T18:23:05.000Z"):

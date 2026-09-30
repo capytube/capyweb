@@ -202,6 +202,21 @@ else
   pass "no hardcoded secrets (source, templates, scripts, demo, amplify, web, root files)"
 fi
 
+# The repo is public, so no real AWS account id (capyweb-manager, 2026-09-30): not in an ARN, at the end
+# of a bucket name, after the word "account", or quoted alone. Docs write <account-id>; commands read it
+# with `aws sts get-caller-identity`; tests use AWS's documentation examples. Every tracked or new file but
+# the self-test, whose cases plant made-up ids on purpose.
+acct_hits=$(git grep -I -n -E --untracked \
+  'arn:aws[a-z-]*:[a-z0-9-]*:[a-z0-9-]*:[0-9]{12}|capy[a-z0-9-]*-[0-9]{12}([^0-9]|$)|[Aa]ccount[^0-9A-Za-z]{1,4}[0-9]{12}([^0-9]|$)|"[0-9]{12}"' \
+  -- . ':!*.lock' ':!*package-lock.json' ':!scripts/guard-selftest.sh' 2>/dev/null \
+  | grep -vE '111122223333|123456789012|000000000000')
+if [ -n "$acct_hits" ]; then
+  printf '%s\n' "$acct_hits" | cut -d: -f1,2 | sed 's/$/: (id not shown)/'
+  fail "no AWS account id in the repo" "write <account-id>, or read it with aws sts get-caller-identity"
+else
+  pass "no AWS account id in the repo"
+fi
+
 # The WASM client's types are the API's public shape. A field named like a playback locator
 # there means someone expects the API to SEND one - to anyone, since the .wasm is public -
 # which is the exact leak clean() in ddb.ts exists to stop. (docs/WASM_PLAN.md section 5, rule 4)

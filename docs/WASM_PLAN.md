@@ -483,13 +483,13 @@ Checked on this Mac (mac-pro-japan-16) on 2026-09-29. The lent Mac was not conta
    here is IAM user `capyapp-mac-pro-japan-16`, in group `capyapp-deployers` only, with an active key made on
    24 Sep. herdr-master's go: **the dev stack only**. Going public (the `capytube-dns` role, the apex, W12)
    needs its own go through capyweb-manager. What was asked for, and granted since:
-   - **IAM user `capyapp-mac-pro-japan-16`** in account 619071347239, member of the group
+   - **IAM user `capyapp-mac-pro-japan-16`** in account <account-id>, member of the group
      **`capyapp-deployers`** and nothing else. It inherits exactly what `capyapp-macbook-pro-14` had: the
      group's five policies, including `capyapp-deploy-core` and `capyapp-deploy-apigw`, scoped to
      `capyapp-*`, ap-southeast-1 + us-east-1, with EC2/NAT/Bedrock etc. denied. No inline policy, no
      billing, no admin. One access key, stored as profile `capy` in `~/.aws/credentials` (mode 600) on
      this Mac only.
-   - **DNS:** add `arn:aws:iam::619071347239:user/capyapp-mac-pro-japan-16` to the trust policy of role
+   - **DNS:** add `arn:aws:iam::<account-id>:user/capyapp-mac-pro-japan-16` to the trust policy of role
      `capyapp-capytube-dns` in autonomous-lab. The user needs `sts:AssumeRole` on that role, if the group
      does not already grant it. This is only needed for new records or certificates, not for re-deploying
      the dev site's content.

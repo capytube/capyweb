@@ -114,6 +114,16 @@ expect_fail "camelCase secret name" "no hardcoded secrets" \
   "echo 'const clientSecret = \"abcdef0123456789abcdef0123456789\";' > backend/src/oops.ts"
 expect_fail "secret outside backend/ (demo, amplify, shell)" "no hardcoded secrets" \
   "echo 'const apiKey = \"abcdef0123456789abcdef0123456789\";' > demo/oops.js"
+# The public repo holds no AWS account id (2026-09-30): in an ARN, a bucket name, after "account",
+# or quoted in a test; in a tracked file and in a new one.
+expect_fail "account id in an ARN" "no AWS account id in the repo" \
+  "echo 'Role: arn:aws:iam::210987654321:role/x' >> docs/PLAN.md"
+expect_fail "account id ending a bucket name" "no AWS account id in the repo" \
+  "echo 'aws s3 ls s3://capyapp-capyweb-contact-mail-210987654321/' >> infra/mail/README.md"
+expect_fail "account id after the word account" "no AWS account id in the repo" \
+  "echo 'the DNS account 210987654321 holds the zone' > docs/oops.md"
+expect_fail "account id quoted in a test" "no AWS account id in the repo" \
+  "echo 'ACCT = \"210987654321\"' >> infra/ops/test_alarm_relay.py"
 # Root-level files, and a credential in a URL's query string (2026-09-30). A hit shows where,
 # never the value: each check exits 0 (a MISS) if the value reaches the output.
 NOSHOW='out=$(./scripts/guard.sh 2>&1); rc=$?; echo "$out" | grep -q Zq9Xw8Vu7EXAMPLE5Po4Nm3Lk2 && { echo VALUE PRINTED; exit 0; }; echo "$out"; exit $rc'

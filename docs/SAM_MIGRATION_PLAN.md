@@ -5,8 +5,8 @@
 Status: plan only. Nothing is migrated until Nic approves.
 
 Accounts and regions:
-- **Capy account 619071347239**: everything runs here (Lambda, DynamoDB, API Gateway, S3, CloudFront, ACM). Backend in ap-southeast-1. The CloudFront certificate has to be in us-east-1 (CloudFront requirement).
-- **AL account 360122305252**: touched ONLY for DNS records in the capytube.xyz hosted zone Z01748582U1VPM60UY0TW (the domain is registered there too).
+- **Capy account <account-id>**: everything runs here (Lambda, DynamoDB, API Gateway, S3, CloudFront, ACM). Backend in ap-southeast-1. The CloudFront certificate has to be in us-east-1 (CloudFront requirement).
+- **AL account <dns-account-id>**: touched ONLY for DNS records in the capytube.xyz hosted zone Z01748582U1VPM60UY0TW (the domain is registered there too).
 
 Allowed services (Nic): Lambda, DynamoDB, API Gateway, CloudFront, Route 53 (capytube.xyz zone only). S3 (capyweb-* buckets, public access always blocked) and ACM (capytube.xyz/www only) are included only because CloudFront needs an origin bucket and a certificate. Nic can veto that. No other services, and no IAM creation by the pipeline.
 
@@ -52,7 +52,7 @@ DNS records are NOT in any stack, because the zone lives in a different account.
 
 ## 5. Least-privilege IAM
 
-### 5a. Capy account 619071347239: user `capyweb-deploy` (inline policy)
+### 5a. Capy account <account-id>: user `capyweb-deploy` (inline policy)
 Can: run CloudFormation stacks named `capyweb-*` (ap-southeast-1 and us-east-1), hand them only the role `capyweb-cfn-exec`, upload to the artifacts/site/media buckets, invalidate CloudFront, read `capyweb-*` Lambda logs.
 Can't: create anything directly, touch IAM, or touch other stacks, buckets or services.
 ```json
@@ -78,8 +78,8 @@ Can't: create anything directly, touch IAM, or touch other stacks, buckets or se
         "cloudformation:DeleteChangeSet"
       ],
       "Resource": [
-        "arn:aws:cloudformation:ap-southeast-1:619071347239:stack/capyweb-*/*",
-        "arn:aws:cloudformation:us-east-1:619071347239:stack/capyweb-*/*",
+        "arn:aws:cloudformation:ap-southeast-1:<account-id>:stack/capyweb-*/*",
+        "arn:aws:cloudformation:us-east-1:<account-id>:stack/capyweb-*/*",
         "arn:aws:cloudformation:ap-southeast-1:aws:transform/Serverless-2016-10-31"
       ]
     },
@@ -95,7 +95,7 @@ Can't: create anything directly, touch IAM, or touch other stacks, buckets or se
       "Sid": "PassOnlyCfnExecRole",
       "Effect": "Allow",
       "Action": "iam:PassRole",
-      "Resource": "arn:aws:iam::619071347239:role/capyweb-cfn-exec",
+      "Resource": "arn:aws:iam::<account-id>:role/capyweb-cfn-exec",
       "Condition": {
         "StringEquals": {
           "iam:PassedToService": "cloudformation.amazonaws.com"
@@ -112,8 +112,8 @@ Can't: create anything directly, touch IAM, or touch other stacks, buckets or se
         "s3:GetBucketLocation"
       ],
       "Resource": [
-        "arn:aws:s3:::capyweb-sam-artifacts-619071347239",
-        "arn:aws:s3:::capyweb-sam-artifacts-619071347239/*"
+        "arn:aws:s3:::capyweb-sam-artifacts-<account-id>",
+        "arn:aws:s3:::capyweb-sam-artifacts-<account-id>/*"
       ]
     },
     {
@@ -126,10 +126,10 @@ Can't: create anything directly, touch IAM, or touch other stacks, buckets or se
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::capyweb-site-619071347239",
-        "arn:aws:s3:::capyweb-site-619071347239/*",
-        "arn:aws:s3:::capyweb-media-619071347239",
-        "arn:aws:s3:::capyweb-media-619071347239/*"
+        "arn:aws:s3:::capyweb-site-<account-id>",
+        "arn:aws:s3:::capyweb-site-<account-id>/*",
+        "arn:aws:s3:::capyweb-media-<account-id>",
+        "arn:aws:s3:::capyweb-media-<account-id>/*"
       ]
     },
     {
@@ -139,7 +139,7 @@ Can't: create anything directly, touch IAM, or touch other stacks, buckets or se
         "cloudfront:CreateInvalidation",
         "cloudfront:GetInvalidation"
       ],
-      "Resource": "arn:aws:cloudfront::619071347239:distribution/*"
+      "Resource": "arn:aws:cloudfront::<account-id>:distribution/*"
     },
     {
       "Sid": "ReadCapywebLambdaLogs",
@@ -149,7 +149,7 @@ Can't: create anything directly, touch IAM, or touch other stacks, buckets or se
         "logs:GetLogEvents",
         "logs:DescribeLogStreams"
       ],
-      "Resource": "arn:aws:logs:ap-southeast-1:619071347239:log-group:/aws/lambda/capyweb-*"
+      "Resource": "arn:aws:logs:ap-southeast-1:<account-id>:log-group:/aws/lambda/capyweb-*"
     }
   ]
 }
@@ -193,13 +193,13 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "lambda:GetRuntimeManagementConfig",
         "lambda:GetFunctionConcurrency"
       ],
-      "Resource": "arn:aws:lambda:ap-southeast-1:619071347239:function:capyweb-*"
+      "Resource": "arn:aws:lambda:ap-southeast-1:<account-id>:function:capyweb-*"
     },
     {
       "Sid": "PassOnlyLambdaExecRole",
       "Effect": "Allow",
       "Action": "iam:PassRole",
-      "Resource": "arn:aws:iam::619071347239:role/capyweb-lambda-exec",
+      "Resource": "arn:aws:iam::<account-id>:role/capyweb-lambda-exec",
       "Condition": {
         "StringEquals": {
           "iam:PassedToService": "lambda.amazonaws.com"
@@ -212,7 +212,7 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
       "Action": [
         "s3:GetObject"
       ],
-      "Resource": "arn:aws:s3:::capyweb-sam-artifacts-619071347239/*"
+      "Resource": "arn:aws:s3:::capyweb-sam-artifacts-<account-id>/*"
     },
     {
       "Sid": "DynamoDBCapywebTablesOnly",
@@ -229,7 +229,7 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "dynamodb:DescribeContinuousBackups",
         "dynamodb:DescribeTimeToLive"
       ],
-      "Resource": "arn:aws:dynamodb:ap-southeast-1:619071347239:table/capyweb-*"
+      "Resource": "arn:aws:dynamodb:ap-southeast-1:<account-id>:table/capyweb-*"
     },
     {
       "Sid": "HttpApiSingapore",
@@ -265,8 +265,8 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "s3:GetBucketPublicAccessBlock"
       ],
       "Resource": [
-        "arn:aws:s3:::capyweb-site-619071347239",
-        "arn:aws:s3:::capyweb-media-619071347239"
+        "arn:aws:s3:::capyweb-site-<account-id>",
+        "arn:aws:s3:::capyweb-media-<account-id>"
       ]
     },
     {
@@ -304,9 +304,9 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "cloudfront:GetFunction"
       ],
       "Resource": [
-        "arn:aws:cloudfront::619071347239:distribution/*",
-        "arn:aws:cloudfront::619071347239:origin-access-control/*",
-        "arn:aws:cloudfront::619071347239:function/capyweb-*"
+        "arn:aws:cloudfront::<account-id>:distribution/*",
+        "arn:aws:cloudfront::<account-id>:origin-access-control/*",
+        "arn:aws:cloudfront::<account-id>:function/capyweb-*"
       ]
     },
     {
@@ -334,7 +334,7 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "acm:DeleteCertificate",
         "acm:ListTagsForCertificate"
       ],
-      "Resource": "arn:aws:acm:us-east-1:619071347239:certificate/*"
+      "Resource": "arn:aws:acm:us-east-1:<account-id>:certificate/*"
     },
     {
       "Sid": "SamTransform",
@@ -363,7 +363,7 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],
-      "Resource": "arn:aws:logs:ap-southeast-1:619071347239:log-group:/aws/lambda/capyweb-*"
+      "Resource": "arn:aws:logs:ap-southeast-1:<account-id>:log-group:/aws/lambda/capyweb-*"
     },
     {
       "Sid": "CapywebTablesCrud",
@@ -379,8 +379,8 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
         "dynamodb:TransactWriteItems"
       ],
       "Resource": [
-        "arn:aws:dynamodb:ap-southeast-1:619071347239:table/capyweb-*",
-        "arn:aws:dynamodb:ap-southeast-1:619071347239:table/capyweb-*/index/*"
+        "arn:aws:dynamodb:ap-southeast-1:<account-id>:table/capyweb-*",
+        "arn:aws:dynamodb:ap-southeast-1:<account-id>:table/capyweb-*/index/*"
       ]
     },
     {
@@ -389,13 +389,13 @@ Trust policy: `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal
       "Action": [
         "s3:PutObject"
       ],
-      "Resource": "arn:aws:s3:::capyweb-media-619071347239/media/*"
+      "Resource": "arn:aws:s3:::capyweb-media-<account-id>/media/*"
     }
   ]
 }
 ```
 
-### 5d. AL account 360122305252: user `capyweb-dns` (inline policy)
+### 5d. AL account <dns-account-id>: user `capyweb-dns` (inline policy)
 Only zone Z01748582U1VPM60UY0TW. Only A/AAAA/CNAME records. Only the names `capytube.xyz`, `www.capytube.xyz` and ACM validation names (`_*.capytube.xyz`). It can't touch MX/TXT/NS, other zones, the domain registration, or anything else in that account. I chose a plain user over a cross-account role because it's fewer steps for the admin.
 ```json
 {
@@ -468,16 +468,16 @@ The templates aren't written yet. When they are, they must meet these rules, and
 ## 7. One-time admin steps
 (These are the same steps that went out as the admin message.)
 
-**Capy account 619071347239 (region Asia Pacific (Singapore) ap-southeast-1 unless noted)**
+**Capy account <account-id> (region Asia Pacific (Singapore) ap-southeast-1 unless noted)**
 1. Rotate the two leaked Livepeer keys in Livepeer Studio. Create SSM Parameter Store SecureString `/capyweb/livepeer-api-key` with the new key.
-2. S3: create bucket `capyweb-sam-artifacts-619071347239` (ap-southeast-1, Block all public access ON).
+2. S3: create bucket `capyweb-sam-artifacts-<account-id>` (ap-southeast-1, Block all public access ON).
 3. IAM role `capyweb-lambda-exec`: trusted entity Lambda, inline policy = capyweb-lambda-exec-role-policy.txt.
 4. IAM role `capyweb-cfn-exec`: trusted entity CloudFormation, inline policy = capyweb-cfn-exec-role-policy.txt.
 5. IAM user `capyweb-deploy`: no console access, inline policy = capyweb-deploy-user-policy.txt, then create a CLI access key and put it in vault link 1.
 6. Service Quotas (ap-southeast-1) > Lambda > Concurrent executions: if it shows 10, request 100.
 7. Billing > Budgets: $20/month cost budget with alerts at 50/80% actual and 100% forecast. Enable Cost Anomaly Detection.
 
-**AL account 360122305252**
+**AL account <dns-account-id>**
 8. IAM user `capyweb-dns`: no console access, inline policy = capyweb-dns-user-policy.txt, then create a CLI access key and put it in vault link 2.
 9. (Optional) $5/month budget alert.
 

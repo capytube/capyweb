@@ -13,7 +13,7 @@ Author: Claude, 2026-09-24. Supersedes nothing; extends `docs/SAM_MIGRATION_PLAN
 ### 1a. The $260/month budget alarm is not capyweb
 
 The Notion note *"AWS budget — capyweb exceeds monthly budget"* reports $267 actual / $353 forecast against a
-$20 budget. I checked Cost Explorer on account `619071347239` directly. The breakdown for 1–25 Sep:
+$20 budget. I checked Cost Explorer on account `<account-id>` directly. The breakdown for 1–25 Sep:
 
 | Service | Gross usage |
 |---|---:|
