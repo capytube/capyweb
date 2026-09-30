@@ -1,4 +1,4 @@
-"""Tests for forwarder.py: python3 -B infra/mail/test_forwarder.py (scripts/guard.sh runs them). No AWS: the
+"""Tests for forwarder/forwarder.py: python3 -B infra/mail/test_forwarder.py (scripts/guard.sh runs them). No AWS: the
 S3, SES and SSM clients are fakes."""
 import base64
 import io
@@ -9,7 +9,8 @@ from email import message_from_bytes
 from email.header import decode_header, make_header
 from email.policy import default
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# The function lives alone in forwarder/, the directory `aws cloudformation package` zips.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "forwarder"))
 import forwarder as f  # noqa: E402
 
 FORWARD_TO = "owner@example.test"

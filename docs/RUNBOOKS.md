@@ -514,14 +514,21 @@ It should show `opensign-test-inbox`, then `store` and `capyweb-contact`.
 updates of `capyapp-capyweb-contact-mail` (same template, change sets as in `infra/mail/README.md` step 1,
 `--change-set-type UPDATE`, every other parameter `UsePreviousValue=true`):
 1. `ReceiveMail=false`. CloudFormation still believes the rule exists, and this takes it out of the stack.
-   The rule is already gone, so its delete may fail in the cleanup phase; the stack still ends
-   `UPDATE_COMPLETE`. If it ends anywhere else, stop and tell capyweb-manager.
+   The rule is already gone; SES deletes a missing rule as a no-op (it errors only when the rule set is
+   missing), and a delete that fails in the cleanup phase still leaves the stack `UPDATE_COMPLETE`. If it
+   ends anywhere else, stop and tell capyweb-manager.
 2. `ReceiveMail=true`, with `AfterRule` set to the rule ours should follow. If `store` is no longer in the
    set, ask capyweb-manager where ours goes before this step. It creates the rule afresh.
 3. Run the check again, then send a test mail as in the README's proof.
 
 Do not rename the rule's logical id instead: the rule's name is fixed, so the cleanup of the old logical id
 would delete the new rule by that name.
+
+**The forwarder's permissions boundary** `capyapp-lambda-boundary` is made by an admin and is not in the repo.
+Its v5 (2026-09-30) added the forwarder's one SES grant: `ses:SendRawEmail` on `identity/capytube.xyz` and
+`configuration-set/capyapp-capyweb-contact`, only From contact@capytube.xyz. Whoever edits that boundary must
+keep the statement; without it the forwarder logs `"decision": "error"` with an `AccessDenied` code and mail
+waits in the bucket (`infra/mail/README.md`, design notes).
 
 **If the active set is gone or has another name:**
 - stop, and tell capyweb-manager;

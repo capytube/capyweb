@@ -195,12 +195,13 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: capyapp-capyweb-contact-forwarder
-      Description: Forwards contact@capytube.xyz to the address in SSM (infra/mail/forwarder.py).
+      Description: Forwards contact@capytube.xyz to the address in SSM (infra/mail/forwarder/forwarder.py).
       Runtime: python3.12
       Architectures: [arm64]
       Handler: forwarder.handler
-      # A local file: `aws cloudformation package` zips it and uploads it (infra/mail/README.md).
-      Code: forwarder.py
+      # A local directory holding only forwarder.py: `aws cloudformation package` zips it and uploads the zip
+      # (infra/mail/README.md). A single file would be uploaded as it is, and Lambda cannot unzip it.
+      Code: forwarder
       Role: !GetAtt ForwarderRole.Arn
       MemorySize: 256
       Timeout: 60

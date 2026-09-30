@@ -1,4 +1,4 @@
-"""Forwards mail sent to contact@capytube.xyz (infra/mail/contact-mail.yaml; tests: test_forwarder.py).
+"""Forwards mail sent to contact@capytube.xyz (infra/mail/contact-mail.yaml; tests: infra/mail/test_forwarder.py).
 
 SES receives the mail, stores it at s3://<bucket>/inbound/<messageId>, then invokes this function
 (asynchronously). The function reads the stored message, rewrites the address headers so that SES may send it

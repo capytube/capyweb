@@ -449,9 +449,16 @@ fi
 #     drops and log hygiene (no address, subject or body in a log line) have tests (infra/mail/test_forwarder.py).
 head "Contact mail"
 if out=$(python3 -B -m unittest -q infra/mail/test_forwarder.py 2>&1); then
-  pass "infra/mail/forwarder.py: $(printf '%s' "$out" | grep -o 'Ran [0-9]* tests')"
+  pass "infra/mail/forwarder/forwarder.py: $(printf '%s' "$out" | grep -o 'Ran [0-9]* tests')"
 else
-  fail "infra/mail/forwarder.py tests" "$(printf '%s' "$out" | tail -3 | tr '\n' ' ')"
+  fail "infra/mail/forwarder/forwarder.py tests" "$(printf '%s' "$out" | tail -3 | tr '\n' ' ')"
+fi
+# `aws cloudformation package` zips the whole directory as the Lambda's code: only forwarder.py belongs there.
+mail_code=$(ls -A infra/mail/forwarder 2>/dev/null | tr '\n' ' ')
+if [ "$mail_code" = "forwarder.py " ]; then
+  pass "infra/mail/forwarder/ holds only forwarder.py (the Lambda's zip)"
+else
+  fail "infra/mail/forwarder/ must hold only forwarder.py: it is zipped whole as the Lambda's code" "found: ${mail_code:-nothing}"
 fi
 
 if [ "$FAILED" -eq 0 ]; then

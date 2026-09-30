@@ -6,7 +6,7 @@ address. That address is an SSM SecureString; it is never in this repo, in a log
 | File | What |
 |---|---|
 | `contact-mail.yaml` | Stack `capyapp-capyweb-contact-mail` (capy account, ap-southeast-1): the SES identity with Easy DKIM, the raw-mail bucket, the receipt rule, the forwarder, its configuration set and the delivery log |
-| `forwarder.py` | The forwarder (Python 3.12, stdlib and boto3). Tests: `python3 -B infra/mail/test_forwarder.py`, also run by `scripts/guard.sh` |
+| `forwarder/forwarder.py` | The forwarder (Python 3.12, stdlib and boto3), alone in its directory: that directory is the Lambda's code. Tests: `python3 -B infra/mail/test_forwarder.py`, also run by `scripts/guard.sh` |
 | `mail-dns.yaml` | Stack `capyapp-capyweb-mail-dns` (DNS account, ap-southeast-1): the MX and the three DKIM CNAMEs, nothing else |
 
 How a mail travels: MX -> SES -> receipt rule `capyweb-contact` in the account's active rule set
@@ -45,9 +45,12 @@ aws sesv2 get-email-identity --profile "$CAPY" --region ap-southeast-1 --email-i
   --query VerifiedForSendingStatus
 ```
 
-**1. Package, make the change set, read it, execute it.** `aws cloudformation package` zips `forwarder.py` (the
-function's `Code` is that local file) and uploads it under the shared SAM bucket's `capyapp-*` prefix, as the
-backend's artifacts are.
+**1. Package, make the change set, read it, execute it.** `aws cloudformation package` zips the directory
+`infra/mail/forwarder/` (the function's `Code`) and uploads the zip under the shared SAM bucket's `capyapp-*`
+prefix, as the backend's artifacts are. It zips only a directory: a single file would be uploaded as it is, and
+Lambda fails with "Could not unzip uploaded file" (the first create, 2026-09-30). The directory must hold
+`forwarder.py` and nothing else (`scripts/guard.sh` checks; a `__pycache__` from running the tests without
+`-B` would ship too), so check before packaging: `ls -A infra/mail/forwarder` prints only `forwarder.py`.
 
 ```sh
 OUT=$(mktemp -d)
@@ -160,7 +163,9 @@ permissions boundary lacks a grant (see the design notes). The mail stays in S3 
 ## Rollback
 
 To stop receiving but keep the stack (the bucket, the forwarder, the identity), update it with
-`ReceiveMail=false`: only our rule leaves the shared set.
+`ReceiveMail=false`: only our rule leaves the shared set. The same switch, `false` then `true`, recreates a rule
+that was lost from the shared set (`docs/RUNBOOKS.md` section 6); renaming the rule's logical id would not, since
+the cleanup of the old id deletes the new rule by its fixed name.
 
 To remove everything, delete the DNS stack first (mail stops arriving), then the mail stack:
 
@@ -177,8 +182,9 @@ aws cloudformation delete-stack --profile "$CAPY" --region ap-southeast-1 --stac
 
 ## Design notes
 
-- **Packaging:** plain CloudFormation, `aws cloudformation package`: it zips a single local `Code` file for an
-  `AWS::Lambda::Function`, so only `forwarder.py` ships. No build step, so no SAM.
+- **Packaging:** plain CloudFormation, `aws cloudformation package`: it zips the local `Code` directory
+  `forwarder/` for an `AWS::Lambda::Function`, so only `forwarder.py` ships, at the root of the zip. No build
+  step, so no SAM.
 - **Delivery record:** SES configuration set `capyapp-capyweb-contact` -> EventBridge (default bus) -> rule
   `capyapp-capyweb-contact-mail-events` -> log group `/aws/events/capyapp-capyweb-contact-mail` (90 days). Each
   line reads `Email Delivered messageId=<id>`. The rule transforms the event first, because the full SES event
@@ -194,6 +200,11 @@ aws cloudformation delete-stack --profile "$CAPY" --region ap-southeast-1 --stac
   `ses:SendRawEmail`, `ssm:GetParameter` and `kms:Decrypt`. Whether it does can only be read in IAM:
   `aws iam get-policy --policy-arn arn:aws:iam::619071347239:policy/capyapp-lambda-boundary`, then
   `get-policy-version` with its default version.
+- **The boundary is admin-made and not in this repo.** Until 2026-09-30 it had no SES action, so the forwarder
+  could not have sent. capyweb-manager made v5 the default that day (v4 kept): it adds `ses:SendRawEmail` on
+  `identity/capytube.xyz` and `configuration-set/capyapp-capyweb-contact` only, with the condition
+  `ses:FromAddress` = contact@capytube.xyz. A boundary only caps, so the other roles that carry it gained
+  nothing. A later boundary version must keep that statement, or forwarding stops with `AccessDenied`.
 - **The role** may send only as contact@capytube.xyz (`ses:FromAddress`), read only `inbound/*` of the bucket, and
   read only the one parameter.
 - **What the forwarder drops:** spam or virus verdict FAIL; mail not for contact@capytube.xyz; any mail with an
