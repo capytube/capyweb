@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: capyweb contact mail DNS - the MX and the three DKIM records for contact@capytube.xyz
+  (infra/mail/README.md). Stack capyapp-capyweb-mail-dns, ap-southeast-1, in the DNS account (autonomous-lab),
+  deployed by that account's admin.
+
+# Separate from the apex stack capyapp-capyweb-dns-<stage> (infra/site/dns.yaml) on purpose: a rollback or a
+# failed update of the apex switch never takes mail down, and this stack never touches the site's records.
+# Nothing else lives here: no TXT (the apex keeps its one site-verification TXT, and SPF is not changed), and no
+# A, AAAA or CNAME at the apex or www.
+
+Parameters:
+  # The contact-mail stack's outputs DkimToken1..3, copied as they are.
+  DkimToken1: {Type: String, AllowedPattern: '^[a-z0-9]{16,64}$', Description: Output DkimToken1 of capyapp-capyweb-contact-mail}
+  DkimToken2: {Type: String, AllowedPattern: '^[a-z0-9]{16,64}$', Description: Output DkimToken2 of capyapp-capyweb-contact-mail}
+  DkimToken3: {Type: String, AllowedPattern: '^[a-z0-9]{16,64}$', Description: Output DkimToken3 of capyapp-capyweb-contact-mail}
+
+Resources:
+  # SES receives mail for ap-southeast-1 at this host; the receipt rule in capyapp-capyweb-contact-mail takes it.
+  Mx:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: capytube.xyz.
+      Name: capytube.xyz.
+      Type: MX
+      TTL: '300'
+      ResourceRecords: ['10 inbound-smtp.ap-southeast-1.amazonaws.com']
+
+  # Easy DKIM: <token>._domainkey.capytube.xyz -> <token>.dkim.amazonses.com
+  Dkim:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: capytube.xyz.
+      RecordSets:
+        - {Name: !Sub '${DkimToken1}._domainkey.capytube.xyz.', Type: CNAME, TTL: '1800', ResourceRecords: [!Sub '${DkimToken1}.dkim.amazonses.com']}
+        - {Name: !Sub '${DkimToken2}._domainkey.capytube.xyz.', Type: CNAME, TTL: '1800', ResourceRecords: [!Sub '${DkimToken2}.dkim.amazonses.com']}
+        - {Name: !Sub '${DkimToken3}._domainkey.capytube.xyz.', Type: CNAME, TTL: '1800', ResourceRecords: [!Sub '${DkimToken3}.dkim.amazonses.com']}

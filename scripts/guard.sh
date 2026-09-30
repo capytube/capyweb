@@ -445,6 +445,15 @@ else
   fail "infra/ops/alarm_relay.py tests" "$(printf '%s' "$out" | tail -3 | tr '\n' ' ')"
 fi
 
+# 10. The contact-mail forwarder handles strangers' mail and a private forward address: its header rewrite,
+#     drops and log hygiene (no address, subject or body in a log line) have tests (infra/mail/test_forwarder.py).
+head "Contact mail"
+if out=$(python3 -B -m unittest -q infra/mail/test_forwarder.py 2>&1); then
+  pass "infra/mail/forwarder.py: $(printf '%s' "$out" | grep -o 'Ran [0-9]* tests')"
+else
+  fail "infra/mail/forwarder.py tests" "$(printf '%s' "$out" | tail -3 | tr '\n' ' ')"
+fi
+
 if [ "$FAILED" -eq 0 ]; then
   [ "$QUIET" -eq 1 ] || printf '\n\033[32mall guards passed\033[0m\n'
   exit 0

@@ -11,6 +11,8 @@ the **`capyapp-*`** naming prefix and to the regions ap-southeast-1 and us-east-
   `capyapp-capyweb-site-<stage>` (private S3 + CloudFront OAC) on `dev.capytube.xyz` or, for
   prod, `capytube.xyz` and `www.capytube.xyz`, and its DNS stack `capyapp-capyweb-dns-<stage>` in the **autonomous-lab**
   account, where the `capytube.xyz` zone lives. The DNS stack is deployed through the `capytube-dns` profile.
+- `mail/`: contact@capytube.xyz, received by SES and forwarded to a private address (stacks `capyapp-capyweb-contact-mail`
+  and, in the DNS account, `capyapp-capyweb-mail-dns`). Deployed by an admin; steps and the proof in `mail/README.md`.
 - Plan and cost model: `docs/PLAN.md`. Issue tracker: `bd list`.
 
 ## Deploy

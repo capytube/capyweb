@@ -1,0 +1,324 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: capyweb contact mail - receives contact@capytube.xyz and forwards it to the address in SSM
+  (infra/mail/README.md). Stack capyapp-capyweb-contact-mail, ap-southeast-1, capy account; the admin packages it
+  (aws cloudformation package) and makes the change set. The DNS records are the separate stack
+  capyapp-capyweb-mail-dns (infra/mail/mail-dns.yaml) in the DNS account.
+
+# SES receives mail for this account through ONE active receipt rule set, opensign-test-inbox, which belongs to
+# another project. This stack never creates or activates a rule set and never touches that project's rules: it
+# adds one rule, capyweb-contact, to the set. Deleting the stack removes that rule only.
+
+Parameters:
+  AfterRule:
+    Type: String
+    Default: store
+    AllowedPattern: '^[A-Za-z0-9_.-]{0,64}$'
+    Description: The rule in opensign-test-inbox that ours goes after (their only rule today is "store"). Empty =
+      ours goes first.
+  ForwardToParameterName:
+    Type: String
+    Default: /capyapp/capyweb/contact/forward-to
+    AllowedPattern: '^/[A-Za-z0-9/_.-]{1,200}$'
+    Description: SSM SecureString (key aws/ssm) holding the address mail is forwarded to. Set by the manager; the
+      address is never in the repo or in any log.
+  AlarmTopicArn:
+    Type: String
+    Default: ''
+    AllowedPattern: '^(arn:aws:sns:[a-z0-9-]+:[0-9]{12}:[A-Za-z0-9_-]{1,256})?$'
+    Description: SNS topic for the forwarder's error alarm, on ALARM and on OK. Empty = no alarm.
+
+Conditions:
+  HasAfterRule: !Not [!Equals [!Ref AfterRule, '']]
+  HasAlarm: !Not [!Equals [!Ref AlarmTopicArn, '']]
+
+Resources:
+  # ---- Sending identity ----------------------------------------------------------------------------------
+  # Easy DKIM, 2048-bit. The three CNAMEs go into mail-dns.yaml from the DkimToken outputs. No custom MAIL FROM:
+  # that would need an SPF TXT record, and the apex TXT stays as it is. DMARC alignment comes from DKIM.
+  Identity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: capytube.xyz
+      DkimAttributes:
+        SigningEnabled: true
+      DkimSigningAttributes:
+        NextSigningKeyLength: RSA_2048_BIT
+
+  # ---- Raw mail ------------------------------------------------------------------------------------------
+  # Kept if the stack goes: it holds mail nobody may have read yet.
+  MailBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub capyapp-capyweb-contact-mail-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules: [{ObjectOwnership: BucketOwnerEnforced}]
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-after-90-days
+            Status: Enabled
+            ExpirationInDays: 90
+            AbortIncompleteMultipartUpload: {DaysAfterInitiation: 1}
+      Tags:
+        - {Key: Project, Value: capyweb}
+        - {Key: Stage, Value: prod}
+
+  # SES may write only under inbound/, and only for our rule in this account. Nothing may use plain HTTP.
+  MailBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MailBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: SesPutsInboundMail
+            Effect: Allow
+            Principal: {Service: ses.amazonaws.com}
+            Action: s3:PutObject
+            Resource: !Sub arn:aws:s3:::capyapp-capyweb-contact-mail-${AWS::AccountId}/inbound/*
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub arn:aws:ses:${AWS::Region}:${AWS::AccountId}:receipt-rule-set/opensign-test-inbox:receipt-rule/capyweb-contact
+          - Sid: DenyPlainHttp
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !Sub arn:aws:s3:::capyapp-capyweb-contact-mail-${AWS::AccountId}
+              - !Sub arn:aws:s3:::capyapp-capyweb-contact-mail-${AWS::AccountId}/*
+            Condition:
+              Bool: {'aws:SecureTransport': 'false'}
+
+  # ---- The receipt rule ----------------------------------------------------------------------------------
+  # SES checks the bucket policy and the Lambda permission when the rule is created, hence the DependsOn.
+  ContactRule:
+    Type: AWS::SES::ReceiptRule
+    DependsOn: [MailBucketPolicy, ForwarderSesPermission]
+    Properties:
+      RuleSetName: opensign-test-inbox
+      After: !If [HasAfterRule, !Ref AfterRule, !Ref AWS::NoValue]
+      Rule:
+        Name: capyweb-contact
+        Enabled: true
+        Recipients: [contact@capytube.xyz]
+        ScanEnabled: true
+        TlsPolicy: Optional
+        Actions:
+          - S3Action:
+              BucketName: !Ref MailBucket
+              ObjectKeyPrefix: inbound/
+          - LambdaAction:
+              FunctionArn: !GetAtt Forwarder.Arn
+              InvocationType: Event
+          # This rule matches only contact@capytube.xyz, so the Stop only ever applies to our mail. It keeps that
+          # mail out of the other project's rules and bucket, even if they add a catch-all rule after ours later.
+          - StopAction:
+              Scope: RuleSet
+
+  # ---- The forwarder -------------------------------------------------------------------------------------
+  ForwarderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/capyapp-capyweb-contact-forwarder
+      RetentionInDays: 30
+      Tags:
+        - {Key: Project, Value: capyweb}
+        - {Key: Stage, Value: prod}
+
+  # Named capyapp-* and carrying capyapp-lambda-boundary, like the backend's function roles (docs/PLAN.md).
+  # No kms:Decrypt: the parameter is under the AWS managed key aws/ssm, whose key policy already lets every
+  # principal in the account decrypt through SSM (kms:ViaService); an identity policy cannot widen or narrow
+  # that (infra/mail/README.md, "Design notes").
+  ForwarderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: capyapp-capyweb-contact-forwarder
+      PermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/capyapp-lambda-boundary
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: forward-contact-mail
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: OwnLogs
+                Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/capyapp-capyweb-contact-forwarder:*
+              - Sid: ReadInboundMail
+                Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub arn:aws:s3:::capyapp-capyweb-contact-mail-${AWS::AccountId}/inbound/*
+              # SES checks both the identity and, when one is named, the configuration set.
+              - Sid: SendAsContact
+                Effect: Allow
+                Action: ses:SendRawEmail
+                Resource:
+                  - !Sub arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/capytube.xyz
+                  - !Sub arn:aws:ses:${AWS::Region}:${AWS::AccountId}:configuration-set/capyapp-capyweb-contact
+                Condition:
+                  StringEquals: {'ses:FromAddress': contact@capytube.xyz}
+              - Sid: ReadForwardAddress
+                Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ForwardToParameterName}
+      Tags:
+        - {Key: Project, Value: capyweb}
+        - {Key: Stage, Value: prod}
+
+  Forwarder:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: capyapp-capyweb-contact-forwarder
+      Description: Forwards contact@capytube.xyz to the address in SSM (infra/mail/forwarder.py).
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: forwarder.handler
+      # A local file: `aws cloudformation package` zips it and uploads it (infra/mail/README.md).
+      Code: forwarder.py
+      Role: !GetAtt ForwarderRole.Arn
+      MemorySize: 256
+      Timeout: 60
+      ReservedConcurrentExecutions: 2
+      LoggingConfig:
+        LogGroup: !Ref ForwarderLogGroup
+      Environment:
+        Variables:
+          BUCKET: !Ref MailBucket
+          CONFIG_SET: !Ref ConfigSet
+          FORWARD_TO_PARAM: !Ref ForwardToParameterName
+      Tags:
+        - {Key: Project, Value: capyweb}
+        - {Key: Stage, Value: prod}
+
+  ForwarderSesPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt Forwarder.Arn
+      Action: lambda:InvokeFunction
+      Principal: ses.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:ses:${AWS::Region}:${AWS::AccountId}:receipt-rule-set/opensign-test-inbox:receipt-rule/capyweb-contact
+
+  ForwarderErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarm
+    Properties:
+      AlarmName: capyapp-capyweb-contact-forwarder-errors
+      AlarmDescription: The contact mail forwarder failed. The mail is still in the bucket; its log line says which
+        message and the error code.
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions: [{Name: FunctionName, Value: !Ref Forwarder}]
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopicArn]
+      OKActions: [!Ref AlarmTopicArn]
+
+  # ---- Delivery record -----------------------------------------------------------------------------------
+  # Every send names this configuration set. Its events go to the default EventBridge bus; one rule writes a
+  # line per event to a log group: the event type and the SES message id, nothing else. The whole event would
+  # carry the forward address (mail.destination), so the rule transforms it first.
+  ConfigSet:
+    Type: AWS::SES::ConfigurationSet
+    Properties:
+      Name: capyapp-capyweb-contact
+
+  ConfigSetEvents:
+    Type: AWS::SES::ConfigurationSetEventDestination
+    Properties:
+      ConfigurationSetName: !Ref ConfigSet
+      EventDestination:
+        Name: capyweb-contact-eventbridge
+        Enabled: true
+        MatchingEventTypes: [send, delivery, bounce, reject, complaint, deliveryDelay]
+        EventBridgeDestination:
+          EventBusArn: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+
+  MailEventsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/events/capyapp-capyweb-contact-mail
+      RetentionInDays: 90
+      Tags:
+        - {Key: Project, Value: capyweb}
+        - {Key: Stage, Value: prod}
+
+  # CloudWatch Logs allows 10 resource policies per region per account, and this account is shared: this one is
+  # scoped to our single log group (infra/mail/README.md).
+  MailEventsLogPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: capyapp-capyweb-contact-mail-events
+      PolicyDocument: !Sub |
+        {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Sid": "EventBridgeWritesContactMailEvents",
+            "Effect": "Allow",
+            "Principal": {"Service": ["events.amazonaws.com", "delivery.logs.amazonaws.com"]},
+            "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+            "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/events/capyapp-capyweb-contact-mail:*"
+          }]
+        }
+
+  MailEventsRule:
+    Type: AWS::Events::Rule
+    DependsOn: MailEventsLogPolicy
+    Properties:
+      Name: capyapp-capyweb-contact-mail-events
+      Description: SES events of the capyapp-capyweb-contact configuration set, to a log group.
+      EventBusName: default
+      State: ENABLED
+      EventPattern:
+        source: [aws.ses]
+        detail:
+          mail:
+            tags:
+              ses:configuration-set: [capyapp-capyweb-contact]
+      Targets:
+        - Id: contact-mail-log
+          Arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/events/capyapp-capyweb-contact-mail
+          # CloudWatch Logs takes only {"timestamp": ..., "message": ...} from a transformer.
+          InputTransformer:
+            InputPathsMap:
+              time: $.time
+              type: $.detail-type
+              id: $.detail.mail.messageId
+            InputTemplate: '{"timestamp": <time>, "message": "<type> messageId=<id>"}'
+
+Outputs:
+  # mail-dns.yaml takes these three as they are (DkimToken1..3).
+  DkimToken1: {Value: !Select [0, !Split ['.', !GetAtt Identity.DkimDNSTokenName1]]}
+  DkimToken2: {Value: !Select [0, !Split ['.', !GetAtt Identity.DkimDNSTokenName2]]}
+  DkimToken3: {Value: !Select [0, !Split ['.', !GetAtt Identity.DkimDNSTokenName3]]}
+  # The same records written out, to compare with what mail-dns.yaml builds.
+  DkimName1: {Value: !GetAtt Identity.DkimDNSTokenName1}
+  DkimValue1: {Value: !GetAtt Identity.DkimDNSTokenValue1}
+  DkimName2: {Value: !GetAtt Identity.DkimDNSTokenName2}
+  DkimValue2: {Value: !GetAtt Identity.DkimDNSTokenValue2}
+  DkimName3: {Value: !GetAtt Identity.DkimDNSTokenName3}
+  DkimValue3: {Value: !GetAtt Identity.DkimDNSTokenValue3}
+  MailBucketName: {Value: !Ref MailBucket}
+  ForwarderName: {Value: !Ref Forwarder}
+  ConfigurationSetName: {Value: !Ref ConfigSet}
+  MailEventsLogGroupName: {Value: !Ref MailEventsLogGroup}
