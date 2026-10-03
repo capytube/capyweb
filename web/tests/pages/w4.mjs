@@ -132,6 +132,12 @@ export async function check({ open, browser, BASE }) {
     await page.waitForSelector('[data-testid=cam-tab]');
     assert.equal(await page.getAttribute('[data-cam=main-cam]', 'aria-selected'), 'true', 'bad cam falls back to the first public camera');
     assert.match(await page.innerText('[data-testid=viewer-count]'), /12 watching/);
+    // Re-selecting the shown camera must not mount a second chat (found by the phone check).
+    await page.waitForSelector('[data-testid=chat-log]', { state: 'attached' });
+    await page.click('[data-cam=main-cam]');
+    await page.waitForURL(/cam=main-cam/);
+    await sleep(500);
+    assert.equal(await page.locator('[data-testid=chat-log]').count(), 1, 'one chat after re-selecting the camera');
     await page.click('[data-cam=side-cam]');
     await page.waitForURL(/cam=side-cam/);
     assert.equal(await page.getAttribute('[data-cam=side-cam]', 'aria-selected'), 'true');

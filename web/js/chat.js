@@ -101,7 +101,9 @@ export function attach(root, id, base, exchange, signIn) {
   send.type = 'submit';
   send.textContent = 'Send';
   form.append(label, input, count, send);
-  root.append(live, reacts, note, empty, log, earlier);
+  // The root is this chat's alone: a second attach to it (the camera tab re-selected) replaces the
+  // first chat instead of adding a copy below it.
+  root.replaceChildren(live, reacts, note, empty, log, earlier);
 
   const say = (m) => {
     const name = clip((m.display_name || 'Someone'), 32);
@@ -281,6 +283,7 @@ export function attach(root, id, base, exchange, signIn) {
       alive = false;
       clearTimeout(timer);
       if (polls.get(id) === handle) polls.delete(id);
+      for (const n of [live, reacts, note, empty, log, earlier, form]) n.remove();
     },
     setAuth(s, r) { signed = !!s; ready = !!r; paintAuth(); },
   };
