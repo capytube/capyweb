@@ -12,7 +12,7 @@ export function seedItems(now: string, { catalogOnly = false }: { catalogOnly?: 
   // -- capybaras ----------------------------------------------------------------
   const capybaras = [
     { id: "magnus", name: "Magnus", gender: "male", bio: "A very tame capybara from the north of Thailand.", personality: "Unbothered. Professionally relaxed.", fun_fact: "Sits like a beanbag under the climbing wall.", favorite_activities: ["soaking", "snacking", "sitting"], awake_from: "08:00", awake_to: "11:00" },
-    { id: "elon", name: "Elon", gender: "male", bio: "Looks at the high holds and thinks about it.", personality: "Ambitious, briefly.", fun_fact: "Has never actually climbed anything.", favorite_activities: ["planning", "napping"], awake_from: "09:00", awake_to: "12:00" },
+    { id: "elon", name: "Mochi", gender: "male", bio: "Looks at the high holds and thinks about it.", personality: "Ambitious, briefly.", fun_fact: "Has never actually climbed anything.", favorite_activities: ["planning", "napping"], awake_from: "09:00", awake_to: "12:00" },
     { id: "einstein", name: "Einstein", gender: "male", bio: "Always planning something.", personality: "Contemplative.", fun_fact: "Stares at the feeder until it opens.", favorite_activities: ["thinking", "watermelon"], awake_from: "07:00", awake_to: "10:00" },
   ];
   for (const c of capybaras) {

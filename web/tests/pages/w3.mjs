@@ -10,11 +10,11 @@ export async function check({ open, browser, BASE, SHOTS }) {
     }
     assert.equal(await page.locator('.home-steps li').count(), 3);
     const cards = page.locator('[data-testid="gang-list"] > li');
-    assert.deepEqual(await cards.locator('h3').allTextContents(), ['Einstein', 'Elon', 'Magnus']);
+    assert.deepEqual(await cards.locator('h3').allTextContents(), ['Einstein', 'Magnus', 'Mochi']);
     assert.deepEqual(await cards.locator('a').evaluateAll(as => as.map(a => a.getAttribute('href'))),
-      ['/stream/einstein', '/stream/elon', '/stream/magnus']);
+      ['/stream/einstein', '/stream/magnus', '/stream/elon']);
     for (const card of await cards.all()) assert.equal(await card.locator('img').count(), 1);
-    assert.match(await cards.nth(2).innerText(), /Awake 08:00–11:00/);
+    assert.match(await cards.nth(1).innerText(), /Awake 08:00–11:00/);
     for (const label of ['Personality', 'Fun fact', 'Favourite activities']) {
       assert.equal(await cards.locator('dt').filter({ hasText: label }).count(), 3);
     }

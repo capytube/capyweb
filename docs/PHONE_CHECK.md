@@ -22,7 +22,7 @@ Open https://dev.capytube.xyz. If a step fails, record it and continue where pos
    Tap **Vote**, check the cost in **Check and confirm**, then tap **Confirm**.
    Expect **Thank you for your vote!** and the balance to fall by that cost.
 
-4. **Bid.** On **Play**, tap **Elon** and find **Name the next climbing hold**.
+4. **Bid.** On **Play**, tap **Mochi** and find **Name the next climbing hold**.
    Leave **Your bid** at **Minimum next bid**, 1 above the current top bid. The page fills it in.
    Tap **Bid**, check the cost, then **Confirm**. Expect **Thank you for your bid!** and the new top bid.
    The bid leaves your balance, and comes back if someone outbids you (your second phone will).
@@ -33,7 +33,7 @@ Open https://dev.capytube.xyz. If a step fails, record it and continue where pos
    Expect moving video marked **Recorded**. In **Chat**, tap **Love** once; its count should rise.
    Type one short line in **Message** and tap **Send**. Expect your line and display name. Both actions are free.
 
-6. **Paid camera.** Return to **Watch**. Open **Elon**'s card. Select **Climbing wall cam**.
+6. **Paid camera.** Return to **Watch**. Open **Mochi**'s card. Select **Climbing wall cam**.
    Read the price: initially **6 play coins a minute**. Tap **Watch**, then **Start watching**. Tap video play if needed.
    Keep the page visible for one minute. Expect moving video and a lower balance.
    The next minute is bought about 40 seconds after starting, so this check normally costs 12 play coins.

@@ -150,7 +150,7 @@ fn capy_photo(id: &str) -> Option<Photo> {
         ),
         "elon" => (
             "/assets/home/elon.webp",
-            "Elon resting in someone’s lap",
+            "Mochi resting in someone’s lap",
             352,
         ),
         "magnus" => (

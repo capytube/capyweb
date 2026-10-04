@@ -71,15 +71,15 @@ export async function check({ open, browser, BASE }) {
       text: e.innerText,
       img: e.querySelector('img')?.getAttribute('src') ?? '',
     })));
-    assert.deepEqual(cards.map((c) => c.href), ['/stream/einstein', '/stream/elon', '/stream/magnus']);
+    assert.deepEqual(cards.map((c) => c.href), ['/stream/einstein', '/stream/magnus', '/stream/elon']);
     assert.match(cards[0].text, /Einstein/);
     assert.match(cards[0].text, /No private cameras/);
     assert.equal(cards[0].img, '/assets/cast/einstein.webp');
-    assert.match(cards[1].text, /Elon/);
-    assert.match(cards[1].text, /1 private camera/);
-    assert.equal(cards[1].img, '/assets/cast/elon.webp');
-    assert.match(cards[2].text, /Magnus/);
-    assert.match(cards[2].text, /No private cameras/);
+    assert.match(cards[1].text, /Magnus/);
+    assert.match(cards[1].text, /No private cameras/);
+    assert.match(cards[2].text, /Mochi/);
+    assert.match(cards[2].text, /1 private camera/);
+    assert.equal(cards[2].img, '/assets/cast/elon.webp');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await shot(page, 'watch-390');
     await page.close();

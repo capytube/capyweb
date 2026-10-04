@@ -371,7 +371,7 @@ mod tests {
                 .iter()
                 .map(|c| c.id.as_str())
                 .collect::<Vec<_>>(),
-            ["einstein", "elon", "magnus"]
+            ["einstein", "magnus", "elon"]
         );
         let passes: Page<Pass> =
             serde_json::from_str(include_str!("../fixtures/nfts.json")).unwrap();

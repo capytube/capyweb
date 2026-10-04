@@ -25,7 +25,7 @@ export async function check({ open, SHOTS }) {
     assert.match(await play.locator('[data-testid="vote-card"]').innerText(), /Cost: 1 play coin per vote/);
     assert.match(await play.locator('[data-testid="vote-card"]').innerText(), /Custom request: 5 play coins/);
     assert.match(await play.locator('[data-testid="vote-card"]').innerText(), /Carrots/);
-    await picker.filter({ hasText: 'Elon' }).click();
+    await picker.filter({ hasText: 'Mochi' }).click();
     await play.waitForURL('**/play?capy=elon');
     await play.waitForSelector('[data-testid="bid-card"]');
     assert.match(await play.locator('[data-testid="bid-card"]').innerText(), /Current top bid: 20 play coins/);
@@ -34,12 +34,12 @@ export async function check({ open, SHOTS }) {
     await play.waitForURL('**/play?capy=einstein');
     await play.waitForSelector('text=No open vote or bid cards for this capybara yet.');
     assert.equal(await play.locator('text=No open vote or bid cards for this capybara yet.').count(), 1);
-    await picker.filter({ hasText: 'Elon' }).click();
+    await picker.filter({ hasText: 'Mochi' }).click();
     await play.waitForURL('**/play?capy=elon');
     await play.reload();
     await play.waitForURL('**/play?capy=elon');
     await play.waitForSelector('[data-testid="bid-card"]');
-    assert.equal(await play.locator('.play-picker-btn[aria-pressed=true]', { hasText: 'Elon' }).count(), 1, 'reload keeps capy query selection');
+    assert.equal(await play.locator('.play-picker-btn[aria-pressed=true]', { hasText: 'Mochi' }).count(), 1, 'reload keeps capy query selection');
     await play.goto(new URL('/play?capy=unknown-id', play.url()).toString());
     await play.waitForSelector('.play-picker-btn');
     assert.equal(await play.locator('.play-picker-btn[aria-pressed=true]', { hasText: 'Einstein' }).count(), 1, 'bad capy query falls back to first by name');
