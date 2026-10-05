@@ -1,6 +1,7 @@
 // Screenshot test for capyweb-z9w: serves a build through the template's own IndexFunction on
 // 127.0.0.1 and, at five widths, checks that the home page's hero picture covers no text, that
-// "Learn more" is visible and clickable, and that nothing scrolls sideways; saves a screenshot of
+// the picture follows the text without a big empty gap (at most 120 px), that "Learn more" is
+// visible and clickable, and that nothing scrolls sideways; saves a screenshot of
 // the hero card per width.   node hero_test.mjs <build dir> [screenshot dir]
 import http from 'node:http'; import { readFile, mkdir } from 'node:fs/promises'; import { createRequire } from 'module'; import { extname, join } from 'node:path';
 const ROOT = process.argv[2], SHOTS = process.argv[3];
@@ -23,19 +24,21 @@ for (const [n, o] of [['iphone-se', pw.devices['iPhone SE']], ['iphone-15', pw.d
   const p = await (await b.newContext(o)).newPage(); await p.goto(B + '/', { waitUntil: 'networkidle' });
   const d = await p.evaluate(() => {
     const card = document.querySelector('h1').closest('div.relative.isolate'); const img = card.lastElementChild; const ib = img.getBoundingClientRect();
-    let worst = 0;
+    let worst = 0, textBottom = 0;
     for (const t of card.querySelectorAll('h1,p,a,span')) {
       if (img.contains(t) || !t.textContent.trim()) continue;
       const r = t.getBoundingClientRect(); const v = Math.min(r.bottom, ib.bottom) - Math.max(r.top, ib.top), h = Math.min(r.right, ib.right) - Math.max(r.left, ib.left);
       if (v > 0 && h > 0) worst = Math.max(worst, Math.round(v));
+      if (r.bottom <= ib.top) textBottom = Math.max(textBottom, r.bottom);
     }
     // "Learn more" must be the topmost element at its own centre once scrolled into view.
     const a = [...card.querySelectorAll('a')].find((x) => /learn more/i.test(x.textContent)); a.scrollIntoView({ block: 'center', behavior: 'instant' });
     const ar = a.getBoundingClientRect(); const top = document.elementFromPoint(ar.left + ar.width / 2, ar.top + ar.height / 2);
-    return { worst, imgShown: ib.height > 100, learnClickable: !!top && a.contains(top), over: document.documentElement.scrollWidth - innerWidth };
+    return { worst, gap: Math.round(ib.top - textBottom), imgShown: ib.height > 100, learnClickable: !!top && a.contains(top), over: document.documentElement.scrollWidth - innerWidth };
   });
-  const ok = d.worst === 0 && d.imgShown && d.learnClickable && d.over <= 0; if (!ok) bad++;
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${n} overlap=${d.worst}px picture=${d.imgShown} learn-more-clickable=${d.learnClickable} sideways=${d.over}px`);
-  if (SHOTS) await p.locator('h1').evaluate((h) => h.closest('div.relative.isolate').scrollIntoView()).then(() => p.locator('div.relative.isolate').first().screenshot({ path: join(SHOTS, `hero-${n}.png`) }));
+  const ok = d.worst === 0 && d.gap <= 120 && d.imgShown && d.learnClickable && d.over <= 0; if (!ok) bad++;
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${n} overlap=${d.worst}px gap=${d.gap}px picture=${d.imgShown} learn-more-clickable=${d.learnClickable} sideways=${d.over}px`);
+  // A full-page shot clipped to the card: the card can be taller than the viewport.
+  if (SHOTS) { await p.evaluate(() => scrollTo(0, 0)); const clip = await p.evaluate(() => { const r = document.querySelector('h1').closest('div.relative.isolate').getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }); await p.screenshot({ path: join(SHOTS, `hero-${n}.png`), fullPage: true, clip }); }
 }
 await b.close(); srv.close(); console.log(bad ? `${bad} FAIL` : 'all ok'); process.exit(bad ? 1 : 0);

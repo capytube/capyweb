@@ -2,4 +2,7 @@
    the "Learn more" button (36-104 px at 375-1920 wide). It now follows the text in the card's flow,
    keeping its size and its left bleed; the card grows to fit both. */
 .relative.isolate > .absolute.bottom-0.z-10 { position: relative; bottom: auto; display: block; margin-top: 1.5rem; }
-.relative.isolate > .max-w-md.pb-48 { padding-bottom: 0; }
+/* The space the card reserved for the old overlay goes: the text block's 12rem bottom padding
+   (below 768 px) and the text wrapper's 32/40rem minimum height and bottom padding. */
+.relative.isolate .max-w-md.pb-48 { padding-bottom: 0; }
+.relative.isolate > .relative.z-10.flex { min-height: 0; padding-bottom: 0; }

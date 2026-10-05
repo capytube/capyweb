@@ -7,10 +7,11 @@ set -eu
 BASE=$1; OUT=$2; HERE=${0:A:h}
 [ ! -e "$OUT" ] || { echo "patch-build.sh: $OUT exists" >&2; exit 1; }
 cp -R "$BASE" "$OUT"
-css=($OUT/_next/static/chunks/*.css)
+trap '[ $? -eq 0 ] || rm -rf "$OUT"' EXIT   # never leave a half-patched build behind
+css=("$OUT"/_next/static/chunks/*.css)
 [ ${#css} -eq 1 ] || { echo "patch-build.sh: expected one stylesheet, found ${#css}" >&2; exit 1; }
 old=${css[1]:t}
-cat $HERE/patches/*.css >> ${css[1]}
+cat "$HERE"/patches/*.css >> "${css[1]}"
 new=${old:r}-$(shasum -a 256 ${css[1]} | cut -c1-10).css
 mv ${css[1]} ${css[1]:h}/$new
 files=($(grep -rlF "$old" $OUT --include='*.html' --include='*.txt'))
