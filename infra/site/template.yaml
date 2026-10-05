@@ -183,13 +183,34 @@ Resources:
           var r = event.request, h = r.headers;
           var mode = h['sec-fetch-mode'] ? h['sec-fetch-mode'].value : '';
           var accept = h.accept ? h.accept.value : '';
-          if (mode === 'navigate' || (!mode && accept.indexOf('text/html') === 0)) {
+          if (mode === 'navigate' || (!mode && /^text\/html(?:[;,\s]|$)/i.test(accept))) {
             return {statusCode: 302, statusDescription: 'Found', headers: {
               location: {value: /^\/api\/me(\/|$)/.test(r.uri) ? '/profile' : '/'},
               'cache-control': {value: 'no-store'}}};
           }
           r.uri = r.uri.slice(4) || '/';
           return r;
+        }
+  # The browser keeps the public API answers for a minute (max-age=60). Without a Vary, a person who
+  # opens /api/streams after a page fetched it gets that cached JSON from the browser itself, and
+  # ApiFunction never sees the visit (capyweb-loh; found by live-checks on prod). Vary on
+  # Sec-Fetch-Mode (and Accept, for browsers without Sec-Fetch-*) keeps the app's cached fetch()
+  # answers apart from a visit. Added to any Vary the API sends; tests in infra/site/test_edge.mjs.
+  ApiVaryFunction:
+    Type: AWS::CloudFront::Function
+    Condition: HasApi
+    Properties:
+      Name: !Sub capyapp-capyweb-${Stage}-api-vary
+      AutoPublish: true
+      FunctionConfig: {Comment: keep cached API answers apart from browser visits, Runtime: cloudfront-js-2.0}
+      FunctionCode: |
+        function handler(event) {
+          var s = event.response, v = s.headers.vary ? s.headers.vary.value : '';
+          var have = v.toLowerCase().split(',').map(function (x) { return x.trim(); });
+          if (have.indexOf('*') >= 0) return s;
+          var add = ['Sec-Fetch-Mode', 'Accept'].filter(function (h) { return have.indexOf(h.toLowerCase()) < 0; });
+          if (add.length) s.headers.vary = {value: (v.trim() ? v.trim() + ', ' : '') + add.join(', ')};
+          return s;
         }
   Cdn:
     Type: AWS::CloudFront::Distribution
@@ -265,7 +286,9 @@ Resources:
               Compress: true
               CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad          # Managed-CachingDisabled
               OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # Managed-AllViewerExceptHostHeader
-              FunctionAssociations: [{EventType: viewer-request, FunctionARN: !GetAtt ApiFunction.FunctionMetadata.FunctionARN}]
+              FunctionAssociations:
+                - {EventType: viewer-request, FunctionARN: !GetAtt ApiFunction.FunctionMetadata.FunctionARN}
+                - {EventType: viewer-response, FunctionARN: !GetAtt ApiVaryFunction.FunctionMetadata.FunctionARN}
             - !Ref AWS::NoValue
         CustomErrorResponses: !If
           - HasApi

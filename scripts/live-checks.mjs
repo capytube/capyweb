@@ -325,6 +325,10 @@ await section('Browser', async () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     for (const [api, want] of [['/api/me', '/profile'], ['/api/me/transactions', '/profile'], ['/api/streams', '/']]) {
       errs = []; failed = [];
+      // The site's own fetch() first, as a page would: the browser may keep that answer (max-age=60),
+      // and the visit right after must still get the page, not the cached JSON.
+      await page.goto(`${SITE}/watch`, { waitUntil: 'load', timeout: 30000 });
+      await page.evaluate((u) => fetch(u).then((x) => x.text()).catch(() => ''), api);
       const r = await page.goto(`${SITE}${api}`, { waitUntil: 'load', timeout: 30000 }).catch(() => null);
       await page.waitForFunction(() => document.querySelector('main h1')?.textContent?.trim(), null, { timeout: 20000 }).catch(() => {});
       const at = new URL(page.url());

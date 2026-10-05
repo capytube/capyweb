@@ -36,5 +36,19 @@ t('/api/media is not /api/me', () => assert.equal(go('/api/media', nav), '/'));
 t('/api/streams -> /', () => assert.equal(go('/api/streams', nav), '/'));
 t('/api/playback/x -> /', () => assert.equal(go('/api/playback/wall-cam', nav), '/'));
 t('old browser without Sec-Fetch, asks for HTML', () => assert.equal(go('/api/me', { accept: 'text/html,*/*' }), '/profile'));
+t('Accept match is case-insensitive', () => assert.equal(go('/api/me', { accept: 'TEXT/HTML' }), '/profile'));
+t('text/htmlx is not HTML', () => assert.equal(api(req('/api/me', { accept: 'text/htmlx' })).uri, '/me'));
+
+// Every API answer varies on Sec-Fetch-Mode and Accept, so the browser never reuses a cached fetch()
+// answer for a visit (capyweb-loh: /api/streams, max-age=60, came back as JSON from the browser cache).
+const vary = code('ApiVaryFunction');
+const res = v => ({ response: { statusCode: 200, headers: v === undefined ? {} : { vary: { value: v } } } });
+const V = v => vary(res(v)).headers.vary?.value;
+t('no Vary -> both', () => assert.equal(V(), 'Sec-Fetch-Mode, Accept'));
+t('kept and added to', () => assert.equal(V('Origin'), 'Origin, Sec-Fetch-Mode, Accept'));
+t('Accept-Encoding is not Accept', () => assert.equal(V('Accept-Encoding'), 'Accept-Encoding, Sec-Fetch-Mode, Accept'));
+t('no duplicates, any case', () => assert.equal(V('accept, sec-fetch-mode'), 'accept, sec-fetch-mode'));
+t('Vary: * left alone', () => assert.equal(V('*'), '*'));
+t('status and body untouched', () => assert.equal(vary({ response: { statusCode: 401, headers: {} } }).statusCode, 401));
 
 console.log(`edge functions: ${n} tests ok`);
