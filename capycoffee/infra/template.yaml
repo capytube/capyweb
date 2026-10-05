@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Capycoffee demo site at roast.capy.life (hm-zxnj3): a private S3 bucket behind CloudFront with
+  its own us-east-1 certificate and two alias records in the existing capy.life zone. One stack in
+  us-east-1 (CloudFront needs the certificate there). Static files only: no API, no data, no forms
+  that send anything (the demo's order form keeps the ticket in the tab's sessionStorage).
+
+Parameters:
+  DomainName: {Type: String, Default: roast.capy.life, AllowedValues: [roast.capy.life]}
+  HostedZoneId: {Type: String, Default: Z0311842207LCZ23XHXL0, AllowedValues: [Z0311842207LCZ23XHXL0], Description: the capy.life zone in this account}
+
+Resources:
+  # DNS-validated; CloudFormation writes the validation CNAME into the zone and waits for it.
+  Cert:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions: [{DomainName: !Ref DomainName, HostedZoneId: !Ref HostedZoneId}]
+      Tags: [{Key: capy-scope, Value: capyapp}, {Key: Project, Value: capycoffee}]
+
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub capyapp-capycoffee-roast-${AWS::AccountId}
+      PublicAccessBlockConfiguration: {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+      OwnershipControls: {Rules: [{ObjectOwnership: BucketOwnerEnforced}]}
+      BucketEncryption: {ServerSideEncryptionConfiguration: [{ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}}]}
+      Tags: [{Key: capy-scope, Value: capyapp}, {Key: Project, Value: capycoffee}]
+
+  Oac:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: capyapp-capycoffee-roast
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # Only this distribution may read the bucket.
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: {Service: cloudfront.amazonaws.com}
+            Action: s3:GetObject
+            Resource: !Sub ${SiteBucket.Arn}/*
+            Condition: {StringEquals: {AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Cdn}'}}
+
+  # The Next.js export links pages with a trailing slash (/roast/, /about/): serve their
+  # index.html, and send /roast to /roast/ (query kept) so relative assets resolve. Tests: test_edge.mjs.
+  IndexFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: capyapp-capycoffee-roast-index
+      AutoPublish: true
+      FunctionConfig: {Comment: directory index for the static export, Runtime: cloudfront-js-2.0}
+      FunctionCode: |
+        function query(q) {
+          var parts = [];
+          for (var k in q) {
+            var all = q[k].multiValue || [q[k]];
+            for (var i = 0; i < all.length; i++) parts.push(all[i].value === '' ? k : k + '=' + all[i].value);
+          }
+          var qs = parts.join('&');
+          // A control character or space would split or bend the Location header: drop the query.
+          return qs && !/[\x00-\x20\x7f]/.test(qs) ? '?' + qs : '';
+        }
+        function handler(event) {
+          var r = event.request, u = r.uri;
+          // Never let a redirect name another host: "//evil.com", "/\evil.com" and "/<tab>/evil" (a
+          // browser drops tabs and newlines) read as one. Such paths go home (hm-zxnj3 testers).
+          if (u.charAt(0) !== '/' || u.charAt(1) === '/' || u.indexOf('\\') >= 0 || /[\x00-\x20\x7f]/.test(u)) {
+            return {statusCode: 301, statusDescription: 'Moved Permanently', headers: {
+              location: {value: '/'}, 'cache-control': {value: 'public,max-age=3600'}}};
+          }
+          if (u.charAt(u.length - 1) === '/') { r.uri = u + 'index.html'; return r; }
+          if (u.lastIndexOf('.') > u.lastIndexOf('/')) return r;
+          return {statusCode: 301, statusDescription: 'Moved Permanently', headers: {
+            location: {value: u + '/' + query(r.querystring || {})}, 'cache-control': {value: 'public,max-age=3600'}}};
+        }
+
+  Cdn:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      Tags: [{Key: capy-scope, Value: capyapp}, {Key: Project, Value: capycoffee}]
+      DistributionConfig:
+        Enabled: true
+        Comment: capycoffee demo, roast.capy.life (hm-zxnj3)
+        Aliases: [!Ref DomainName]
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_200
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        ViewerCertificate: {AcmCertificateArn: !Ref Cert, SslSupportMethod: sni-only, MinimumProtocolVersion: TLSv1.2_2021}
+        Origins:
+          - Id: site
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt Oac.Id
+            S3OriginConfig: {OriginAccessIdentity: ''}
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6          # Managed-CachingOptimized
+          ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03  # Managed-SecurityHeadersPolicy
+          FunctionAssociations: [{EventType: viewer-request, FunctionARN: !GetAtt IndexFunction.FunctionMetadata.FunctionARN}]
+        # A missing key reads as 403 through OAC: show the export's own 404 page.
+        CustomErrorResponses:
+          - {ErrorCode: 403, ResponseCode: 404, ResponsePagePath: /404.html, ErrorCachingMinTTL: 60}
+          - {ErrorCode: 404, ResponseCode: 404, ResponsePagePath: /404.html, ErrorCachingMinTTL: 60}
+
+  # The only DNS change: two new names in the shared capy.life zone (apex and other names untouched).
+  RecordA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget: {DNSName: !GetAtt Cdn.DomainName, HostedZoneId: Z2FDTNDATAQYW2}
+  RecordAAAA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: AAAA
+      AliasTarget: {DNSName: !GetAtt Cdn.DomainName, HostedZoneId: Z2FDTNDATAQYW2}
+
+Outputs:
+  Bucket: {Value: !Ref SiteBucket}
+  DistributionId: {Value: !Ref Cdn}
+  DistributionDomain: {Value: !GetAtt Cdn.DomainName}
