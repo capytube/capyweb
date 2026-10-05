@@ -2,9 +2,9 @@
 // 127.0.0.1 and, at five widths, checks that the home page's hero picture covers no text, that
 // the picture follows the text without a big empty gap (at most 120 px), that "Learn more" is
 // visible and clickable, and that nothing scrolls sideways; saves a screenshot of
-// the hero card per width.   node hero_test.mjs <build dir> [screenshot dir]
+// the hero card per width.   node hero_test.mjs <build dir | https URL of a deployed site> [screenshot dir]
 import http from 'node:http'; import { readFile, mkdir } from 'node:fs/promises'; import { createRequire } from 'module'; import { extname, join } from 'node:path';
-const ROOT = process.argv[2], SHOTS = process.argv[3];
+const ROOT = process.argv[2], SHOTS = process.argv[3], LIVE = /^https:\/\//.test(ROOT);
 const T = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
 const tpl = await readFile(new URL('infra/template.yaml', import.meta.url), 'utf8');
 const edge = new Function(`${tpl.slice(tpl.indexOf('\n  IndexFunction:\n')).match(/FunctionCode: \|\n((?: {8}.*\n|\n)+)/)[1]}\nreturn handler;`)();
@@ -13,9 +13,9 @@ const srv = http.createServer(async (q, s) => {
   if (out.statusCode) { s.writeHead(out.statusCode, { location: out.headers.location.value }); return s.end(); }
   try { const b = await readFile(join(ROOT, decodeURIComponent(out.uri))); s.writeHead(200, { 'content-type': T[extname(out.uri)] ?? 'application/octet-stream' }); s.end(b); }
   catch { s.writeHead(404, { 'content-type': 'text/html' }); s.end(await readFile(join(ROOT, '404.html'))); }
-}).listen(0, '127.0.0.1');
-await new Promise((r) => srv.on('listening', r));
-const B = `http://127.0.0.1:${srv.address().port}`;
+});
+if (!LIVE) { srv.listen(0, '127.0.0.1'); await new Promise((r) => srv.on('listening', r)); }
+const B = LIVE ? ROOT.replace(/\/$/, '') : `http://127.0.0.1:${srv.address().port}`;
 const PW = `${process.env.HOME}/.cache/capyweb/pw/`; process.env.PLAYWRIGHT_BROWSERS_PATH ??= `${PW}browsers`;
 const pw = createRequire(PW)('playwright');
 if (SHOTS) await mkdir(SHOTS, { recursive: true });
