@@ -460,6 +460,15 @@ else
   fail "infra/ops/alarm_relay.py tests" "$(printf '%s' "$out" | tail -3 | tr '\n' ' ')"
 fi
 
+# 9b. The site's /api edge function sends a person who opens an /api URL to a page, never the
+#     API's JSON, and lets the app's own calls through (capyweb-loh; infra/site/test_edge.mjs).
+head "Edge functions"
+if out=$(node infra/site/test_edge.mjs 2>&1); then
+  pass "infra/site/template.yaml ApiFunction: $out"
+else
+  fail "infra/site/test_edge.mjs" "$(printf '%s' "$out" | tail -3 | tr '\n' ' ')"
+fi
+
 # 10. The contact-mail forwarder handles strangers' mail and a private forward address: its header rewrite,
 #     drops and log hygiene (no address, subject or body in a log line) have tests (infra/mail/test_forwarder.py).
 head "Contact mail"

@@ -165,16 +165,29 @@ Resources:
         }
   # /api/x -> the HTTP API's /x. Same-origin, so the playback route's Set-Cookie lands on the
   # site's domain, where CloudFront checks it (docs/VIDEO_DESIGN.md section 4).
+  # A person who opens an /api URL in the browser sees a page, never the API's JSON (capyweb-loh):
+  # /api/me and below go to /profile, whose signed-out view is the Sign in; any other /api URL goes
+  # to the home page. Only a top-level navigation is sent away (Sec-Fetch-Mode: navigate; a browser
+  # without Sec-Fetch-* headers when it asks for HTML first). The app's fetch() calls, the video
+  # element and hls.js are never navigations, so the API answers them as before.
+  # Tests: infra/site/test_edge.mjs (scripts/guard.sh runs them).
   ApiFunction:
     Type: AWS::CloudFront::Function
     Condition: HasApi
     Properties:
       Name: !Sub capyapp-capyweb-${Stage}-api-prefix
       AutoPublish: true
-      FunctionConfig: {Comment: strip the /api prefix, Runtime: cloudfront-js-2.0}
+      FunctionConfig: {Comment: strip the /api prefix; send browser visits to a page, Runtime: cloudfront-js-2.0}
       FunctionCode: |
         function handler(event) {
-          var r = event.request;
+          var r = event.request, h = r.headers;
+          var mode = h['sec-fetch-mode'] ? h['sec-fetch-mode'].value : '';
+          var accept = h.accept ? h.accept.value : '';
+          if (mode === 'navigate' || (!mode && accept.indexOf('text/html') === 0)) {
+            return {statusCode: 302, statusDescription: 'Found', headers: {
+              location: {value: /^\/api\/me(\/|$)/.test(r.uri) ? '/profile' : '/'},
+              'cache-control': {value: 'no-store'}}};
+          }
           r.uri = r.uri.slice(4) || '/';
           return r;
         }

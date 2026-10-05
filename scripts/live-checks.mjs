@@ -302,9 +302,10 @@ await section('Browser', async () => {
         const t = await page.evaluate(() => document.querySelector('main h1')?.textContent?.trim() ?? '');
         const csp = await page.evaluate(() => window.__csp.splice(0));
         const wide = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+        const json = await page.evaluate(() => /^\s*[[{]/.test(document.body?.innerText ?? ''));
         if (path in legal && width === 1280) legal[path] = await page.evaluate(() => document.querySelector('main')?.innerText ?? '');
         const problems = [
-          !t && 'no h1', t === 'Page not found' && 'the not-found view', wide && 'scrolls sideways',
+          !t && 'no h1', t === 'Page not found' && 'the not-found view', wide && 'scrolls sideways', json && 'raw JSON on the page',
           errs.length && `${errs.length} console errors: ${errs.slice(0, 2).join(' / ')}`,
           csp.length && `${csp.length} CSP violations: ${csp.slice(0, 2).join(' / ')}`,
           failed.length && `failed: ${failed.slice(0, 3).join(', ')}`,
@@ -317,6 +318,21 @@ await section('Browser', async () => {
       const hits = [...(text ?? '').matchAll(/\[insert[^\]]*\]/gi)].map((m) => m[0]);
       check(text !== null && text.length > 200 && hits.length === 0, `${path} holds no [Insert ...] placeholder`,
         text === null ? 'not read' : hits.length ? `${hits.length}: ${[...new Set(hits)].join(', ')}` : `${text.length} characters`);
+    }
+
+    // A signed-out person who opens an /api URL sees a page, never the API's JSON (capyweb-loh):
+    // /api/me and below land on /profile with its Sign in, any other /api URL on the home page.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    for (const [api, want] of [['/api/me', '/profile'], ['/api/me/transactions', '/profile'], ['/api/streams', '/']]) {
+      errs = []; failed = [];
+      const r = await page.goto(`${SITE}${api}`, { waitUntil: 'load', timeout: 30000 }).catch(() => null);
+      await page.waitForFunction(() => document.querySelector('main h1')?.textContent?.trim(), null, { timeout: 20000 }).catch(() => {});
+      const at = new URL(page.url());
+      const body = await page.evaluate(() => document.body?.innerText ?? '');
+      const signIn = await page.locator('[data-testid=sign-in]').first().isVisible().catch(() => false);
+      const ok = at.origin === SITE && at.pathname === want && !/^\s*[[{]/.test(body) && (want !== '/profile' || signIn);
+      check(ok, `signed out, opening ${api} in the browser shows a page, not JSON`,
+        `${r?.status() ?? 'no answer'}; at ${at.pathname}${want === '/profile' ? `; Sign in ${signIn ? 'shown' : 'missing'}` : ''}${/^\s*[[{]/.test(body) ? `; JSON: ${short(body, 60)}` : ''}`);
     }
 
     // Sign-in: the button leads to the stage's managed login, which loads. Nothing is typed.
