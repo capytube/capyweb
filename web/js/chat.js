@@ -240,7 +240,23 @@ export function attach(root, id, base, exchange, signIn) {
     if (msg.status < 200 || msg.status >= 300) { showNote(kind(msg)); return; }
     try { counts = JSON.parse(msg.body).reactions || counts; } catch { /* keep */ }
     paintCounts();
+    burst(ev.target);
   };
+  // A counted reaction pops its button and floats a "+1" above it (style/motion.css); not with
+  // reduced motion.
+  function burst(b) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    b.classList.remove('pop');
+    void b.offsetWidth;
+    b.classList.add('pop');
+    const up = el('span', 'react-burst');
+    up.textContent = '+1';
+    up.setAttribute('aria-hidden', 'true');
+    up.style.left = (b.offsetLeft + b.offsetWidth / 2) + 'px';
+    up.style.top = b.offsetTop + 'px';
+    up.addEventListener('animationend', () => up.remove());
+    reacts.append(up);
+  }
   earlier.onclick = () => { if (cursor) pull(cursor, true); };
   input.oninput = () => { count.textContent = units(input.value) + '/280'; };
   form.onsubmit = async (ev) => {
