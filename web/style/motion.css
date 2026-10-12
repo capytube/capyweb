@@ -60,7 +60,7 @@
 .gang-day-name { font-family: var(--font-ui); font-size: .85rem; color: var(--choco-brown); transition: opacity .4s; }
 .gang-day.is-3d .gang-day-name { opacity: 0; }
 .gang-day-legend { height: 0; overflow: hidden; opacity: 0; font-size: .8rem; color: var(--choco-brown); transition: opacity .4s .5s; }
-.gang-day.is-3d .gang-day-legend { height: auto; opacity: .8; }
+.gang-day.is-3d .gang-day-legend { height: auto; opacity: 1; }
 .gang-day-grid i {
   position: relative;
   aspect-ratio: 1;
@@ -107,10 +107,11 @@
 .gang-day i.h21 { transition-delay: 462ms; }
 .gang-day i.h22 { transition-delay: 484ms; }
 .gang-day i.h23 { transition-delay: 506ms; }
-.gang-day-axis { display: flex; justify-content: space-between; margin-left: 4.6rem; font-size: .75rem; color: var(--choco-brown); opacity: .7; }
+.gang-day-axis { display: flex; justify-content: space-between; margin-left: 4.6rem; font-size: .75rem; color: var(--choco-brown); }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Cards and photos rise in as they scroll into view. Individual translate/scale properties, so
+  /* Cards and photos rise in as they scroll into view (no fade: a half-faded card fails contrast
+     until it arrives). Individual translate/scale properties, so
      a card's own transform (the cast cards' slight tilt) is kept. */
   @supports (animation-timeline: view()) {
     .hero-phone-frame { animation: phone-stand linear both; animation-timeline: view(); animation-range: entry 20% cover 45%; }
@@ -134,7 +135,7 @@
   .gang-day-grid, .gang-day-grid i { transition: none; }
 }
 @keyframes phone-stand { from { transform: rotateX(22deg) scale(.94); translate: 0 6%; } to { transform: none; translate: 0 0; } }
-@keyframes rise-in { from { opacity: 0; translate: 0 28px; scale: .97; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes rise-in { from { translate: 0 32px; scale: .96; } to { translate: 0 0; scale: 1; } }
 @keyframes drift { from { object-position: 50% 25%; } to { object-position: 50% 75%; } }
 @keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 178, 111, .7); } 100% { box-shadow: 0 0 0 .55rem rgba(255, 178, 111, 0); } }
 @keyframes react-pop { 40% { scale: 1.18; } 100% { scale: 1; } }
