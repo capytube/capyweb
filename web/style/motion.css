@@ -77,7 +77,10 @@
 .gang-day.is-3d { --tower: clamp(16px, 4vw, 34px); }
 .gang-day.is-3d .gang-day-grid { transform: rotateX(56deg) rotateZ(-28deg) scale(.86); }
 @media (max-width: 700px) {
-  .gang-day.is-3d .gang-day-grid { transform: translateY(-.5rem) rotateX(56deg) rotateZ(-28deg) scale(.92); }
+  .gang-day.is-3d { --tower: 30px; }
+  .gang-day.is-3d .gang-day-stage { padding: 3.5rem 0 2.5rem; }
+  .gang-day.is-3d .gang-day-grid { transform: rotateX(56deg) rotateZ(-28deg) scale(1.3); }
+  .gang-day-stage { transition: padding 900ms cubic-bezier(.65, 0, .35, 1); }
   .gang-day-grid { grid-template-columns: 3.8rem repeat(24, minmax(0, 1fr)); gap: 2px; }
   .gang-day-axis { margin-left: 3.8rem; }
 }
