@@ -335,21 +335,23 @@ fn GangDay(capybaras: Vec<crate::domain::Capybara>) -> impl IntoView {
             .collect::<Vec<_>>()
             .join(", ")
     );
-    let label = rows
-        .iter()
-        .map(|r| r.2.clone())
-        .collect::<Vec<_>>()
-        .join("; ");
+    let label = "When the gang is awake: ".to_string()
+        + &rows
+            .iter()
+            .map(|r| r.2.clone())
+            .collect::<Vec<_>>()
+            .join("; ");
     view! {
         <div class="gang-day" class:is-3d=move || three_d.get() data-testid="gang-day">
             <div class="gang-day-head">
                 <h3>"The gang's day"</h3>
-                <button type="button" class="btn btn-ghost btn-small" aria-pressed=move || three_d.get().to_string()
-                    on:click=move |_| three_d.update(|v| *v = !*v)>
-                    {move || if three_d.get() { "Flat" } else { "3D" }}
+                // A toggle button: its name stays "3D view", aria-pressed says whether it is on.
+                <button type="button" class="btn btn-ghost btn-small gang-day-toggle" aria-pressed=move || three_d.get().to_string()
+                    aria-controls="gang-day-chart" on:click=move |_| three_d.update(|v| *v = !*v)>
+                    "3D view"
                 </button>
             </div>
-            <div class="gang-day-stage" role="img" aria-label=label>
+            <div class="gang-day-stage" id="gang-day-chart" role="img" aria-label=label>
                 <div class="gang-day-grid">
                     {rows.into_iter().map(|(name, awake, _)| view! {
                         <p class="gang-day-name" aria-hidden="true">{name.clone()}</p>

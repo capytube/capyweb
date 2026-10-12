@@ -47,6 +47,7 @@
 @property --tower { syntax: "<length>"; inherits: true; initial-value: 0px; }
 .gang-day { margin-top: 2rem; padding: 1.25rem; border: 2px solid var(--choco-brown); border-radius: 20px; background: var(--babycorn-yellow); }
 .gang-day-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.gang-day-toggle[aria-pressed="true"] { background: var(--choco-brown); color: white; }
 .gang-day-head h3 { font-family: var(--font-display); font-size: 1.6rem; color: var(--choco-brown); }
 .gang-day-stage { perspective: 900px; padding: 1.25rem 0 .5rem; overflow: hidden; }
 .gang-day-grid {
