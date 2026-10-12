@@ -25,7 +25,9 @@ export async function check({ open, browser, BASE, SHOTS }) {
     assert.equal(await now.getAttribute('src'), '/assets/home/einstein.webp');
     assert.equal(await now.getAttribute('alt'), 'Einstein standing on a bed');
     assert.equal(await now.getAttribute('loading'), null, 'not lazy: it is near the top of the page');
-    assert.equal(await page.locator('main video, main button').count(), 0);
+    // The only control on the home page is the gang's day 3D/Flat toggle (animation proposal).
+    assert.equal(await page.locator('main video, main button:not([data-testid=gang-day] button)').count(), 0);
+    assert.equal(await page.locator('[data-testid=gang-day] button[aria-pressed]').count(), 1);
     assert.equal(await page.locator('.home-film a[href="/watch"]').count(), 3);
     for (const img of await page.locator('main img').all()) {
       assert.notEqual(await img.getAttribute('alt'), null);
