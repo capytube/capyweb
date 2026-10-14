@@ -1,11 +1,12 @@
 #!/bin/zsh
 # Capy Roast redesign (nic order #4097) over a renamed build, in place: appends redesign/roast.css to the stylesheet
 # (new content-hashed name, as patch-build.sh does), adds the family morph gallery (redesign/morph.js + hero.js) and
-# the pictures under /roast-family/, and changes the home headline. The order form, prices and checkout are untouched.
+# the pictures under /roast-family/, swaps in the Capy Roast profile cards, and changes the home headline and ticker. The order form, prices and checkout are untouched.
 # Deterministic: same inputs, same output. The old stylesheet stays too, so pages cached before a deploy keep working.
 # It changes the build in place: if it stops part way, rebuild from patch-build.sh and rename-roast.sh and run it again.
 #   redesign-roast.sh <build dir> <pictures dir>   (the pictures dir holds <name>.webp and <name>-768.webp per line of
-#   redesign/pictures.txt: "name|alt"; the first line is the hero, the 2nd the About band, the 3rd the Roast band)
+#   redesign/pictures.txt: "name|alt"; the first line is the hero, the 2nd the About band, the 3rd the Roast band;
+#   and roasts/ with the six profile cards that replace the build's)
 set -eu
 setopt null_glob extended_glob
 OUT=$1; PICS=$2; HERE=${0:A:h}; R=$HERE/redesign
@@ -25,6 +26,10 @@ done < "$R/pictures.txt"
 js="${js%,}]"
 mkdir "$OUT/roast-family"
 for n in $names; do cp "$PICS/$n.webp" "$PICS/$n-768.webp" "$OUT/roast-family/"; done
+# the profile cards: the old art printed CAPYCOFFEE (and a wrong origin); the same six files, redrawn as Capy Roast
+cards=(young-capy adult-capy grandpa-capy young-capy-portrait adult-capy-portrait grandpa-capy-portrait)
+for c in $cards; do [ -f "$PICS/roasts/$c.webp" ] && [ -f "$OUT/roasts/$c.webp" ] || { echo "redesign-roast.sh: missing roasts/$c.webp" >&2; exit 1; }; done
+for c in $cards; do cp "$PICS/roasts/$c.webp" "$OUT/roasts/$c.webp"; done
 cp "$R/morph.js" "$OUT/roast-family/morph.js"
 python3 - "$R/hero.js" "$OUT/roast-family/hero.js" "$js" <<'EOF'
 import sys
@@ -61,4 +66,9 @@ for f in $hl; do LC_ALL=C sed -i '' -e 's#<!-- --> rotating bean\.</h1>#<!-- -->
   -e 's#" rotating bean\."\]#", roasted to order."]#g' -e 's#\\" rotating bean\.\\"\]#\\", roasted to order.\\"]#g' "$f"; done
 left=$(grep -rlF ' rotating bean.' "$OUT" | wc -l | tr -d ' ')
 [ "$left" = 0 ] || { echo "redesign-roast.sh: $left files still have the old headline" >&2; exit 1; }
-echo "redesign: stylesheet $old -> $new; ${#names} pictures; scripts on ${#pages} pages; headline in ${#hl} files"
+# the ticker's "Freebird rotating bean" (the React key and the text, in the page and the RSC payloads) says the same
+tk=($(grep -rlF 'Freebird rotating bean' "$OUT" --include='*.html' --include='*.txt'))
+for f in $tk; do LC_ALL=C sed -i '' 's#Freebird rotating bean#Freebird, roasted to order#g' "$f"; done
+left=$(grep -rhoF 'Freebird rotating bean' "$OUT" | wc -l | tr -d ' ')
+[ "$left" = 0 ] || { echo "redesign-roast.sh: $left ticker entries still say rotating bean" >&2; exit 1; }
+echo "redesign: stylesheet $old -> $new; ${#names} pictures; scripts on ${#pages} pages; headline in ${#hl} files; ticker in ${#tk} files"

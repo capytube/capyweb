@@ -34,9 +34,8 @@
     const thumbs = el('ul', { class: 'morph-thumbs' }, PICS.map(([name, alt], i) => el('li', {}, [
       el('button', { type: 'button', 'data-morph-go': String(i), 'aria-label': `Show ${LABEL}${alt}`, 'aria-current': String(i === 0) },
         [el('img', { 'data-thumb': `${DIR}${name}-768.webp`, alt: '', width: '80', height: '50' })])])));
-    const label = el('span', { class: 'render-label hero-render-label' }); label.textContent = 'GENERATED CONCEPT IMAGE';
     return el('section', { class: 'morph-hero rr-gallery', 'aria-label': 'Capy Roast concept pictures' }, [
-      stage, el('div', { class: 'morph-shade', 'aria-hidden': 'true' }), label,
+      stage, el('div', { class: 'morph-shade', 'aria-hidden': 'true' }),
       arrow(-1, 'Previous picture', '15 18 9 12 15 6'), arrow(1, 'Next picture', '9 18 15 12 9 6'), thumbs,
       el('p', { class: 'sr-only morph-status', 'aria-live': 'polite' })]);
   };

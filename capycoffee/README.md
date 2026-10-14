@@ -29,8 +29,9 @@ was chosen by nic (Q518). The RED packet is in agent-notes, `handoffs/capycoffee
   `patch-build.sh <out20260908> <out> && rename-roast.sh <out>`; the result is
   `build-manifest-roast.sha256`.
 - `redesign-roast.sh <build dir> <pictures dir>`: the Capy Roast redesign (nic order #4097) over a renamed build:
-  `redesign/roast.css` (family palette, edge-to-edge hero, phone-first ticket, captioned picture bands),
+  `redesign/roast.css` (family palette, edge-to-edge hero, phone-first ticket, picture bands; no label on pictures, one footer line "Some pictures are generated concepts.", nic order #4237),
   `redesign/hero.js` + `redesign/morph.js` (the family morph gallery as its own layer under React's wrapper),
-  the pictures named in `redesign/pictures.txt` under `/roast-family/`, and the home headline. Build:
+  the pictures named in `redesign/pictures.txt` under `/roast-family/`, the six Capy Roast profile cards from
+  `<pictures>/roasts/` over the build's `roasts/` (the old art printed CAPYCOFFEE), and the home headline and ticker. Build:
   `patch-build.sh <out20260908> <out> && rename-roast.sh <out> && redesign-roast.sh <out> <pictures>`; the result is
   `build-manifest-redesign.sha256`. `hero_test.mjs` tests the new hero.

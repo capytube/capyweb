@@ -1,6 +1,6 @@
 // Hero test for the Capy Roast redesign (nic order #4097; was the capyweb-z9w test): serves a build through the
 // template's own IndexFunction on 127.0.0.1 and, at five widths, checks that the hero is edge to edge with the headline
-// on the picture, that the gallery layer sits exactly on the card with its GENERATED CONCEPT IMAGE label, that nothing
+// on the picture, that the gallery layer sits exactly on the card with no label on any picture (one footer line instead), that nothing
 // shifted while the page loaded (CLS 0), that "Learn more" and the order button are visible and clickable, and that
 // nothing scrolls sideways, and that the picture still fills the card after a scroll. Then: reduced motion never advances the picture, in-site navigation away removes the
 // gallery and back home brings exactly one, and no page logs an error. Saves a screenshot of the hero per width.
@@ -44,18 +44,19 @@ for (const [n, o] of [['iphone-se', pw.devices['iPhone SE']], ['iphone-15', pw.d
   const d = await p.evaluate(() => {
     const card = document.querySelector('h1').closest('div.relative.isolate'), cr = card.getBoundingClientRect(), hr = document.querySelector('h1').getBoundingClientRect();
     const layers = document.querySelectorAll('body > .rr-gallery'), lr = layers[0]?.getBoundingClientRect();
-    const label = layers[0]?.querySelector('.render-label'), lab = label?.getBoundingClientRect();
+    const badge = [...document.querySelectorAll('body *')].some((x) => /GENERATED CONCEPT IMAGE/i.test(getComputedStyle(x, '::before').content + getComputedStyle(x, '::after').content + (x.children.length ? '' : x.textContent)));
+    const foot = getComputedStyle(document.querySelector('footer p.border-t'), '::after').content === '"Some pictures are generated concepts."';
     const a = [...card.querySelectorAll('a')].find((x) => /learn more/i.test(x.textContent)); a.scrollIntoView({ block: 'center', behavior: 'instant' }); const ar = a.getBoundingClientRect();
     const top = document.elementFromPoint(ar.left + ar.width / 2, ar.top + ar.height / 2);
     const near = (x, y) => Math.abs(x - y) <= 1;
     return { edge: near(cr.left, 0) && near(cr.width, document.documentElement.clientWidth), height: Math.round(cr.height),
       onPicture: hr.top >= cr.top && hr.bottom <= cr.bottom, layers: layers.length,
       onCard: !!lr && near(lr.top, cr.top) && near(lr.left, cr.left) && near(lr.width, cr.width) && near(lr.height, cr.height),
-      label: label?.textContent === 'GENERATED CONCEPT IMAGE' && lab.width > 0 && lab.top >= cr.top && lab.bottom <= cr.bottom,
+      label: !badge && foot,
       learn: !!top && a.contains(top), cls: Math.round(window.__cls * 1e4) / 1e4, over: document.documentElement.scrollWidth - innerWidth };
   });
   say(d.edge && d.height >= 480 && d.onPicture && d.layers === 1 && d.onCard && d.label && d.learn && d.cls === 0 && d.over <= 0,
-    `${n} edge=${d.edge} height=${d.height}px headline-on-picture=${d.onPicture} gallery=${d.layers} on-card=${d.onCard} label=${d.label} learn-more-clickable=${d.learn} cls=${d.cls} sideways=${d.over}px`);
+    `${n} edge=${d.edge} height=${d.height}px headline-on-picture=${d.onPicture} gallery=${d.layers} on-card=${d.onCard} no-badge+footer-line=${d.label} learn-more-clickable=${d.learn} cls=${d.cls} sideways=${d.over}px`);
   // The picture still fills the card after a scroll (b520838: WebGL left the lower hero dark).
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(300); const lit = await band(p);
   await p.evaluate(() => scrollTo(0, 200)); await p.waitForTimeout(600); const lit2 = await band(p);
