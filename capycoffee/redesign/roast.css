@@ -78,6 +78,18 @@ main:has([class*="aspect-[3/2]"]):not(:has(#order)){--rr-band:url(/roast-family/
   main:has([class*="aspect-[3/2]"]):not(:has(#order)){--rr-band:url(/roast-family/__P2__.webp)}
 }
 
+/* ---- home "Roasted on Kaffelogic Nano 7": the hot-air roaster beside the words (above them on a phone) ---- */
+main>section>div.bg-primary.overflow-hidden>div.absolute{display:none}
+main>section>div.bg-primary.overflow-hidden::before{content:"GENERATED CONCEPT IMAGE";display:flex;align-items:flex-end;height:220px;
+  margin:-32px -24px 24px;padding:0 12px 12px;color:#faf8e9;font-size:8px;letter-spacing:1.4px;font-weight:700;
+  background:linear-gradient(180deg,transparent 60%,#0b171c88),url(/roast-family/__P2__-768.webp) 50% 40%/cover no-repeat #1d2a22}
+@media (min-width:640px){main>section>div.bg-primary.overflow-hidden::before{margin:-40px -40px 28px}}
+@media (min-width:1024px){
+  main>section>div.bg-primary.overflow-hidden{min-height:380px;padding-right:calc(42% + 40px)}
+  main>section>div.bg-primary.overflow-hidden::before{position:absolute;top:0;right:0;bottom:0;width:42%;height:auto;margin:0;
+    background-image:linear-gradient(180deg,transparent 60%,#0b171c88),url(/roast-family/__P2__.webp)}
+}
+
 /* ---- every profile picture is a generated image: say so on it ---- */
 [class*="aspect-[3/2]"]::after,main figure::after{content:"GENERATED CONCEPT IMAGE";position:absolute;left:10px;bottom:10px;z-index:2;
   color:#faf8e9;font-size:8px;letter-spacing:1.4px;font-weight:700;background:#29432db0;padding:5px 9px;line-height:1.4;pointer-events:none}
