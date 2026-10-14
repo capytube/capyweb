@@ -1,10 +1,12 @@
 #!/bin/sh
 # Offline test of fix.sh and back.sh against a fake aws (a folder bucket that keeps each object's headers) and a fake
-# curl: refusals without the GO, stops on a changed live file or a bad package file (nothing uploaded), the result
+# curl, on a temp copy of the package: refusals without the GO, stops on a changed live file or a bad package file (nothing uploaded), the result
 # (build + the live-only keys), headers, upload order, a rerun, and back.sh restoring today's bytes exactly.
 #   sh test.sh <package folder from pack.sh> <live copy> <redesign build>
 set -u
-PK=$(cd "$1" && pwd) LIVE=$(cd "$2" && pwd) NEW=$(cd "$3" && pwd); W=$(mktemp -d); trap 'rm -rf "$W"' EXIT; F=$W/fake
+LIVE=$(cd "$2" && pwd) NEW=$(cd "$3" && pwd); W=$(mktemp -d); trap 'rm -rf "$W"' EXIT; F=$W/fake
+# the test runs a temp copy of the package (it corrupts a file there on purpose), so the package stays byte-clean
+cp -R "$1" $W/pkg; PK=$W/pkg
 mkdir -p $F/bin $F/bucket $F/meta && cp -R "$LIVE/." $F/bucket/
 (cd $F/bucket && find . -type f | sed 's|^\./||') | while read -r k; do mkdir -p "$F/meta/$(dirname "$k")"
   ct=$(grep "^$k|" "$PK/list.txt" | cut -d'|' -f4); [ -n "$ct" ] || ct=unknown/live
