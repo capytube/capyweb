@@ -72,6 +72,7 @@ main:has(figure)::before,main:has([class*="aspect-[3/2]"]):not(:has(#order))::be
   letter-spacing:1.4px;font-weight:700;background:linear-gradient(180deg,transparent 60%,#0b171c88),var(--rr-band) 50% 50%/cover no-repeat #1d2a22}
 main:has(figure){--rr-band:url(/roast-family/__P1__-768.webp)}
 main:has([class*="aspect-[3/2]"]):not(:has(#order)){--rr-band:url(/roast-family/__P2__-768.webp)}
+main:has([class*="aspect-[3/2]"]):not(:has(#order))::before{margin-bottom:-4rem}  /* the page's header has its own top padding */
 @media (min-width:769px){
   main>section:has(>#order)>div:first-child{--rr-pic:url(/roast-family/__P0__.webp)}
   main:has(figure){--rr-band:url(/roast-family/__P1__.webp)}
