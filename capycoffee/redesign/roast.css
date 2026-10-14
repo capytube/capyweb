@@ -60,10 +60,11 @@ main>section:has(>#order)>div:first-child a{pointer-events:auto;background:#fff8
   .hero-render-label{top:auto;bottom:20px;left:auto;right:32px}
 }
 
-/* ---- home ticket: below the picture, phone first; the order button stays in reach while the form scrolls ---- */
+/* ---- home ticket: below the picture, phone first; the order button stays in reach while the form scrolls (z 30: above
+   the profile cards' invisible z-20 radio inputs, under the z-40 header) ---- */
 #order{max-width:44rem;margin:40px auto 0;border-radius:6px;box-shadow:0 18px 50px -30px #23372266}
 @media (max-width:767px){#order{margin:28px 12px 0}}
-#order button[type=submit]{position:sticky;bottom:12px;z-index:5;border-radius:999px;box-shadow:0 10px 30px -12px #233722aa}
+#order button[type=submit]{position:sticky;bottom:12px;z-index:30;border-radius:999px;box-shadow:0 10px 30px -12px #233722aa}
 
 /* ---- About and Roast pages: an edge-to-edge picture band above the page, captioned ---- */
 main:has(figure)::before,main:has([class*="aspect-[3/2]"]):not(:has(#order))::before{content:"GENERATED CONCEPT IMAGE";display:flex;
