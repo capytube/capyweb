@@ -23,3 +23,8 @@ was chosen by nic (Q518). The RED packet is in agent-notes, `handoffs/capycoffee
 - `build-manifest.sha256`: the sorted sha256 of every file of the build that is deployed
   (`out20260908`, 68 files, kept outside the repo). The original is on Mac mini 3 at
   `~/stacks/capycoffee-demo-publish`.
+- `rename-roast.sh <build dir>`: renames the shown name Capycoffee to Capy Roast (nic order #4095)
+  in a patched build, in place. Both names are 10 bytes, so RSC text rows keep their lengths; the
+  one JS chunk that holds the name gets a new name of the same length. Build:
+  `patch-build.sh <out20260908> <out> && rename-roast.sh <out>`; the result is
+  `build-manifest-roast.sha256`.
