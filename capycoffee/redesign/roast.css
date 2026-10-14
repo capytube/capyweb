@@ -1,0 +1,90 @@
+/* Capy Roast redesign (nic order #4097): the capy.life family look over the frozen Next.js export. Appended to its
+   one stylesheet by redesign-roast.sh; __P0__..__P2__ become picture names from pictures.txt. Fraunces and Nunito are
+   the site's own fonts already. Only looks change: the order form, its fields, prices and checkout are the same code. */
+
+/* ---- family palette: cream paper, deep green ink, terracotta accent; square-ish corners ---- */
+:root:root{--background:#f5f3ea;--foreground:#2f4437;--card:#fbfaf5;--card-foreground:#2f4437;--popover:#fbfaf5;
+  --popover-foreground:#2f4437;--primary:#2f4437;--primary-foreground:#f5f3ea;--secondary:#eceee0;--secondary-foreground:#2f4437;
+  --muted:#eef0e4;--muted-foreground:#5c6758;--accent:#758366;--accent-foreground:#fbfaf5;--border:#dcded0;--input:#cfd5c3;
+  --ring:#ab7050;--cocoa:#8f5b3f;--sage:#758366;--cream:#f5f3ea;--paper:#fbfaf5;--radius:.375rem}
+.paper-grain{display:none}
+h1.font-heading,h2.font-heading,h3.font-heading{font-weight:400;letter-spacing:-.035em}
+[class*="rounded-[1.75rem]"],[class*="rounded-[1.5rem]"]{border-radius:6px}
+header.sticky{background:var(--background);backdrop-filter:none}
+main>p:first-child{background:var(--primary);color:#e9e4cf;border:0;font-size:10px;letter-spacing:.24em}
+
+/* ---- home hero: edge to edge, fixed height, headline on the picture ---- */
+main>section:has(>#order){display:block;max-width:none;padding:0;margin:-4rem 0 0}  /* -4rem: main's flex gap-16 above it */
+main>section:has(>#order)>div:first-child{--rr-pic:url(/roast-family/__P0__-768.webp);height:clamp(520px,calc(100svh - 98px),860px);
+  min-height:0;border-radius:0;background:#1d2a22;color:#fff8e4;pointer-events:none}
+main>section:has(>#order)>div:first-child::before{content:"";position:absolute;inset:0;z-index:0;
+  background:linear-gradient(180deg,#0b171c55 0%,#0b171c22 30%,#0b171c77 62%,#0b171cdd 100%),var(--rr-pic) 50% 50%/cover no-repeat}
+body:has(>.rr-gallery) main>section:has(>#order)>div:first-child{background:transparent}
+body:has(>.rr-gallery) main>section:has(>#order)>div:first-child::before{display:none}
+main>section:has(>#order)>div:first-child>svg,
+main>section:has(>#order)>div:first-child>div.absolute{display:none}
+main>section:has(>#order)>div:first-child>div.relative{height:100%;min-height:0;justify-content:flex-end;
+  padding:24px 20px 44px;padding-left:max(20px,calc((100% - 1152px)/2));text-shadow:0 2px 24px #0b171c99}
+main>section:has(>#order)>div:first-child>div.relative>div{max-width:40rem;padding-bottom:0}
+main>section:has(>#order) h1{color:#fff8e4;font-size:clamp(2.75rem,10vw,6rem);line-height:.98;letter-spacing:-.045em;margin-top:14px}
+main>section:has(>#order)>div:first-child p{color:#f2eedf}
+main>section:has(>#order)>div:first-child p:first-child{color:#e9e1c8;font-size:10px;letter-spacing:.26em}
+main>section:has(>#order)>div:first-child a{pointer-events:auto;background:#fff8e4;border:0;color:#2f4437;text-shadow:none;border-radius:999px}
+
+/* the gallery layer (hero.js): a child of <body>, under React's wrapper, placed over the card */
+.rr-gallery{position:absolute;z-index:9;top:0;left:0;height:0;overflow:hidden;background:#1d2a22;isolation:isolate}
+.morph-stage{position:absolute;inset:0;outline:none;touch-action:pan-y}
+.morph-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 50%;opacity:0;transition:opacity .9s ease}
+.morph-slide.is-active{opacity:1}
+.morph-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .4s ease}
+.morph-hero.is-gl .morph-canvas{opacity:1}
+.morph-shade{position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(180deg,#0b171c55 0%,#0b171c22 30%,#0b171c77 62%,#0b171cdd 100%)}
+.render-label{position:absolute;z-index:2;color:#faf8e9;font-size:8px;letter-spacing:1.4px;background:#29432db0;padding:5px 9px;
+  font-family:var(--font-nunito),system-ui,sans-serif;font-weight:700;line-height:1.4;pointer-events:none}
+.hero-render-label{top:14px;left:14px}
+.morph-arrow{position:absolute;z-index:3;top:10px;display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;
+  border-radius:50%;border:1px solid #fff8e433;background:#fff8e41a;color:#fff8e4;backdrop-filter:blur(10px);cursor:pointer}
+.morph-arrow svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.morph-arrow:hover{background:#fff8e440}
+.morph-arrow:focus-visible,.morph-thumbs button:focus-visible,.morph-stage:focus-visible{outline:2px solid #fff8e4;outline-offset:3px}
+.morph-prev{right:62px}.morph-next{right:12px}
+.morph-thumbs{display:none;position:absolute;z-index:3;right:136px;bottom:40px;gap:8px;margin:0;padding:0;list-style:none}
+.morph-thumbs button{display:block;padding:0;border:2px solid transparent;border-radius:6px;overflow:hidden;background:none;opacity:.6;cursor:pointer;transition:opacity .2s}
+.morph-thumbs button:hover{opacity:.9}
+.morph-thumbs button[aria-current=true]{border-color:#fff8e4;opacity:1}
+.morph-thumbs img{display:block;width:72px;height:46px;object-fit:cover}
+@media (min-width:1024px){
+  main>section:has(>#order)>div:first-child>div.relative{padding-bottom:56px}
+  .morph-arrow{top:auto;bottom:44px}.morph-prev{right:84px}.morph-next{right:32px}
+  .morph-thumbs{display:flex}
+  .hero-render-label{top:auto;bottom:20px;left:auto;right:32px}
+}
+
+/* ---- home ticket: below the picture, phone first; the order button stays in reach while the form scrolls ---- */
+#order{max-width:44rem;margin:40px auto 0;border-radius:6px;box-shadow:0 18px 50px -30px #23372266}
+@media (max-width:767px){#order{margin:28px 12px 0}}
+#order button[type=submit]{position:sticky;bottom:12px;z-index:5;border-radius:999px;box-shadow:0 10px 30px -12px #233722aa}
+
+/* ---- About and Roast pages: an edge-to-edge picture band above the page, captioned ---- */
+main:has(figure)::before,main:has([class*="aspect-[3/2]"]):not(:has(#order))::before{content:"GENERATED CONCEPT IMAGE";display:flex;
+  align-items:flex-end;height:clamp(220px,42svh,460px);padding:0 14px 14px;margin-bottom:8px;color:#faf8e9;font-size:8px;
+  letter-spacing:1.4px;font-weight:700;background:linear-gradient(180deg,transparent 60%,#0b171c88),var(--rr-band) 50% 50%/cover no-repeat #1d2a22}
+main:has(figure){--rr-band:url(/roast-family/__P1__-768.webp)}
+main:has([class*="aspect-[3/2]"]):not(:has(#order)){--rr-band:url(/roast-family/__P2__-768.webp)}
+@media (min-width:769px){
+  main>section:has(>#order)>div:first-child{--rr-pic:url(/roast-family/__P0__.webp)}
+  main:has(figure){--rr-band:url(/roast-family/__P1__.webp)}
+  main:has([class*="aspect-[3/2]"]):not(:has(#order)){--rr-band:url(/roast-family/__P2__.webp)}
+}
+
+/* ---- every profile picture is a generated image: say so on it ---- */
+[class*="aspect-[3/2]"]::after,main figure::after{content:"GENERATED CONCEPT IMAGE";position:absolute;left:10px;bottom:10px;z-index:2;
+  color:#faf8e9;font-size:8px;letter-spacing:1.4px;font-weight:700;background:#29432db0;padding:5px 9px;line-height:1.4;pointer-events:none}
+main figure{position:relative}
+main figure:has(figcaption)::after{bottom:auto;top:10px}
+
+/* ---- reduced motion: no ticker, no autoplay (morph.js), no dissolve ---- */
+@media (prefers-reduced-motion:reduce){
+  .animate-ticker{animation:none}
+  .morph-slide,.morph-canvas,.morph-thumbs button{transition:none}
+}

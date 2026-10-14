@@ -1,8 +1,10 @@
-// Screenshot test for capyweb-z9w: serves a build through the template's own IndexFunction on
-// 127.0.0.1 and, at five widths, checks that the home page's hero picture covers no text, that
-// the picture follows the text without a big empty gap (at most 120 px), that "Learn more" is
-// visible and clickable, and that nothing scrolls sideways; saves a screenshot of
-// the hero card per width.   node hero_test.mjs <build dir | https URL of a deployed site> [screenshot dir]
+// Hero test for the Capy Roast redesign (nic order #4097; was the capyweb-z9w test): serves a build through the
+// template's own IndexFunction on 127.0.0.1 and, at five widths, checks that the hero is edge to edge with the headline
+// on the picture, that the gallery layer sits exactly on the card with its GENERATED CONCEPT IMAGE label, that nothing
+// shifted while the page loaded (CLS 0), that "Learn more" and the order button are visible and clickable, and that
+// nothing scrolls sideways. Then: reduced motion never advances the picture, in-site navigation away removes the
+// gallery and back home brings exactly one, and no page logs an error. Saves a screenshot of the hero per width.
+//   node hero_test.mjs <build dir | https URL of a deployed site> [screenshot dir]
 import http from 'node:http'; import { readFile, mkdir } from 'node:fs/promises'; import { createRequire } from 'module'; import { extname, join } from 'node:path';
 const ROOT = process.argv[2], SHOTS = process.argv[3], LIVE = /^https:\/\//.test(ROOT);
 const T = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
@@ -20,25 +22,52 @@ const PW = `${process.env.HOME}/.cache/capyweb/pw/`; process.env.PLAYWRIGHT_BROW
 const pw = createRequire(PW)('playwright');
 if (SHOTS) await mkdir(SHOTS, { recursive: true });
 const b = await pw.chromium.launch(); let bad = 0;
+const say = (ok, line) => { if (!ok) bad++; console.log(`${ok ? 'ok  ' : 'FAIL'} ${line}`); };
+const watch = (p) => { const errs = []; p.on('pageerror', (e) => errs.push(e.message.slice(0, 90))); p.on('console', (m) => m.type() === 'error' && errs.push(m.text().slice(0, 90))); return errs; };
+const CLS = () => { window.__cls = 0; new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true }); };
+
 for (const [n, o] of [['iphone-se', pw.devices['iPhone SE']], ['iphone-15', pw.devices['iPhone 15']], ['tablet-768', { viewport: { width: 768, height: 1024 } }], ['desktop-1280', { viewport: { width: 1280, height: 800 } }], ['wide-1920', { viewport: { width: 1920, height: 1080 } }]]) {
-  const p = await (await b.newContext(o)).newPage(); await p.goto(B + '/', { waitUntil: 'networkidle' });
+  const ctx = await b.newContext(o); await ctx.addInitScript(CLS); const p = await ctx.newPage(); const errs = watch(p);
+  await p.goto(B + '/', { waitUntil: 'networkidle' }); await p.waitForTimeout(600);
   const d = await p.evaluate(() => {
-    const card = document.querySelector('h1').closest('div.relative.isolate'); const img = card.lastElementChild; const ib = img.getBoundingClientRect();
-    let worst = 0, textBottom = 0;
-    for (const t of card.querySelectorAll('h1,p,a,span')) {
-      if (img.contains(t) || !t.textContent.trim()) continue;
-      const r = t.getBoundingClientRect(); const v = Math.min(r.bottom, ib.bottom) - Math.max(r.top, ib.top), h = Math.min(r.right, ib.right) - Math.max(r.left, ib.left);
-      if (v > 0 && h > 0) worst = Math.max(worst, Math.round(v));
-      if (r.bottom <= ib.top) textBottom = Math.max(textBottom, r.bottom);
-    }
-    // "Learn more" must be the topmost element at its own centre once scrolled into view.
-    const a = [...card.querySelectorAll('a')].find((x) => /learn more/i.test(x.textContent)); a.scrollIntoView({ block: 'center', behavior: 'instant' });
-    const ar = a.getBoundingClientRect(); const top = document.elementFromPoint(ar.left + ar.width / 2, ar.top + ar.height / 2);
-    return { worst, gap: Math.round(ib.top - textBottom), imgShown: ib.height > 100, learnClickable: !!top && a.contains(top), over: document.documentElement.scrollWidth - innerWidth };
+    const card = document.querySelector('h1').closest('div.relative.isolate'), cr = card.getBoundingClientRect(), hr = document.querySelector('h1').getBoundingClientRect();
+    const layers = document.querySelectorAll('body > .rr-gallery'), lr = layers[0]?.getBoundingClientRect();
+    const label = layers[0]?.querySelector('.render-label'), lab = label?.getBoundingClientRect();
+    const a = [...card.querySelectorAll('a')].find((x) => /learn more/i.test(x.textContent)); a.scrollIntoView({ block: 'center', behavior: 'instant' }); const ar = a.getBoundingClientRect();
+    const top = document.elementFromPoint(ar.left + ar.width / 2, ar.top + ar.height / 2);
+    const near = (x, y) => Math.abs(x - y) <= 1;
+    return { edge: near(cr.left, 0) && near(cr.width, document.documentElement.clientWidth), height: Math.round(cr.height),
+      onPicture: hr.top >= cr.top && hr.bottom <= cr.bottom, layers: layers.length,
+      onCard: !!lr && near(lr.top, cr.top) && near(lr.left, cr.left) && near(lr.width, cr.width) && near(lr.height, cr.height),
+      label: label?.textContent === 'GENERATED CONCEPT IMAGE' && lab.width > 0 && lab.top >= cr.top && lab.bottom <= cr.bottom,
+      learn: !!top && a.contains(top), cls: Math.round(window.__cls * 1e4) / 1e4, over: document.documentElement.scrollWidth - innerWidth };
   });
-  const ok = d.worst === 0 && d.gap <= 120 && d.imgShown && d.learnClickable && d.over <= 0; if (!ok) bad++;
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${n} overlap=${d.worst}px gap=${d.gap}px picture=${d.imgShown} learn-more-clickable=${d.learnClickable} sideways=${d.over}px`);
-  // A full-page shot clipped to the card: the card can be taller than the viewport.
-  if (SHOTS) { await p.evaluate(() => scrollTo(0, 0)); const clip = await p.evaluate(() => { const r = document.querySelector('h1').closest('div.relative.isolate').getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }); await p.screenshot({ path: join(SHOTS, `hero-${n}.png`), fullPage: true, clip }); }
+  say(d.edge && d.height >= 480 && d.onPicture && d.layers === 1 && d.onCard && d.label && d.learn && d.cls === 0 && d.over <= 0,
+    `${n} edge=${d.edge} height=${d.height}px headline-on-picture=${d.onPicture} gallery=${d.layers} on-card=${d.onCard} label=${d.label} learn-more-clickable=${d.learn} cls=${d.cls} sideways=${d.over}px`);
+  if (SHOTS) await p.screenshot({ path: join(SHOTS, `hero-${n}.png`) });
+  const btn = p.locator('#order button[type=submit]'); await btn.scrollIntoViewIfNeeded();
+  const o2 = await btn.evaluate((x) => { const r = x.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { click: !!t && x.contains(t), text: x.textContent.trim(), top: t ? `${t.tagName}.${String(t.className).slice(0, 60)}` : 'none' }; });
+  say(o2.click && /^Order whole beans/.test(o2.text), `${n} order button clickable="${o2.click}" text="${o2.text}"${o2.click ? '' : ` covered-by=${o2.top}`}`);
+  if (SHOTS) await p.screenshot({ path: join(SHOTS, `order-${n}.png`) });
+  say(errs.length === 0, `${n} console errors ${JSON.stringify(errs.slice(0, 3))}`);
+  await ctx.close();
 }
-await b.close(); srv.close(); console.log(bad ? `${bad} FAIL` : 'all ok'); process.exit(bad ? 1 : 0);
+
+// Reduced motion: the picture never changes by itself.
+{ const ctx = await b.newContext({ ...pw.devices['iPhone 15'], reducedMotion: 'reduce' }); const p = await ctx.newPage();
+  await p.goto(B + '/', { waitUntil: 'networkidle' }); const a = await p.evaluate(() => document.querySelector('.rr-gallery .morph-slide.is-active')?.alt);
+  await p.waitForTimeout(7500); const z = await p.evaluate(() => document.querySelector('.rr-gallery .morph-slide.is-active')?.alt);
+  say(!!a && a === z, `reduced motion: picture stays ("${(z || '').slice(0, 50)}")`); await ctx.close(); }
+
+// In-site navigation: About (no gallery, its picture band), back home (one gallery on the card), Roast, home again.
+{ const ctx = await b.newContext({ viewport: { width: 1280, height: 800 } }); const p = await ctx.newPage(); const errs = watch(p);
+  await p.goto(B + '/', { waitUntil: 'networkidle' });
+  const count = () => p.evaluate(() => document.querySelectorAll('body > .rr-gallery').length);
+  const steps = [['header nav a[href="/about/"]', /\/about\/$/, 0], ['header nav a[href="/"]', /\/$/, 1], ['header nav a[href="/roast/"]', /\/roast\/$/, 0], ['header nav a[href="/"]', /\/$/, 1]];
+  for (const [sel, url, want] of steps) {
+    await p.locator(sel).first().click(); await p.waitForURL(url); await p.waitForTimeout(700);
+    const c = await count(); say(c === want, `navigate to ${new URL(p.url()).pathname}: galleries=${c} (want ${want})`);
+  }
+  say(errs.length === 0, `navigation console errors ${JSON.stringify(errs.slice(0, 3))}`); await ctx.close(); }
+
+await b.close(); srv.close?.(); console.log(bad ? `${bad} FAIL` : 'all ok'); process.exit(bad ? 1 : 0);
