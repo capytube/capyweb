@@ -2,7 +2,8 @@
 # Capy Roast redesign (nic order #4097) over a renamed build, in place: appends redesign/roast.css to the stylesheet
 # (new content-hashed name, as patch-build.sh does), adds the family morph gallery (redesign/morph.js + hero.js) and
 # the pictures under /roast-family/, and changes the home headline. The order form, prices and checkout are untouched.
-# Deterministic: same inputs, same output.
+# Deterministic: same inputs, same output. The old stylesheet stays too, so pages cached before a deploy keep working.
+# It changes the build in place: if it stops part way, rebuild from patch-build.sh and rename-roast.sh and run it again.
 #   redesign-roast.sh <build dir> <pictures dir>   (the pictures dir holds <name>.webp and <name>-768.webp per line of
 #   redesign/pictures.txt: "name|alt"; the first line is the hero, the 2nd the About band, the 3rd the Roast band)
 set -eu
@@ -35,11 +36,13 @@ EOF
 css=("$OUT"/_next/static/chunks/*.css)
 [ ${#css} -eq 1 ] || { echo "redesign-roast.sh: expected one stylesheet, found ${#css}" >&2; exit 1; }
 old=${css[1]:t}
+cp "${css[1]}" "${css[1]}.before"   # kept under its old name: a page cached before the deploy still finds it
 sed -e "s/__P0__/${names[1]}/g" -e "s/__P1__/${names[2]}/g" -e "s/__P2__/${names[3]}/g" "$R/roast.css" >> "${css[1]}"
 new=${old%%-*}; new=${new%.css}-$(shasum -a 256 "${css[1]}" | cut -c1-10).css
 mv "${css[1]}" "${css[1]:h}/$new"
+mv "${css[1]}.before" "${css[1]}"
 for f in $(grep -rlF "$old" "$OUT" --include='*.html' --include='*.txt'); do LC_ALL=C sed -i '' "s/${old//./\\.}/$new/g" "$f"; done
-[ "$(grep -rlF "$old" "$OUT" | wc -l | tr -d ' ')" = 0 ] || { echo "redesign-roast.sh: files still name $old" >&2; exit 1; }
+[ "$(grep -rlF "$old" "$OUT" --include='*.html' --include='*.txt' | wc -l | tr -d ' ')" = 0 ] || { echo "redesign-roast.sh: files still name $old" >&2; exit 1; }
 
 # scripts on every page (in-site navigation can reach the home page from any of them); hero picture preload on home
 tags='<script src="/roast-family/morph.js" defer></script><script src="/roast-family/hero.js" defer></script>'

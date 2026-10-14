@@ -1,7 +1,7 @@
 'use strict';
 // Vendored from the capy.life family site (levara-capy-life site/morph.js), unchanged except that it is a function,
 // window.capyMorph(hero), so hero.js can start it again when the Next.js app shows the home page anew, and that it
-// announces "Picture n of m" (these are generated pictures, not photographs).
+// announces "Picture n of m" (these are generated pictures, not photographs), and that software WebGL gets the cross-fade.
 // Hero gallery: our photographs dissolve into each other through noise (one WebGL pass over two textures), after the
 // morph-gallery component by kedhareswer (21st component library), ported from React to plain JS; nothing is loaded from outside this site.
 // The first photograph is a plain <img> (it is the page's largest paint); the canvas covers it once ready.
@@ -108,6 +108,10 @@ void main(){
   function startGl() {
     const ctx = canvas.getContext('webgl', {alpha: false, antialias: false, preserveDrawingBuffer: false});
     if (!ctx) return null;
+    // WebGL in software (SwiftShader, llvmpipe) leaves the lower hero dark after a scroll (seen in headless Chromium,
+    // not with a GPU): such browsers get the image cross-fade instead.
+    const info = ctx.getExtension('WEBGL_debug_renderer_info');
+    if (/swiftshader|llvmpipe|software/i.test(info ? ctx.getParameter(info.UNMASKED_RENDERER_WEBGL) : '')) return null;
     const compile = (type, src) => {
       const s = ctx.createShader(type); ctx.shaderSource(s, src); ctx.compileShader(s);
       if (!ctx.getShaderParameter(s, ctx.COMPILE_STATUS)) throw new Error('shader');

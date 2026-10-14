@@ -1,5 +1,5 @@
-roast-hero|A capybara resting on the lawn by a lagoon while a roaster carries a tray of beans out of a wooden roast house
+roast-hero|A capybara resting on the lawn by a lake, in front of a wooden house with a veranda and forested hills behind
 roast-cup|Hands around a cup of black coffee on a wooden table, a capybara grazing on the lawn beyond
 roast-fluidbed|A small tabletop hot-air roaster with a steel funnel on top and coffee beans in its glass chamber
 roast-beans|Green coffee in a burlap sack beside bowls of beans roasted from light to dark
-roast-bag|A plain paper coffee bag with a drawn capybara on a window ledge, beside a cup and roasted beans
+roast-bag|A plain paper coffee bag with a drawn capybara, standing on a wooden shelf by a window beside a cup and roasted beans

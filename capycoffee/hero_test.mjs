@@ -2,7 +2,7 @@
 // template's own IndexFunction on 127.0.0.1 and, at five widths, checks that the hero is edge to edge with the headline
 // on the picture, that the gallery layer sits exactly on the card with its GENERATED CONCEPT IMAGE label, that nothing
 // shifted while the page loaded (CLS 0), that "Learn more" and the order button are visible and clickable, and that
-// nothing scrolls sideways. Then: reduced motion never advances the picture, in-site navigation away removes the
+// nothing scrolls sideways, and that the picture still fills the card after a scroll. Then: reduced motion never advances the picture, in-site navigation away removes the
 // gallery and back home brings exactly one, and no page logs an error. Saves a screenshot of the hero per width.
 //   node hero_test.mjs <build dir | https URL of a deployed site> [screenshot dir]
 import http from 'node:http'; import { readFile, mkdir } from 'node:fs/promises'; import { createRequire } from 'module'; import { extname, join } from 'node:path';
@@ -24,11 +24,23 @@ if (SHOTS) await mkdir(SHOTS, { recursive: true });
 const b = await pw.chromium.launch(); let bad = 0;
 const say = (ok, line) => { if (!ok) bad++; console.log(`${ok ? 'ok  ' : 'FAIL'} ${line}`); };
 const watch = (p) => { const errs = []; p.on('pageerror', (e) => errs.push(e.message.slice(0, 90))); p.on('console', (m) => m.type() === 'error' && errs.push(m.text().slice(0, 90))); return errs; };
+// Mean brightness (0-255) of a band of the hero card, 55%-75% down, as the viewport shows it now. The whole viewport is
+// captured (a clipped capture re-renders the region and can hide a painting fault) and decoded in the page.
+const band = async (p) => {
+  const png = (await p.screenshot()).toString('base64');
+  return p.evaluate(async (src) => {
+    const c0 = document.querySelector('main h1').closest('div.relative.isolate').getBoundingClientRect(), k = devicePixelRatio;
+    const i = new Image(); i.src = src; await i.decode(); const c = document.createElement('canvas'); c.width = i.width; c.height = i.height;
+    const g = c.getContext('2d'); g.drawImage(i, 0, 0);
+    const d = g.getImageData(Math.round(c0.x * k), Math.round((c0.y + c0.height * 0.55) * k), Math.round(c0.width * k), Math.round(c0.height * 0.2 * k)).data;
+    let t = 0; for (let n = 0; n < d.length; n += 4) t += (d[n] + d[n + 1] + d[n + 2]) / 3; return Math.round(t / (d.length / 4)); }, `data:image/png;base64,${png}`);
+};
 const CLS = () => { window.__cls = 0; new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true }); };
 
 for (const [n, o] of [['iphone-se', pw.devices['iPhone SE']], ['iphone-15', pw.devices['iPhone 15']], ['tablet-768', { viewport: { width: 768, height: 1024 } }], ['desktop-1280', { viewport: { width: 1280, height: 800 } }], ['wide-1920', { viewport: { width: 1920, height: 1080 } }]]) {
   const ctx = await b.newContext(o); await ctx.addInitScript(CLS); const p = await ctx.newPage(); const errs = watch(p);
   await p.goto(B + '/', { waitUntil: 'networkidle' }); await p.waitForTimeout(600);
+  if (SHOTS) await p.screenshot({ path: join(SHOTS, `hero-${n}.png`) });   // before anything scrolls
   const d = await p.evaluate(() => {
     const card = document.querySelector('h1').closest('div.relative.isolate'), cr = card.getBoundingClientRect(), hr = document.querySelector('h1').getBoundingClientRect();
     const layers = document.querySelectorAll('body > .rr-gallery'), lr = layers[0]?.getBoundingClientRect();
@@ -44,7 +56,10 @@ for (const [n, o] of [['iphone-se', pw.devices['iPhone SE']], ['iphone-15', pw.d
   });
   say(d.edge && d.height >= 480 && d.onPicture && d.layers === 1 && d.onCard && d.label && d.learn && d.cls === 0 && d.over <= 0,
     `${n} edge=${d.edge} height=${d.height}px headline-on-picture=${d.onPicture} gallery=${d.layers} on-card=${d.onCard} label=${d.label} learn-more-clickable=${d.learn} cls=${d.cls} sideways=${d.over}px`);
-  if (SHOTS) await p.screenshot({ path: join(SHOTS, `hero-${n}.png`) });
+  // The picture still fills the card after a scroll (b520838: WebGL left the lower hero dark).
+  await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(300); const lit = await band(p);
+  await p.evaluate(() => scrollTo(0, 200)); await p.waitForTimeout(600); const lit2 = await band(p);
+  say(lit2 >= lit * 0.7, `${n} hero picture after a 200px scroll: brightness ${lit} -> ${lit2}`);
   const btn = p.locator('#order button[type=submit]'); await btn.scrollIntoViewIfNeeded();
   const o2 = await btn.evaluate((x) => { const r = x.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { click: !!t && x.contains(t), text: x.textContent.trim(), top: t ? `${t.tagName}.${String(t.className).slice(0, 60)}` : 'none' }; });
   say(o2.click && /^Order whole beans/.test(o2.text), `${n} order button clickable="${o2.click}" text="${o2.text}"${o2.click ? '' : ` covered-by=${o2.top}`}`);
