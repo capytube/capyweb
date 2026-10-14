@@ -71,4 +71,20 @@ tk=($(grep -rlF 'Freebird rotating bean' "$OUT" --include='*.html' --include='*.
 for f in $tk; do LC_ALL=C sed -i '' 's#Freebird rotating bean#Freebird, roasted to order#g' "$f"; done
 left=$(grep -rhoF 'Freebird rotating bean' "$OUT" | wc -l | tr -d ' ')
 [ "$left" = 0 ] || { echo "redesign-roast.sh: $left ticker entries still say rotating bean" >&2; exit 1; }
-echo "redesign: stylesheet $old -> $new; ${#names} pictures; scripts on ${#pages} pages; headline in ${#hl} files; ticker in ${#tk} files"
+# About: "Meet Freebird" said the same thing twice (the lot facts, then the SKU story). The story paragraph goes, from the
+# page, its inline RSC rows and the .txt payloads (plain JSON rows, no length prefix); the facts paragraph stays
+ab=($(grep -rlF 'Freebird is the only bean on the bar. This sack' "$OUT/about" --include='*.html' --include='*.txt'))
+[ ${#ab} -eq 4 ] || { echo "redesign-roast.sh: expected the About story in 4 files, found ${#ab}" >&2; exit 1; }
+python3 - $ab <<'EOF'
+import sys
+S = "Freebird is the only bean on the bar. This sack came from Chiang Mai, Thailand \u2014 one lot at a time, roasted to the Kaffelogic profile and roast level you pick, then packed as whole beans. When the sack is gone, a new origin lands."
+cut = ['<p class="leading-relaxed text-foreground/80">' + S + '</p>',
+       ',["$","p",null,{"className":"leading-relaxed text-foreground/80","children":"' + S + '"}]',
+       ',[\\"$\\",\\"p\\",null,{\\"className\\":\\"leading-relaxed text-foreground/80\\",\\"children\\":\\"' + S + '\\"}]']
+for f in sys.argv[1:]:
+    t = open(f, encoding='utf-8').read(); n = sum(t.count(c) for c in cut)
+    for c in cut: t = t.replace(c, '')
+    assert n >= 1 and S not in t, f"{f}: story still there"
+    open(f, 'w', encoding='utf-8').write(t)
+EOF
+echo "redesign: stylesheet $old -> $new; ${#names} pictures; scripts on ${#pages} pages; headline in ${#hl} files; ticker in ${#tk} files; About story out of ${#ab} files"
