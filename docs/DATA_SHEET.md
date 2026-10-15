@@ -61,7 +61,8 @@ These are the only cookies CapyTube's own servers set.
 | `sessionStorage`, key `capyweb.auth.flow` | During one sign-in redirect: a random state value and code verifier, the page to return to, and the vote or bid the person was about to make | Deleted when the sign-in returns; otherwise until the tab closes | `auth.rs` `FLOW_KEY`, `AuthCallback`; `web/src/oauth.rs` `Flow`, `PendingAction` |
 | `sessionStorage`, key `capyweb.auth.name-prompt-dismissed` | That the person closed the "choose a display name" prompt | Until the tab closes | `auth.rs` `NAME_PROMPT_KEY` |
 | `sessionStorage`, keys starting `capyweb:pos:` | Where a recorded video was paused, to resume there | Until the tab closes | `web/js/player.js` `savePos` |
-| Cookies on Cognito's sign-in domain | Cognito's own sign-in session, set by AWS on `capyapp-capyweb-<stage>.auth.ap-southeast-1.amazoncognito.com`, ended at sign-out through Cognito's `/logout` | Set by AWS; not verified | `oauth.rs` `logout_url` |
+| Cookies on Cognito's sign-in domain | Cognito's own sign-in session, set by AWS on our sign-in name `auth.<site>` (`auth.dev.capytube.xyz` on dev since 2026-10-16; `infra/site/stages.json` `auth`), or on `capyapp-capyweb-<stage>.auth.ap-southeast-1.amazoncognito.com` where that is not on; ended at sign-out through Cognito's `/logout` | Set by AWS; not verified | `oauth.rs` `logout_url` |
+| `sessionStorage`, key `capyweb.auth.passkey-return` | While managed login adds a passkey: the page to come back to | Deleted when it comes back; otherwise until the tab closes | `auth.rs` `PASSKEY_KEY` |
 | Paid-camera cookies | See above | Paid time plus 30 seconds | `cfsign.ts` |
 
 ## Server logs and backups
