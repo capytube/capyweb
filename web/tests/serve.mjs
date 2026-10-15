@@ -37,7 +37,8 @@ const root = resolve(dirArg);
 const TEST_LOGIN_ORIGIN = 'https://capyapp-test.auth.example.com';
 const policy = JSON.parse(readFileSync(new URL('../../infra/site/headers-dev.json', import.meta.url), 'utf8'));
 const sec = policy.SecurityHeadersConfig;
-const LOGIN_ORIGIN = /https:\/\/[a-z0-9-]+\.auth\.[a-z0-9-]+\.amazoncognito\.com/g;
+// Cognito's prefix domain, or our own sign-in name (auth.<site>, infra/site/stages.json).
+const LOGIN_ORIGIN = /https:\/\/(?:[a-z0-9-]+\.auth\.[a-z0-9-]+\.amazoncognito\.com|auth\.[a-z0-9.-]+\.[a-z]+)(?=[ ;])/g;
 const csp = sec.ContentSecurityPolicy.ContentSecurityPolicy;
 if ((csp.match(LOGIN_ORIGIN) ?? []).length !== 1) {
   console.error('serve: expected one managed-login origin in the CSP of infra/site/headers-dev.json');

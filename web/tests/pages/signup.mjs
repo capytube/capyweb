@@ -90,8 +90,12 @@ export async function check({ browser, BASE }) {
     await page.fill('#signup-code', '123 456');
     await page.click('[data-testid=signup-code] button[type=submit]');
     // Managed login, the code exchange, the add-a-passkey page, then back here signed in.
+    for (let t = 0; passkeys.length === 0; t += 1) {
+      assert.ok(t < 300, 'the add-a-passkey page within 30 s');
+      await page.waitForTimeout(100);
+    }
+    await page.waitForURL(`${BASE}/shop`);
     await page.locator('[data-testid=sign-out]').waitFor();
-    assert.equal(page.url(), `${BASE}/shop`);
     assert.equal(cognito.log.authorize.at(-1).login_hint, EMAIL, 'managed login gets the email');
     assert.deepEqual(passkeys, [{ client_id: CLIENT, redirect_uri: `${BASE}/auth/callback` }], 'then the add-a-passkey page, once');
     assert.equal(await page.evaluate(() => location.search), '');
@@ -100,6 +104,10 @@ export async function check({ browser, BASE }) {
     // -- signed in: the profile page offers another passkey and comes back to itself --------------
     await page.goto(`${BASE}/profile`);
     await page.click('[data-testid=add-passkey]');
+    for (let t = 0; passkeys.length === 1; t += 1) {
+      assert.ok(t < 300, 'the add-a-passkey page within 30 s');
+      await page.waitForTimeout(100);
+    }
     await page.waitForURL(`${BASE}/profile`);
     assert.equal(passkeys.length, 2);
     await page.locator('[data-testid=sign-out]').waitFor();
