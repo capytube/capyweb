@@ -46,12 +46,14 @@ CS=auth-domain-${MODE#plan-}-$(date +%H%M%S)
 drop() { aws cloudformation delete-change-set --stack-name "$ST" --change-set-name "$CS" ||
          echo "auth-domain.sh: WARN could not delete change set $CS on $ST; delete it by hand" >&2; }
 # Whatever ends this script before the execute (a refusal, an error, Ctrl-C), the change set goes.
-LEFT=1; trap '[ "$LEFT" != 1 ] || drop' EXIT
+LEFT=0; trap '[ "$LEFT" != 1 ] || drop' EXIT
 aws cloudformation create-change-set --stack-name "$ST" --change-set-name "$CS" --use-previous-template \
   --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --parameters "${SET[@]}" >/dev/null
+LEFT=1   # made: from here every exit before the execute deletes it
 aws cloudformation wait change-set-create-complete --stack-name "$ST" --change-set-name "$CS" || {
   aws cloudformation describe-change-set --stack-name "$ST" --change-set-name "$CS" --query StatusReason --output text >&2 || true
   die "change set $CS did not build (reason above; deleted, not run)"; }
+# Replacement is compared too: a Modify UserPool that replaced the pool would lose every user.
 GOT=$(aws cloudformation describe-change-set --stack-name "$ST" --change-set-name "$CS" \
       --query 'Changes[].ResourceChange.[Action,LogicalResourceId,Replacement]' --output text | sort) || {
   die "could not read change set $CS (deleted, not run)"; }
@@ -59,7 +61,6 @@ echo "change set $CS on $ST:"; echo "$GOT" | sed 's/^/  /'
 [ "$GOT" = "$WANT" ] || { die "not the expected change (want: $(echo "$WANT" | tr '\n\t' '; ')); deleted, not run"; }
 case $MODE in plan-*) echo "plan only: deleted, not run"; exit 0 ;; esac
 
-# Replacement is checked too: a Modify UserPool that replaced the pool would lose every user.
 aws cloudformation execute-change-set --stack-name "$ST" --change-set-name "$CS"
 LEFT=0   # executed: CloudFormation owns it now
 aws cloudformation wait stack-update-complete --stack-name "$ST" || die "$ST did not complete: see its events"
