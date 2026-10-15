@@ -194,6 +194,9 @@ pub fn resend_body(c: &AuthConfig, email: &str) -> String {
     serde_json::json!({"ClientId": c.client_id, "Username": email}).to_string()
 }
 
+/// `idp_error` for an email that already has an account (confirmed or not).
+pub const USER_EXISTS: &str = "This email already has an account. Sign in instead.";
+
 /// One plain sentence for a refused Cognito API call, from its `__type`.
 pub fn idp_error(body: &str) -> &'static str {
     let kind = serde_json::from_str::<Value>(body)
@@ -201,7 +204,7 @@ pub fn idp_error(body: &str) -> &'static str {
         .and_then(|v| text(&v, "__type"))
         .unwrap_or_default();
     match kind.rsplit('#').next().unwrap_or_default() {
-        "UsernameExistsException" => "This email already has an account. Sign in instead.",
+        "UsernameExistsException" => USER_EXISTS,
         "CodeMismatchException" => "That code is not right. Check the email and try again.",
         "ExpiredCodeException" => "That code has expired. Send a new one.",
         "InvalidParameterException" => "Please check the email address.",

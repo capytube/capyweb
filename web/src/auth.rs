@@ -632,11 +632,16 @@ pub fn SignInDialog() -> impl IntoView {
         busy.set(true);
         note.set("");
         spawn_local(async move {
-            let r = if again {
+            let mut r = if again {
                 auth.resend_code(&e).await
             } else {
                 auth.sign_up(&e).await
             };
+            // An earlier sign-up that was never confirmed: send its code again. A confirmed
+            // account refuses the resend, and the user is told to sign in.
+            if r == Err(oauth::USER_EXISTS) && auth.resend_code(&e).await.is_ok() {
+                r = Ok(());
+            }
             busy.set(false);
             match r {
                 Ok(()) => {
@@ -687,7 +692,11 @@ pub fn SignInDialog() -> impl IntoView {
                 <label for="signup-email">"Email address"</label>
                 <input id="signup-email" type="email" autocomplete="email"
                     prop:value=email on:input=move |ev| email.set(event_target_value(&ev))/>
-                <button type="submit" class="btn mt-2" disabled=busy>"Send code"</button>
+                <div class="actions mt-2">
+                    <button type="submit" class="btn" disabled=busy>"Send code"</button>
+                    <button type="button" class="btn btn-ghost" data-testid="signup-back"
+                        on:click=move |_| { note.set(""); step.set(0); }>"Back"</button>
+                </div>
             </form>
             <form data-testid="signup-code" hidden=shown(2)
                 on:submit=move |ev| { ev.prevent_default(); confirm(); }>
@@ -698,6 +707,8 @@ pub fn SignInDialog() -> impl IntoView {
                     <button type="submit" class="btn" disabled=busy>"Confirm"</button>
                     <button type="button" class="btn btn-ghost" disabled=busy
                         on:click=move |_| send(true)>"Send a new code"</button>
+                    <button type="button" class="btn btn-ghost" data-testid="signup-change-email"
+                        on:click=move |_| { note.set(""); code.set(String::new()); step.set(1); }>"Change email"</button>
                 </div>
             </form>
             <p role="status" data-testid="signup-note">{move || note.get()}</p>

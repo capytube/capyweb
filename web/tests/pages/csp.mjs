@@ -11,7 +11,7 @@ export async function check({ open, BASE }) {
   const res = await fetch(`${BASE}/watch`);
   const policy = JSON.parse(readFileSync(new URL('../../../infra/site/headers-dev.json', import.meta.url), 'utf8'));
   const want = policy.SecurityHeadersConfig.ContentSecurityPolicy.ContentSecurityPolicy
-    .replace(/https:\/\/(?:[^ ;]+\.amazoncognito\.com|auth\.[a-z0-9.-]+\.[a-z]+)(?=[ ;])/, 'https://capyapp-test.auth.example.com');
+    .replace(/https:\/\/(?:[^ ;]+\.amazoncognito\.com|auth\.[a-z0-9.-]+\.[a-z]+)(?=[ ;])/g, 'https://capyapp-test.auth.example.com');
   assert.equal(res.headers.get('content-security-policy'), want);
   assert.match(want, /script-src 'self' 'wasm-unsafe-eval';/);
 

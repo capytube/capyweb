@@ -40,8 +40,9 @@ const sec = policy.SecurityHeadersConfig;
 // Cognito's prefix domain, or our own sign-in name (auth.<site>, infra/site/stages.json).
 const LOGIN_ORIGIN = /https:\/\/(?:[a-z0-9-]+\.auth\.[a-z0-9-]+\.amazoncognito\.com|auth\.[a-z0-9.-]+\.[a-z]+)(?=[ ;])/g;
 const csp = sec.ContentSecurityPolicy.ContentSecurityPolicy;
-if ((csp.match(LOGIN_ORIGIN) ?? []).length !== 1) {
-  console.error('serve: expected one managed-login origin in the CSP of infra/site/headers-dev.json');
+// Both the prefix domain and our own name are listed while sign-in moves between them.
+if (![1, 2].includes((csp.match(LOGIN_ORIGIN) ?? []).length)) {
+  console.error('serve: expected one or two managed-login origins in the CSP of infra/site/headers-dev.json');
   process.exit(1);
 }
 const SECURITY_HEADERS = {

@@ -10,7 +10,7 @@
 #
 # It changes only the parameters AuthDomain and AuthCertArn, on the template already deployed
 # (every other parameter keeps its value), and runs the change set only if it is exactly the
-# expected one. "on" needs the issued us-east-1 certificate (infra/site/deploy.sh <stage> cert auth);
+# expected one, with no resource replaced. "on" needs the issued us-east-1 certificate (infra/site/deploy.sh <stage> cert auth);
 # afterwards the DNS stack aliases the name (infra/site/deploy.sh <stage> dns <name>). "off" moves
 # passkeys back to the Cognito prefix domain: passkeys made on the custom name stop working, users
 # keep their accounts and sign in by e-mail code. Production also needs CAPYWEB_PROD_GO=1.
@@ -31,10 +31,10 @@ if [ "${MODE#plan-}" = on ]; then
          --query "CertificateSummaryList[?DomainName=='$NAME'].CertificateArn | [0]" --output text)
   [[ $CERT == arn:aws:acm:us-east-1:* ]] || die "no issued certificate for $NAME: run infra/site/deploy.sh $STAGE cert auth"
   SET=(ParameterKey=AuthDomain,ParameterValue=$NAME ParameterKey=AuthCertArn,ParameterValue=$CERT)
-  WANT=$'Add\tUserPoolCustomDomain\nModify\tSignupCapPermission\nModify\tUserPool'
+  WANT=$'Add\tUserPoolCustomDomain\tNone\nModify\tSignupCapPermission\tConditional\nModify\tUserPool\tFalse'
 else
   SET=(ParameterKey=AuthDomain,ParameterValue= ParameterKey=AuthCertArn,ParameterValue=)
-  WANT=$'Modify\tSignupCapPermission\nModify\tUserPool\nRemove\tUserPoolCustomDomain'
+  WANT=$'Modify\tSignupCapPermission\tConditional\nModify\tUserPool\tFalse\nRemove\tUserPoolCustomDomain\tNone'
 fi
 
 # Every other parameter as it is now.
@@ -43,21 +43,25 @@ for k in $KEEP; do
   case $k in AuthDomain|AuthCertArn) ;; *) SET+=("ParameterKey=$k,UsePreviousValue=true") ;; esac
 done
 CS=auth-domain-${MODE#plan-}-$(date +%H%M%S)
-aws cloudformation create-change-set --stack-name "$ST" --change-set-name "$CS" --use-previous-template \
-  --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --parameters "${SET[@]}" >/dev/null
 drop() { aws cloudformation delete-change-set --stack-name "$ST" --change-set-name "$CS" ||
          echo "auth-domain.sh: WARN could not delete change set $CS on $ST; delete it by hand" >&2; }
+# Whatever ends this script before the execute (a refusal, an error, Ctrl-C), the change set goes.
+LEFT=1; trap '[ "$LEFT" != 1 ] || drop' EXIT
+aws cloudformation create-change-set --stack-name "$ST" --change-set-name "$CS" --use-previous-template \
+  --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --parameters "${SET[@]}" >/dev/null
 aws cloudformation wait change-set-create-complete --stack-name "$ST" --change-set-name "$CS" || {
   aws cloudformation describe-change-set --stack-name "$ST" --change-set-name "$CS" --query StatusReason --output text >&2 || true
-  drop; die "change set $CS did not build (reason above; deleted, not run)"; }
+  die "change set $CS did not build (reason above; deleted, not run)"; }
 GOT=$(aws cloudformation describe-change-set --stack-name "$ST" --change-set-name "$CS" \
-      --query 'Changes[].ResourceChange.[Action,LogicalResourceId]' --output text | sort) || {
-  drop; die "could not read change set $CS (deleted, not run)"; }
+      --query 'Changes[].ResourceChange.[Action,LogicalResourceId,Replacement]' --output text | sort) || {
+  die "could not read change set $CS (deleted, not run)"; }
 echo "change set $CS on $ST:"; echo "$GOT" | sed 's/^/  /'
-[ "$GOT" = "$WANT" ] || { drop; die "not the expected change (want: $(echo "$WANT" | tr '\n\t' '; ')); deleted, not run"; }
-case $MODE in plan-*) drop; echo "plan only: deleted, not run"; exit 0 ;; esac
+[ "$GOT" = "$WANT" ] || { die "not the expected change (want: $(echo "$WANT" | tr '\n\t' '; ')); deleted, not run"; }
+case $MODE in plan-*) echo "plan only: deleted, not run"; exit 0 ;; esac
 
+# Replacement is checked too: a Modify UserPool that replaced the pool would lose every user.
 aws cloudformation execute-change-set --stack-name "$ST" --change-set-name "$CS"
+LEFT=0   # executed: CloudFormation owns it now
 aws cloudformation wait stack-update-complete --stack-name "$ST" || die "$ST did not complete: see its events"
 aws cognito-idp get-user-pool-mfa-config --user-pool-id \
   "$(aws cloudformation describe-stacks --stack-name "$ST" --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" --output text)" \

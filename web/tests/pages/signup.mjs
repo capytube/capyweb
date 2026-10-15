@@ -10,6 +10,8 @@ const IDP = 'https://cognito-idp.ap-southeast-1.amazonaws.com';
 const CLIENT = 'testclient123';
 const CONFIG = JSON.stringify({ auth: { domain: DOMAIN, client_id: CLIENT, idp: IDP } });
 const EMAIL = 'new.user+capy@example.com';
+// An address whose earlier sign-up was never confirmed.
+const PENDING = 'half.done@example.com';
 
 export async function check({ browser, BASE }) {
   const cognito = fakeCognito(BASE);
@@ -38,6 +40,9 @@ export async function check({ browser, BASE }) {
       const cors = { 'access-control-allow-origin': BASE, 'content-type': 'application/x-amz-json-1.1' };
       if (action === 'AWSCognitoIdentityProviderService.SignUp') {
         assert.equal(body.Password, undefined, 'sign-up sends no password');
+        if (body.Username === PENDING) {
+          return route.fulfill({ status: 400, headers: cors, body: '{"__type":"UsernameExistsException","message":"exists"}' });
+        }
         assert.deepEqual(body.UserAttributes, [{ Name: 'email', Value: body.Username }]);
         return route.fulfill({ headers: cors, body: '{"UserConfirmed":false,"UserSub":"user-sub-1"}' });
       }
@@ -77,6 +82,17 @@ export async function check({ browser, BASE }) {
     await page.click('[data-testid=signup-email] button[type=submit]');
     await page.getByText('Please enter your email address.').waitFor();
     assert.equal(idp.length, 0, 'nothing sent for a malformed email');
+    // Back to the choice and forward again; an unconfirmed address gets its code again.
+    await page.click('[data-testid=signup-back]');
+    await page.locator('[data-testid=signin-choose]:not([hidden])').waitFor();
+    await page.click('[data-testid=choose-sign-up]');
+    await page.fill('#signup-email', PENDING);
+    await page.click('[data-testid=signup-email] button[type=submit]');
+    await page.locator('[data-testid=signup-code]:not([hidden])').waitFor();
+    assert.deepEqual(idp.map((c) => c.action.split('.')[1]), ['SignUp', 'ResendConfirmationCode']);
+    idp.length = 0;
+    await page.click('[data-testid=signup-change-email]');
+    await page.locator('[data-testid=signup-email]:not([hidden])').waitFor();
     await page.fill('#signup-email', ` ${EMAIL.toUpperCase()} `);
     await page.click('[data-testid=signup-email] button[type=submit]');
     await page.locator('[data-testid=signup-code]:not([hidden])').waitFor();

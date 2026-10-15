@@ -4,7 +4,7 @@
   "SecurityHeadersConfig": {
     "ContentSecurityPolicy": {
       "Override": true,
-      "ContentSecurityPolicy": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://capyapp-capyweb-prod.auth.ap-southeast-1.amazoncognito.com https://cognito-idp.ap-southeast-1.amazonaws.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+      "ContentSecurityPolicy": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://auth.capytube.xyz https://capyapp-capyweb-prod.auth.ap-southeast-1.amazoncognito.com https://cognito-idp.ap-southeast-1.amazonaws.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     },
     "StrictTransportSecurity": {
       "Override": true,
