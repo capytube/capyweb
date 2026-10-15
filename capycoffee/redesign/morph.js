@@ -28,7 +28,9 @@ window.capyMorph = (hero) => {
     slides.forEach((s, k) => { s.classList.toggle('is-active', k === i); s.setAttribute('aria-hidden', String(k !== i)); });
     thumbs.forEach((b, k) => b.setAttribute('aria-current', String(k === i)));
   };
-  const ensureImg = (i) => { const s = slides[i]; if (!s.getAttribute('src')) s.src = source(i); };
+  // hero.js gives pictures not shown yet a data: placeholder src
+  const unloaded = (img) => !img.getAttribute('src') || img.getAttribute('src').startsWith('data:');
+  const ensureImg = (i) => { const s = slides[i]; if (unloaded(s)) s.src = source(i); };
 
   const go = (next, byPerson) => {
     const to = wrap(next);
@@ -71,7 +73,7 @@ window.capyMorph = (hero) => {
     if (Math.abs(dx) > 48) go(active + (dx < 0 ? 1 : -1), true);
   });
   // Thumbnails are only shown on wide screens; their pictures load only there.
-  const loadThumbs = () => thumbs.forEach((b) => { const img = b.querySelector('img'); if (b.offsetParent && !img.getAttribute('src')) img.src = img.dataset.thumb; });
+  const loadThumbs = () => thumbs.forEach((b) => { const img = b.querySelector('img'); if (b.offsetParent && unloaded(img)) img.src = img.dataset.thumb; });
 
   // ---- WebGL ----
   const VERT = 'attribute vec2 a_position;varying vec2 v_uv;void main(){v_uv=a_position*0.5+0.5;gl_Position=vec4(a_position,0.0,1.0);}';

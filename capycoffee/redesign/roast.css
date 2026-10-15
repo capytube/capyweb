@@ -56,11 +56,11 @@ main>section:has(>#order)>div:first-child a{pointer-events:auto;background:#fff8
   .morph-thumbs{display:flex}
 }
 
-/* ---- home ticket: below the picture, phone first; the order button stays in reach while the form scrolls (z 30: above
-   the profile cards' invisible z-20 radio inputs, under the z-40 header) ---- */
+/* ---- home ticket: below the picture, phone first. The order button stays where the form ends: a floating (sticky)
+   button covered the ticket's own text while the form scrolled (Clef, 2026-10-15) ---- */
 #order{max-width:44rem;margin:40px auto 0;border-radius:6px;box-shadow:0 18px 50px -30px #23372266}
 @media (max-width:767px){#order{margin:28px 12px 0}}
-#order button[type=submit]{position:sticky;bottom:12px;z-index:30;border-radius:999px;box-shadow:0 10px 30px -12px #233722aa}
+#order button[type=submit]{border-radius:999px;box-shadow:0 10px 30px -12px #233722aa}
 
 /* ---- About and Roast pages: an edge-to-edge picture band above the page ---- */
 main:has(figure)::before,main:has([class*="aspect-[3/2]"]):not(:has(#order))::before{content:"";display:block;

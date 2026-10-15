@@ -9,6 +9,8 @@
   const PICS = /*PICS*/[];   // [name, alt] pairs, filled in by redesign-roast.sh from pictures.txt; the first is the hero
   const DIR = '/roast-family/';
   const LABEL = 'Capy Roast concept: ';
+  // Pictures not shown yet carry a 1x1 transparent GIF, so no <img> is ever without a src; morph.js swaps in the real one.
+  const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
   const el = (tag, attrs = {}, kids = []) => {
     const e = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
@@ -28,12 +30,12 @@
   const build = () => {
     const slides = PICS.map(([name, alt], i) => i === 0
       ? el('img', { class: 'morph-slide is-active', src: `${DIR}${name}-768.webp`, srcset: `${DIR}${name}-768.webp 768w, ${DIR}${name}.webp 1536w`, sizes: '100vw', alt: `${LABEL}${alt}; generated concept imagery`, width: '1536', height: '1024', fetchpriority: 'high' })
-      : el('img', { class: 'morph-slide', 'data-src': `${DIR}${name}`, alt: `${LABEL}${alt}; generated concept imagery`, width: '1536', height: '1024', decoding: 'async', 'aria-hidden': 'true' }));
+      : el('img', { class: 'morph-slide', src: BLANK, 'data-src': `${DIR}${name}`, alt: `${LABEL}${alt}; generated concept imagery`, width: '1536', height: '1024', decoding: 'async', 'aria-hidden': 'true' }));
     const stage = el('div', { class: 'morph-stage', role: 'group', 'aria-roledescription': 'carousel', 'aria-label': 'Capy Roast concept pictures', tabindex: '0' },
       [...slides, el('canvas', { class: 'morph-canvas', 'aria-hidden': 'true' })]);
     const thumbs = el('ul', { class: 'morph-thumbs' }, PICS.map(([name, alt], i) => el('li', {}, [
       el('button', { type: 'button', 'data-morph-go': String(i), 'aria-label': `Show ${LABEL}${alt}`, 'aria-current': String(i === 0) },
-        [el('img', { 'data-thumb': `${DIR}${name}-768.webp`, alt: '', width: '80', height: '50' })])])));
+        [el('img', { src: BLANK, 'data-thumb': `${DIR}${name}-768.webp`, alt: '', width: '80', height: '50' })])])));
     return el('section', { class: 'morph-hero rr-gallery', 'aria-label': 'Capy Roast concept pictures' }, [
       stage, el('div', { class: 'morph-shade', 'aria-hidden': 'true' }),
       arrow(-1, 'Previous picture', '15 18 9 12 15 6'), arrow(1, 'Next picture', '9 18 15 12 9 6'), thumbs,
