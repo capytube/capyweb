@@ -9,6 +9,8 @@
 #   infra/site/deploy.sh <stage> alarms <change-set>    the us-east-1 egress alarm stack (capy account)
 #   infra/site/deploy.sh <stage> cert                   the us-east-1 certificate; its validation
 #                                                       records go to the DNS account (capytube-dns)
+#   infra/site/deploy.sh <stage> cert auth              the same for the sign-in name (stages.json "auth"),
+#                                                       for the backend's AuthCertArn
 #   infra/site/deploy.sh <stage> dns <change-set>       the DNS stack (DNS account). For prod this is
 #                                                       the apex switch: herdr-master's go G3 only
 #   infra/site/deploy.sh <stage> prune <dist>           lists old hashed files; deletes nothing
@@ -135,8 +137,12 @@ content)
     # The stage's own sign-in settings, from the backend stack (public values).
     AUTH_DOMAIN=$(out "$BACKEND" ManagedLoginDomain); CLIENT=$(out "$BACKEND" UserPoolClientId)
     [ -n "$AUTH_DOMAIN" ] && [ "$AUTH_DOMAIN" != None ] || die "no ManagedLoginDomain in $BACKEND"
-    AUTH_DOMAIN=$AUTH_DOMAIN CLIENT=$CLIENT python3 -c 'import json, os
-print(json.dumps({"auth": {"domain": "https://" + os.environ["AUTH_DOMAIN"], "client_id": os.environ["CLIENT"]}}))' \
+    # Our own sign-up (no password) only where the pool sends e-mail codes (output SignUpApi).
+    IDP=$(out "$BACKEND" SignUpApi); [[ $IDP == https://cognito-idp.*.amazonaws.com ]] || IDP=""
+    AUTH_DOMAIN=$AUTH_DOMAIN CLIENT=$CLIENT IDP=$IDP python3 -c 'import json, os
+auth = {"domain": "https://" + os.environ["AUTH_DOMAIN"], "client_id": os.environ["CLIENT"]}
+if os.environ["IDP"]: auth["idp"] = os.environ["IDP"]
+print(json.dumps({"auth": auth}))' \
       > "$STAGED/config.json"
   fi
   # Only production is for crawlers (docs/CRAWLERS_NOTES.md), whatever robots.txt the build carries.
@@ -182,6 +188,7 @@ alarms)
   ;;
 
 cert)
+  if [ "${1:-}" = auth ]; then DOMAIN=$(cfg auth); WWW=""; fi
   CERT=$(find_cert)
   if [ -z "$CERT" ]; then
     names=("$DOMAIN"); [ -n "$WWW" ] && names+=("$WWW")
@@ -220,7 +227,10 @@ print(json.dumps({"Changes": changes}))')
 dns)
   NAME=${1:?usage: deploy.sh <stage> dns <change-set-name>}
   CDN=$(out "$SITE" CdnDomain); [[ $CDN == *.cloudfront.net ]] || die "no CdnDomain in $SITE"
-  P=$(params_file DomainName="$DOMAIN" WwwDomain="$WWW" CdnDomain="$CDN"); trap 'rm -f "$P"' EXIT
+  # The sign-in name joins once the backend has its custom domain (AuthDomainCdn); until then none.
+  AUTH_CDN=$(out "$BACKEND" AuthDomainCdn); [[ $AUTH_CDN == *.cloudfront.net ]] || AUTH_CDN=""
+  P=$(params_file DomainName="$DOMAIN" WwwDomain="$WWW" CdnDomain="$CDN" AuthDomain="$(cfg auth)" AuthCdn="$AUTH_CDN")
+  trap 'rm -f "$P"' EXIT
   change_set ap-southeast-1 "capyapp-capyweb-dns-$STAGE" "$NAME" infra/site/dns.yaml "$P" --profile capytube-dns
   ;;
 

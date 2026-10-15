@@ -25,6 +25,16 @@ Parameters:
     Default: ""
     AllowedPattern: "^(arn:aws:ses:[a-z0-9-]+:[0-9]{12}:identity/.+)?$"
     Description: Verified SES identity (domain or address) Cognito sends from. Empty = Cognito default sender, no e-mail OTP.
+  # Sign-in on our own name (hm-nuhjd): auth.<site domain>, with a us-east-1 certificate for it
+  # (infra/site/deploy.sh <stage> cert auth). Passkeys belong to this name, so it is set before
+  # anyone makes one; empty = the Cognito prefix domain only.
+  AuthDomain:
+    Type: String
+    Default: ""
+  AuthCertArn:
+    Type: String
+    Default: ""
+    AllowedPattern: "^(arn:aws:acm:us-east-1:[0-9]{12}:certificate/.+)?$"
   SesFromAddress:
     Type: String
     Default: ""
@@ -43,9 +53,17 @@ Mappings:
     dev: {Origin: "https://dev.capytube.xyz"}
     prod: {Origin: "https://capytube.xyz"}
 
+Rules:
+  AuthDomainHasCert:
+    RuleCondition: !Not [!Equals [!Ref AuthDomain, ""]]
+    Assertions:
+      - Assert: !Not [!Equals [!Ref AuthCertArn, ""]]
+        AssertDescription: AuthDomain needs AuthCertArn (infra/site/deploy.sh <stage> cert auth).
+
 Conditions:
   IsDev: !Equals [!Ref Stage, dev]
   UseSes: !Not [!Equals [!Ref SesIdentityArn, ""]]
+  HasAuthDomain: !Not [!Equals [!Ref AuthDomain, ""]]
 
 Globals:
   Function:
@@ -140,9 +158,13 @@ Resources:
           RequireNumbers: false
           RequireSymbols: false
           TemporaryPasswordValidityDays: 1
-      # Passkeys belong to the managed-login domain (UserPoolDomain below), where they are made
-      # and used; a passkey without user verification (PIN, face, finger) is still accepted.
-      WebAuthnRelyingPartyID: !Sub capyapp-capyweb-${Stage}.auth.${AWS::Region}.amazoncognito.com
+      # Passkeys belong to the managed-login domain, where they are made and used: our own name
+      # when set (Cognito requires it then), else the prefix domain. A passkey without user
+      # verification (PIN, face, finger) is still accepted.
+      WebAuthnRelyingPartyID: !If
+        - HasAuthDomain
+        - !Ref AuthDomain
+        - !Sub capyapp-capyweb-${Stage}.auth.${AWS::Region}.amazoncognito.com
       WebAuthnUserVerification: preferred
       EmailConfiguration: !If
         - UseSes
@@ -163,6 +185,17 @@ Resources:
     Properties:
       UserPoolId: !Ref UserPool
       Domain: !Sub capyapp-capyweb-${Stage}
+      ManagedLoginVersion: 2
+
+  # The same managed login on our own name. Cognito serves it from its own CloudFront
+  # distribution (output AuthDomainCdn), which the DNS stack aliases.
+  UserPoolCustomDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Condition: HasAuthDomain
+    Properties:
+      UserPoolId: !Ref UserPool
+      Domain: !Ref AuthDomain
+      CustomDomainConfig: {CertificateArn: !Ref AuthCertArn}
       ManagedLoginVersion: 2
 
   # The web app: a public client (it runs in the browser, so it cannot keep a secret).
@@ -616,7 +649,15 @@ Outputs:
     Value: !Ref UserPoolClient
   ManagedLoginDomain:
     Description: Managed login host. The web app's auth config takes it as https://<this>.
-    Value: !Sub ${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com
+    Value: !If [HasAuthDomain, !Ref AuthDomain, !Sub "${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"]
+  SignUpApi:
+    Condition: UseSes
+    Description: Cognito's API for the web app's own sign-up (no password; needs e-mail codes, so SES).
+    Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com
+  AuthDomainCdn:
+    Condition: HasAuthDomain
+    Description: The CloudFront host behind AuthDomain; the DNS stack aliases AuthDomain to it.
+    Value: !GetAtt UserPoolCustomDomain.CloudFrontDistribution
   AuthIssuer:
     Description: JWT issuer the CognitoJwt authorizer trusts.
     Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}

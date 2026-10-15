@@ -74,6 +74,21 @@ export function postForm(url, body, noCors) {
   return p;
 }
 
+// Call one Cognito user-pool API action that needs no token (SignUp, ConfirmSignUp,
+// ResendConfirmationCode). Resolves to [status, body]; status 0 on a network error.
+export function postIdp(url, action, body) {
+  return fetch(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/x-amz-json-1.1",
+      "x-amz-target": "AWSCognitoIdentityProviderService." + action,
+    },
+    body,
+  })
+    .then(async (r) => [r.status, await r.text()])
+    .catch(() => [0, ""]);
+}
+
 export function pageOrigin() {
   return location.origin;
 }

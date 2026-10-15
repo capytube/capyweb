@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 
-use crate::auth::{Auth, AuthCallback};
+use crate::auth::{Auth, AuthCallback, SignInDialog};
 use crate::components::chrome::{Footer, Header, TabBar, ToastHost};
 use crate::components::name_prompt::NamePrompt;
 use crate::pages::home::Home;
@@ -52,6 +52,7 @@ pub fn App() -> impl IntoView {
             <TabBar/>
             <ToastHost/>
             <NamePrompt/>
+            <SignInDialog/>
         </Router>
     }
 }

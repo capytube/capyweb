@@ -48,6 +48,8 @@ extern "C" {
     fn query_param(name: &str) -> Option<String>;
     #[wasm_bindgen(js_name = postForm)]
     fn post_form_js(url: &str, body: &str, no_cors: bool) -> Promise;
+    #[wasm_bindgen(js_name = postIdp)]
+    fn post_idp_js(url: &str, action: &str, body: &str) -> Promise;
 }
 
 /// localStorage: survives the tab, so a returning visitor stays signed in.
@@ -55,6 +57,10 @@ const REFRESH_KEY: &str = "capyweb.auth.refresh";
 /// sessionStorage: one redirect's PKCE verifier, state, return path and pending action.
 const FLOW_KEY: &str = "capyweb.auth.flow";
 const NAME_PROMPT_KEY: &str = "capyweb.auth.name-prompt-dismissed";
+/// sessionStorage: where to go once managed login's add-a-passkey page comes back.
+const PASSKEY_KEY: &str = "capyweb.auth.passkey-return";
+/// The pending action that sends a new account on to add a passkey after its first sign-in.
+const PASSKEY_KIND: &str = "passkey";
 
 const SESSION: bool = true;
 const LOCAL: bool = false;
@@ -87,6 +93,8 @@ struct Inner {
     timer: Option<TimeoutHandle>,
     pending: Option<PendingAction>,
     user: Option<User>,
+    /// What "Sign in" was asked for, kept while the chooser is open.
+    asked: Option<(String, Option<PendingAction>)>,
 }
 
 fn now_ms() -> u64 {
@@ -108,6 +116,8 @@ pub fn random_key() -> String {
 pub struct Auth {
     /// A pool is configured and a stored session has been tried: sign-in controls may show.
     ready: RwSignal<bool>,
+    /// The sign-in chooser (`SignInDialog`) is open.
+    pub chooser: RwSignal<bool>,
     inner: StoredValue<Inner, LocalStorage>,
     session: Session,
     toasts: Toasts,
@@ -140,6 +150,7 @@ impl Auth {
     pub fn provide(session: Session, toasts: Toasts) {
         let auth = Auth {
             ready: RwSignal::new(false),
+            chooser: RwSignal::new(false),
             inner: StoredValue::new_local(Inner::default()),
             session,
             toasts,
@@ -149,8 +160,9 @@ impl Auth {
             if auth.load_config().await.is_none() {
                 return;
             }
-            // The callback page finishes its own sign-in; resuming there would race it.
-            if !page_path().starts_with(oauth::CALLBACK_PATH)
+            // The callback page finishes its own sign-in; resuming there would race it. Back
+            // from adding a passkey it carries no code, and the stored session resumes.
+            if !(page_path().starts_with(oauth::CALLBACK_PATH) && query_param("code").is_some())
                 && store_get(LOCAL, REFRESH_KEY).is_some()
             {
                 auth.refresh().await;
@@ -177,14 +189,100 @@ impl Auth {
         self.inner.with_value(|i| i.user.clone())
     }
 
-    /// Go to managed login; come back to `return_to` (a path on this site).
+    /// Sign in or create an account, then come back to `return_to` (a path on this site). With
+    /// our own sign-up configured this opens the chooser; otherwise straight to managed login.
     pub fn sign_in(&self, return_to: &str) {
-        self.start(return_to, None);
+        self.ask(return_to, None);
     }
 
     /// Like `sign_in`, and hand `action` back to its page afterwards (`take_pending`).
     pub fn sign_in_then(&self, return_to: &str, action: PendingAction) {
-        self.start(return_to, Some(action));
+        self.ask(return_to, Some(action));
+    }
+
+    fn ask(&self, return_to: &str, pending: Option<PendingAction>) {
+        if self.can_sign_up() {
+            self.inner
+                .update_value(|i| i.asked = Some((return_to.to_owned(), pending)));
+            self.chooser.set(true);
+        } else {
+            self.start(return_to, pending, "");
+        }
+    }
+
+    /// Our own sign-up is configured (`config.json` names Cognito's API).
+    pub fn can_sign_up(&self) -> bool {
+        self.config().is_some_and(|c| c.idp.is_some())
+    }
+
+    /// The chooser's "Sign in": managed login, for what was asked.
+    pub fn continue_sign_in(&self) {
+        let (to, pending) = self
+            .inner
+            .try_update_value(|i| i.asked.take())
+            .flatten()
+            .unwrap_or_else(|| ("/".into(), None));
+        self.chooser.set(false);
+        self.start(&to, pending, "");
+    }
+
+    /// After a confirmed sign-up: managed login with the email filled in (its first sign-in is
+    /// by e-mail code), then managed login's page to add a passkey, then back.
+    pub fn sign_in_new(&self, email: &str) {
+        let to = self
+            .inner
+            .try_update_value(|i| i.asked.take())
+            .flatten()
+            .map_or_else(|| "/".into(), |a| a.0);
+        self.chooser.set(false);
+        let passkey = PendingAction {
+            kind: PASSKEY_KIND.into(),
+            data: String::new(),
+        };
+        self.start(&to, Some(passkey), email);
+    }
+
+    /// Managed login's page to add a passkey (or another one), then back to `return_to`.
+    pub fn add_passkey(&self, return_to: &str) {
+        let Some(cfg) = self.config() else { return };
+        if store_set(SESSION, PASSKEY_KEY, &oauth::safe_return_path(return_to)) {
+            go(&oauth::passkey_add_url(&cfg, &redirect_uri()));
+        }
+    }
+
+    /// One Cognito API call of our sign-up. `Err` is a sentence for the user.
+    async fn idp(
+        &self,
+        action: &str,
+        body: impl Fn(&AuthConfig) -> String,
+    ) -> Result<(), &'static str> {
+        let cfg = self.config().ok_or("Sign-up is not available here.")?;
+        let url = cfg.idp.clone().ok_or("Sign-up is not available here.")?;
+        let r = js_sys::Array::from(
+            &JsFuture::from(post_idp_js(&url, action, &body(&cfg)))
+                .await
+                .map_err(|_| "No connection. Please try again.")?,
+        );
+        match r.get(0).as_f64().unwrap_or(0.0) as u16 {
+            200 => Ok(()),
+            0 => Err("No connection. Please try again."),
+            _ => Err(oauth::idp_error(&r.get(1).as_string().unwrap_or_default())),
+        }
+    }
+
+    /// Create the account with the email only; Cognito emails a code to confirm it.
+    pub async fn sign_up(&self, email: &str) -> Result<(), &'static str> {
+        self.idp("SignUp", |c| oauth::signup_body(c, email)).await
+    }
+
+    pub async fn confirm_sign_up(&self, email: &str, code: &str) -> Result<(), &'static str> {
+        self.idp("ConfirmSignUp", |c| oauth::confirm_body(c, email, code))
+            .await
+    }
+
+    pub async fn resend_code(&self, email: &str) -> Result<(), &'static str> {
+        self.idp("ResendConfirmationCode", |c| oauth::resend_body(c, email))
+            .await
     }
 
     /// The action saved by `sign_in_then`, if it is of this kind. Taken once.
@@ -373,11 +471,12 @@ impl Auth {
         Some(cfg)
     }
 
-    fn start(&self, return_to: &str, pending: Option<PendingAction>) {
+    fn start(&self, return_to: &str, pending: Option<PendingAction>, login_hint: &str) {
         let Some(cfg) = self.config() else {
             return;
         };
         let toasts = self.toasts;
+        let hint = login_hint.to_owned();
         let flow = Flow {
             state: oauth::b64url(&random_bytes(16)),
             verifier: oauth::b64url(&random_bytes(32)),
@@ -390,11 +489,12 @@ impl Auth {
             match JsFuture::from(sha256(&flow.verifier)).await {
                 Ok(digest) if store_set(SESSION, FLOW_KEY, &flow.encode()) => {
                     let challenge = oauth::pkce_challenge(&Uint8Array::new(&digest).to_vec());
-                    go(&oauth::authorize_url(
+                    go(&oauth::authorize_url_for(
                         &cfg,
                         &redirect_uri(),
                         &challenge,
                         &flow.state,
+                        &hint,
                     ))
                 }
                 _ => toasts.show("Sign-in needs HTTPS and this site to be allowed to store data."),
@@ -447,6 +547,27 @@ pub fn AuthCallback() -> impl IntoView {
     let auth = use_auth();
     let navigate = use_navigate();
     let failed = RwSignal::new(None::<&'static str>);
+    // Back from managed login's add-a-passkey page: no code, only where to go next.
+    let passkey_return = store_get(SESSION, PASSKEY_KEY);
+    store_del(SESSION, PASSKEY_KEY);
+    if let Some(to) = passkey_return.filter(|_| query_param("code").is_none()) {
+        let to = oauth::safe_return_path(&to);
+        request_animation_frame(move || {
+            navigate(
+                &to,
+                NavigateOptions {
+                    replace: true,
+                    ..Default::default()
+                },
+            )
+        });
+        return view! {
+            <PageHead title="Signing you in"/>
+            <p class="lede" role="status" data-testid="auth-status">"One moment…"</p>
+            <A href="/">"Back to home"</A>
+        }
+        .into_any();
+    }
     // Read once and delete: a callback URL replayed later finds no flow and is refused.
     let flow = store_get(SESSION, FLOW_KEY).and_then(|s| Flow::decode(&s));
     store_del(SESSION, FLOW_KEY);
@@ -460,6 +581,8 @@ pub fn AuthCallback() -> impl IntoView {
             )
             .await
         {
+            // A new account's first sign-in goes on to add a passkey.
+            Ok(path) if auth.take_pending(PASSKEY_KIND).is_some() => auth.add_passkey(&path),
             Ok(path) => navigate(
                 &path,
                 NavigateOptions {
@@ -476,6 +599,109 @@ pub fn AuthCallback() -> impl IntoView {
             {move || failed.get().unwrap_or("One moment…")}
         </p>
         <A href="/">"Back to home"</A>
+    }
+    .into_any()
+}
+
+/// "Sign in" with our own sign-up next to it (hm-nuhjd): managed login's sign-up always asks a
+/// password, so a new account is made here with the email and a code, no password; its first
+/// sign-in is by e-mail code on managed login, which then adds a passkey.
+#[component]
+pub fn SignInDialog() -> impl IntoView {
+    use crate::components::modal::Modal;
+    let auth = use_auth();
+    // 0: choose, 1: email, 2: code
+    let step = RwSignal::new(0u8);
+    let email = RwSignal::new(String::new());
+    let code = RwSignal::new(String::new());
+    let note = RwSignal::new("");
+    let busy = RwSignal::new(false);
+    Effect::new(move |_| {
+        if auth.chooser.get() {
+            step.set(0);
+            code.set(String::new());
+            note.set("");
+        }
+    });
+    let send = move |again: bool| {
+        let e = email.get_untracked().trim().to_lowercase();
+        if !oauth::valid_email(&e) {
+            note.set("Please enter your email address.");
+            return;
+        }
+        busy.set(true);
+        note.set("");
+        spawn_local(async move {
+            let r = if again {
+                auth.resend_code(&e).await
+            } else {
+                auth.sign_up(&e).await
+            };
+            busy.set(false);
+            match r {
+                Ok(()) => {
+                    step.set(2);
+                    note.set("We sent a 6-digit code to your email.");
+                }
+                Err(m) => note.set(m),
+            }
+        });
+    };
+    let confirm = move || {
+        let e = email.get_untracked().trim().to_lowercase();
+        let c: String = code
+            .get_untracked()
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .collect();
+        if !oauth::valid_code(&c) {
+            note.set("Enter the 6-digit code from the email.");
+            return;
+        }
+        busy.set(true);
+        note.set("");
+        spawn_local(async move {
+            match auth.confirm_sign_up(&e, &c).await {
+                Ok(()) => auth.sign_in_new(&e),
+                Err(m) => {
+                    busy.set(false);
+                    note.set(m);
+                }
+            }
+        });
+    };
+    let shown = move |n: u8| move || step.get() != n;
+    view! {
+        <Modal open=auth.chooser title="Sign in or create an account" close_label="Cancel">
+            <div data-testid="signin-choose" hidden=shown(0)>
+                <p class="mb-4">"No password needed: sign in with a passkey or a code we email you."</p>
+                <div class="actions">
+                    <button type="button" class="btn" data-testid="choose-sign-in"
+                        on:click=move |_| auth.continue_sign_in()>"Sign in"</button>
+                    <button type="button" class="btn btn-ghost" data-testid="choose-sign-up"
+                        on:click=move |_| step.set(1)>"Create account"</button>
+                </div>
+            </div>
+            <form data-testid="signup-email" novalidate hidden=shown(1)
+                on:submit=move |ev| { ev.prevent_default(); send(false); }>
+                <label for="signup-email">"Email address"</label>
+                <input id="signup-email" type="email" autocomplete="email"
+                    prop:value=email on:input=move |ev| email.set(event_target_value(&ev))/>
+                <button type="submit" class="btn mt-2" disabled=busy>"Send code"</button>
+            </form>
+            <form data-testid="signup-code" hidden=shown(2)
+                on:submit=move |ev| { ev.prevent_default(); confirm(); }>
+                <label for="signup-code">"Code"</label>
+                <input id="signup-code" inputmode="numeric" autocomplete="one-time-code" maxlength="8"
+                    prop:value=code on:input=move |ev| code.set(event_target_value(&ev))/>
+                <div class="actions mt-2">
+                    <button type="submit" class="btn" disabled=busy>"Confirm"</button>
+                    <button type="button" class="btn btn-ghost" disabled=busy
+                        on:click=move |_| send(true)>"Send a new code"</button>
+                </div>
+            </form>
+            <p role="status" data-testid="signup-note">{move || note.get()}</p>
+        </Modal>
     }
 }
 

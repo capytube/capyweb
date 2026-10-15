@@ -48,6 +48,15 @@ pub fn Profile() -> impl IntoView {
             })}
         </div>
         {move || signed_in().then(signed_in_view)}
+        // Passkeys live on managed login; this sends the user there and back.
+        {move || (signed_in() && auth.can_sign_up()).then(|| view! {
+            <section class="mt-6" aria-labelledby="profile-passkey">
+                <h2 id="profile-passkey">"Passkey"</h2>
+                <p class="mb-2">"Sign in with your face, fingerprint or screen lock instead of an email code."</p>
+                <button type="button" class="btn btn-ghost" data-testid="add-passkey"
+                    on:click=move |_| auth.add_passkey("/profile")>"Add a passkey"</button>
+            </section>
+        })}
     }
 }
 

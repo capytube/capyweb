@@ -69,6 +69,10 @@ pub struct AuthConfig {
     /// `https://<host>`, no path, no trailing slash.
     pub domain: String,
     pub client_id: String,
+    /// Cognito's API, `https://cognito-idp.<region>.amazonaws.com`, for our own sign-up page
+    /// (hm-nuhjd: managed login's sign-up always asks a password). `None`: sign-up is left to
+    /// managed login.
+    pub idp: Option<String>,
 }
 
 /// `{"auth": {"domain": "https://…", "client_id": "…"}}`. Anything else, including
@@ -91,26 +95,124 @@ pub fn parse_config(json: &str) -> Option<AuthConfig> {
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'-'));
     let id_ok = (1..=128).contains(&client_id.len())
         && client_id.bytes().all(|b| b.is_ascii_alphanumeric());
+    // Only Cognito's own regional endpoint, so a tampered file cannot send an email elsewhere.
+    let idp = auth
+        .get("idp")
+        .and_then(Value::as_str)
+        .filter(|u| {
+            u.strip_prefix("https://cognito-idp.")
+                .and_then(|r| r.strip_suffix(".amazonaws.com"))
+                .is_some_and(|r| {
+                    (2..=32).contains(&r.len())
+                        && r.bytes()
+                            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+                })
+        })
+        .map(str::to_owned);
     (host_ok && id_ok).then(|| AuthConfig {
         domain: ["https://", host].concat(),
         client_id: client_id.to_owned(),
+        idp,
     })
 }
 
 pub fn authorize_url(c: &AuthConfig, redirect_uri: &str, challenge: &str, state: &str) -> String {
+    authorize_url_for(c, redirect_uri, challenge, state, "")
+}
+
+/// `authorize_url` with the email filled in on managed login (`login_hint`), when not empty.
+pub fn authorize_url_for(
+    c: &AuthConfig,
+    redirect_uri: &str,
+    challenge: &str,
+    state: &str,
+    login_hint: &str,
+) -> String {
+    let mut pairs = vec![
+        ("response_type", "code"),
+        ("client_id", c.client_id.as_str()),
+        ("redirect_uri", redirect_uri),
+        ("scope", "openid email"),
+        ("code_challenge_method", "S256"),
+        ("code_challenge", challenge),
+        ("state", state),
+    ];
+    if !login_hint.is_empty() {
+        pairs.push(("login_hint", login_hint));
+    }
+    at(c, "/oauth2/authorize?", &pairs)
+}
+
+/// Managed login's page that adds a passkey to the signed-in user; it returns to `redirect_uri`
+/// (one of the client's callback URLs) with no code.
+pub fn passkey_add_url(c: &AuthConfig, redirect_uri: &str) -> String {
     at(
         c,
-        "/oauth2/authorize?",
-        &[
-            ("response_type", "code"),
-            ("client_id", &c.client_id),
-            ("redirect_uri", redirect_uri),
-            ("scope", "openid email"),
-            ("code_challenge_method", "S256"),
-            ("code_challenge", challenge),
-            ("state", state),
-        ],
+        "/passkeys/add?",
+        &[("client_id", &c.client_id), ("redirect_uri", redirect_uri)],
     )
+}
+
+/// A plausible email address: what Cognito would accept as a user name here, checked before
+/// any request so a typo gets a plain answer.
+pub fn valid_email(e: &str) -> bool {
+    let Some((local, host)) = e.split_once('@') else {
+        return false;
+    };
+    (3..=254).contains(&e.len())
+        && !local.is_empty()
+        && host.contains('.')
+        && !host.starts_with('.')
+        && !host.ends_with('.')
+        && !e.contains(char::is_whitespace)
+        && !host.contains('@')
+}
+
+/// A confirmation code as Cognito sends it: 6 digits (spaces typed around it are dropped first).
+pub fn valid_code(c: &str) -> bool {
+    c.len() == 6 && c.bytes().all(|b| b.is_ascii_digit())
+}
+
+/// `SignUp` with the email only: no password, which a pool with e-mail codes allows.
+pub fn signup_body(c: &AuthConfig, email: &str) -> String {
+    serde_json::json!({
+        "ClientId": c.client_id,
+        "Username": email,
+        "UserAttributes": [{"Name": "email", "Value": email}],
+    })
+    .to_string()
+}
+
+/// `ConfirmSignUp`: the code from the email proves the address and confirms the account.
+pub fn confirm_body(c: &AuthConfig, email: &str, code: &str) -> String {
+    serde_json::json!({"ClientId": c.client_id, "Username": email, "ConfirmationCode": code})
+        .to_string()
+}
+
+/// `ResendConfirmationCode`.
+pub fn resend_body(c: &AuthConfig, email: &str) -> String {
+    serde_json::json!({"ClientId": c.client_id, "Username": email}).to_string()
+}
+
+/// One plain sentence for a refused Cognito API call, from its `__type`.
+pub fn idp_error(body: &str) -> &'static str {
+    let kind = serde_json::from_str::<Value>(body)
+        .ok()
+        .and_then(|v| text(&v, "__type"))
+        .unwrap_or_default();
+    match kind.rsplit('#').next().unwrap_or_default() {
+        "UsernameExistsException" => "This email already has an account. Sign in instead.",
+        "CodeMismatchException" => "That code is not right. Check the email and try again.",
+        "ExpiredCodeException" => "That code has expired. Send a new one.",
+        "InvalidParameterException" => "Please check the email address.",
+        "LimitExceededException"
+        | "TooManyRequestsException"
+        | "TooManyFailedAttemptsException" => "Too many tries. Please wait a few minutes.",
+        // The sign-up cap (PreSignUp) refused it.
+        "UserLambdaValidationException" => "Sign-ups are paused for now. Please try again later.",
+        "NotAuthorizedException" => "This account is already confirmed. Sign in instead.",
+        _ => "Something went wrong. Please try again.",
+    }
 }
 
 pub fn token_url(c: &AuthConfig) -> String {
@@ -440,6 +542,78 @@ mod tests {
             r#"{"auth":{"domain":"https://capyapp-capyweb-dev.auth.ap-southeast-1.amazoncognito.com/","client_id":"abc123"}}"#,
         )
         .unwrap()
+    }
+
+    #[test]
+    fn idp_only_cognito() {
+        let with = |idp: &str| {
+            parse_config(&format!(
+                r#"{{"auth":{{"domain":"https://auth.dev.capytube.xyz","client_id":"abc123","idp":"{idp}"}}}}"#
+            ))
+            .unwrap()
+            .idp
+        };
+        assert_eq!(cfg().idp, None);
+        assert_eq!(
+            with("https://cognito-idp.ap-southeast-1.amazonaws.com").as_deref(),
+            Some("https://cognito-idp.ap-southeast-1.amazonaws.com")
+        );
+        for bad in [
+            "http://cognito-idp.ap-southeast-1.amazonaws.com",
+            "https://cognito-idp.ap-southeast-1.amazonaws.com.evil.com",
+            "https://cognito-idp.evil.com/.amazonaws.com",
+            "https://cognito-idp..amazonaws.com",
+            "https://evil.com",
+        ] {
+            assert_eq!(with(bad), None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn signup_requests() {
+        let c = cfg();
+        let v: Value = serde_json::from_str(&signup_body(&c, "a@b.co")).unwrap();
+        assert_eq!(v["ClientId"], "abc123");
+        assert_eq!(v["Username"], "a@b.co");
+        assert_eq!(v["UserAttributes"][0]["Value"], "a@b.co");
+        assert!(v.get("Password").is_none(), "no password");
+        let v: Value = serde_json::from_str(&confirm_body(&c, "a@b.co", "123456")).unwrap();
+        assert_eq!(v["ConfirmationCode"], "123456");
+        assert!(valid_email("nok@example.com"));
+        for bad in [
+            "", "a@b", "@b.co", "a b@c.co", "a@.co", "a@b.co.", "a@b@c.co",
+        ] {
+            assert!(!valid_email(bad), "{bad}");
+        }
+        assert!(valid_code("012345"));
+        assert!(!valid_code("12345") && !valid_code("12345a"));
+        assert_eq!(
+            idp_error(r#"{"__type":"CodeMismatchException","message":"x"}"#),
+            "That code is not right. Check the email and try again."
+        );
+        assert_eq!(
+            idp_error(r#"{"__type":"com.amazonaws#UsernameExistsException"}"#),
+            "This email already has an account. Sign in instead."
+        );
+        assert_eq!(
+            idp_error("<html>"),
+            "Something went wrong. Please try again."
+        );
+    }
+
+    #[test]
+    fn hint_and_passkey_urls() {
+        let c = cfg();
+        let d = &c.domain;
+        assert!(
+            authorize_url_for(&c, "https://x.y/auth/callback", "ch", "st", "a+b@c.co")
+                .ends_with("&state=st&login_hint=a%2Bb%40c.co")
+        );
+        assert!(!authorize_url(&c, "https://x.y/auth/callback", "ch", "st").contains("login_hint"));
+        assert_eq!(
+            passkey_add_url(&c, "https://x.y/auth/callback"),
+            format!("{d}/passkeys/add?client_id=abc123&redirect_uri=https%3A%2F%2Fx.y%2Fauth%2Fcallback")
+        );
     }
 
     #[test]
