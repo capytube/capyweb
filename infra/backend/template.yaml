@@ -129,9 +129,10 @@ Resources:
       Policies:
         # Cognito refuses a sign-in policy without PASSWORD ("Password should be configured as
         # one of the allowed first auth factors"), so it stays listed; with SES, managed login
-        # offers the e-mail code first and users can sign up without a password.
+        # offers the e-mail code first and users can sign up without a password. A passkey
+        # (WEB_AUTHN) is added after the first sign-in and needs no SES (hm-nuhjd, nic 2590).
         SignInPolicy:
-          AllowedFirstAuthFactors: !If [UseSes, [PASSWORD, EMAIL_OTP], [PASSWORD]]
+          AllowedFirstAuthFactors: !If [UseSes, [PASSWORD, EMAIL_OTP, WEB_AUTHN], [PASSWORD, WEB_AUTHN]]
         PasswordPolicy:
           MinimumLength: 12
           RequireLowercase: false
@@ -139,6 +140,10 @@ Resources:
           RequireNumbers: false
           RequireSymbols: false
           TemporaryPasswordValidityDays: 1
+      # Passkeys belong to the managed-login domain (UserPoolDomain below), where they are made
+      # and used; a passkey without user verification (PIN, face, finger) is still accepted.
+      WebAuthnRelyingPartyID: !Sub capyapp-capyweb-${Stage}.auth.${AWS::Region}.amazoncognito.com
+      WebAuthnUserVerification: preferred
       EmailConfiguration: !If
         - UseSes
         - {EmailSendingAccount: DEVELOPER, SourceArn: !Ref SesIdentityArn, From: !Ref SesFromAddress}
