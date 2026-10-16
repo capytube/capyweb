@@ -269,13 +269,90 @@ fn Gang() -> impl IntoView {
                     Ok(page) if page.items.is_empty() => view! { <p class="notice" role="status">"The gang will be here soon."</p> }.into_any(),
                     Ok(page) => view! {
                         <ul class="home-cast-grid" data-testid="gang-list">
-                            {page.items.into_iter().map(|capy| view! { <CapyCard capy/> }).collect_view()}
+                            {page.items.iter().cloned().map(|capy| view! { <CapyCard capy/> }).collect_view()}
                         </ul>
+                        <GangDay capybaras=page.items/>
                     }.into_any(),
                 })}
             </Suspense>
         </section>
     }
+}
+
+/// When each capybara is awake, hour by hour (after 21st.dev's contribution-skyline): a flat strip
+/// that, on "3D", tilts into an isometric skyline whose awake hours rise as towers. Real data: the
+/// capybaras' own awake hours. The text equivalent is the list of hours in the label.
+#[component]
+fn GangDay(capybaras: Vec<crate::domain::Capybara>) -> impl IntoView {
+    let three_d = RwSignal::new(false);
+    let rows: Vec<(String, Vec<bool>, String)> = capybaras
+        .into_iter()
+        .filter_map(|c| {
+            let (from, to) = (
+                hour(c.awake_from.as_deref()?)?,
+                hour(c.awake_to.as_deref()?)?,
+            );
+            let awake = (0..24)
+                .map(|h| {
+                    if from <= to {
+                        h >= from && h < to
+                    } else {
+                        h >= from || h < to
+                    }
+                })
+                .collect();
+            Some((
+                c.name.clone(),
+                awake,
+                format!("{} is awake {from}:00 to {to}:00", c.name),
+            ))
+        })
+        .collect();
+    if rows.is_empty() {
+        return ().into_any();
+    }
+    let legend = format!(
+        "Rows, back to front: {}",
+        rows.iter()
+            .map(|r| r.0.clone())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    let label = "When the gang is awake: ".to_string()
+        + &rows
+            .iter()
+            .map(|r| r.2.clone())
+            .collect::<Vec<_>>()
+            .join("; ");
+    view! {
+        <div class="gang-day" class:is-3d=move || three_d.get() data-testid="gang-day">
+            <div class="gang-day-head">
+                <h3>"The gang's day"</h3>
+                // A toggle button: its name stays "3D view", aria-pressed says whether it is on.
+                <button type="button" class="btn btn-ghost btn-small gang-day-toggle" aria-pressed=move || three_d.get().to_string()
+                    aria-controls="gang-day-chart" on:click=move |_| three_d.update(|v| *v = !*v)>
+                    "3D view"
+                </button>
+            </div>
+            <div class="gang-day-stage" id="gang-day-chart" role="img" aria-label=label>
+                <div class="gang-day-grid">
+                    {rows.into_iter().map(|(name, awake, _)| view! {
+                        <p class="gang-day-name" aria-hidden="true">{name.clone()}</p>
+                        {awake.into_iter().enumerate().map(|(h, on)| view! {
+                            <i class=format!("h{h}") class:on=on title=format!("{name}, {h}:00")></i>
+                        }).collect_view()}
+                    }).collect_view()}
+                </div>
+            </div>
+            <p class="gang-day-legend" aria-hidden="true">{legend}</p>
+            <p class="gang-day-axis" aria-hidden="true"><span>"0:00"</span><span>"12:00"</span><span>"23:00"</span></p>
+        </div>
+    }
+    .into_any()
+}
+
+fn hour(t: &str) -> Option<u32> {
+    t.split(':').next()?.parse().ok().filter(|h: &u32| *h < 24)
 }
 
 #[component]

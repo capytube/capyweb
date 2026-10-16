@@ -1,0 +1,74 @@
+/* The gang's day (preview of the animation proposal, after 21st.dev contribution-skyline, MIT):
+   a flat strip of hours that tilts into an isometric skyline on "3D view". CSS only. */
+@property --tower { syntax: "<length>"; inherits: true; initial-value: 0px; }
+.gang-day { margin-top: 2rem; padding: 1.25rem; border: 2px solid var(--choco-brown); border-radius: 20px; background: var(--babycorn-yellow); }
+.gang-day-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.gang-day-toggle[aria-pressed="true"] { background: var(--choco-brown); color: white; }
+.gang-day-head h3 { font-family: var(--font-display); font-size: 1.6rem; color: var(--choco-brown); }
+.gang-day-stage { perspective: 900px; padding: 1.25rem 0 .5rem; overflow: hidden; }
+.gang-day-grid {
+  display: grid;
+  grid-template-columns: 4.6rem repeat(24, minmax(0, 1fr));
+  gap: 3px;
+  align-items: center;
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(.65, 0, .35, 1);
+}
+.gang-day-name { font-family: var(--font-ui); font-size: .85rem; color: var(--choco-brown); transition: opacity .4s; }
+.gang-day.is-3d .gang-day-name { opacity: 0; }
+.gang-day-legend { height: 0; overflow: hidden; opacity: 0; font-size: .8rem; color: var(--choco-brown); transition: opacity .4s .5s; }
+.gang-day.is-3d .gang-day-legend { height: auto; opacity: 1; }
+.gang-day-grid i {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: rgba(61, 36, 36, .1);
+  transform-style: preserve-3d;
+  transform: translateZ(var(--tower));
+  transition: --tower 700ms cubic-bezier(.65, 0, .35, 1), background-color 300ms;
+}
+.gang-day-grid i:not(.on) { --tower: 0px; }
+.gang-day-grid i.on { background: var(--leaf-green); }
+.gang-day-grid i.on:hover { background: #4d8a2c; }
+.gang-day.is-3d { --tower: clamp(16px, 4vw, 34px); }
+.gang-day.is-3d .gang-day-grid { transform: rotateX(56deg) rotateZ(-28deg) scale(.86); }
+@media (max-width: 700px) {
+  .gang-day.is-3d { --tower: 30px; }
+  .gang-day.is-3d .gang-day-stage { padding: 3.5rem 0 2.5rem; }
+  .gang-day.is-3d .gang-day-grid { transform: rotateX(56deg) rotateZ(-28deg) scale(1.3); }
+  .gang-day-stage { transition: padding 900ms cubic-bezier(.65, 0, .35, 1); }
+  .gang-day-grid { grid-template-columns: 3.8rem repeat(24, minmax(0, 1fr)); gap: 2px; }
+  .gang-day-axis { margin-left: 3.8rem; }
+}
+/* The tower's two visible sides hang from the raised top down to the floor. */
+.gang-day-grid i.on::before, .gang-day-grid i.on::after { content: ""; position: absolute; }
+.gang-day-grid i.on::before { left: 0; right: 0; top: 100%; height: var(--tower); background: #2c5019; transform-origin: top; transform: rotateX(-90deg); }
+.gang-day-grid i.on::after { top: 0; bottom: 0; left: 100%; width: var(--tower); background: #213c13; transform-origin: left; transform: rotateY(90deg); }
+.gang-day i.h1 { transition-delay: 22ms; }
+.gang-day i.h2 { transition-delay: 44ms; }
+.gang-day i.h3 { transition-delay: 66ms; }
+.gang-day i.h4 { transition-delay: 88ms; }
+.gang-day i.h5 { transition-delay: 110ms; }
+.gang-day i.h6 { transition-delay: 132ms; }
+.gang-day i.h7 { transition-delay: 154ms; }
+.gang-day i.h8 { transition-delay: 176ms; }
+.gang-day i.h9 { transition-delay: 198ms; }
+.gang-day i.h10 { transition-delay: 220ms; }
+.gang-day i.h11 { transition-delay: 242ms; }
+.gang-day i.h12 { transition-delay: 264ms; }
+.gang-day i.h13 { transition-delay: 286ms; }
+.gang-day i.h14 { transition-delay: 308ms; }
+.gang-day i.h15 { transition-delay: 330ms; }
+.gang-day i.h16 { transition-delay: 352ms; }
+.gang-day i.h17 { transition-delay: 374ms; }
+.gang-day i.h18 { transition-delay: 396ms; }
+.gang-day i.h19 { transition-delay: 418ms; }
+.gang-day i.h20 { transition-delay: 440ms; }
+.gang-day i.h21 { transition-delay: 462ms; }
+.gang-day i.h22 { transition-delay: 484ms; }
+.gang-day i.h23 { transition-delay: 506ms; }
+.gang-day-axis { display: flex; justify-content: space-between; margin-left: 4.6rem; font-size: .75rem; color: var(--choco-brown); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gang-day-grid, .gang-day-grid i, .gang-day-stage { transition: none; }
+}
