@@ -20,6 +20,27 @@ pub fn access_badge(s: &LiveStream) -> impl IntoView {
     }
 }
 
+/// The camera cards' pointer light (a port of Aceternity's MIT "Card Spotlight", hm-f78ea): one
+/// listener on the list writes the pointer's place on the card under it as two CSS variables;
+/// home.css draws the light. Mouse only: touch gets a sweep as the card scrolls in.
+fn spotlight(ev: leptos::ev::PointerEvent) {
+    use wasm_bindgen::JsCast;
+    if ev.pointer_type() != "mouse" {
+        return;
+    }
+    let card = ev
+        .target()
+        .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
+        .and_then(|e| e.closest(".cam-card").ok().flatten())
+        .and_then(|e| e.dyn_into::<web_sys::HtmlElement>().ok());
+    if let Some(card) = card {
+        let r = card.get_bounding_client_rect();
+        let style = card.style();
+        let _ = style.set_property("--mx", &format!("{:.0}px", ev.client_x() as f64 - r.left()));
+        let _ = style.set_property("--my", &format!("{:.0}px", ev.client_y() as f64 - r.top()));
+    }
+}
+
 /// Where a camera card links: the watch room of the camera's first capybara.
 pub fn watch_href(s: &LiveStream) -> String {
     match s.capybara_ids.first() {
@@ -60,23 +81,31 @@ pub fn Home() -> impl IntoView {
                         <p role="status">"No cameras are available right now."</p>
                     }.into_any(),
                     Ok(page) => view! {
-                        <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="stream-list">
+                        <ul class="cam-list grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="stream-list"
+                            on:pointermove=spotlight>
                             {page.items.into_iter().map(|s| {
+                                let live = !s.is_recording() && s.is_live.unwrap_or(false);
                                 let line = if s.is_recording() {
                                     "Recorded"
-                                } else if s.is_live.unwrap_or(false) {
+                                } else if live {
                                     "Live now"
                                 } else {
                                     "Resting. Showing the reel."
                                 };
                                 view! {
-                                    <li class="card">
+                                    <li class="card cam-card">
                                         <A href=watch_href(&s) attr:class="block no-underline">
                                             <div class="flex flex-wrap items-center justify-between gap-2">
                                                 <span class="font-dynapuff text-lg">{s.title.clone()}</span>
                                                 {access_badge(&s)}
                                             </div>
-                                            <p class="text-sm mt-1" data-testid="stream-state">{line}</p>
+                                            <p class="text-sm mt-1" data-testid="stream-state">
+                                                {if live {
+                                                    view! { <span class="live-badge"><span class="live-dot" aria-hidden="true"></span>{line}</span> }.into_any()
+                                                } else {
+                                                    line.into_any()
+                                                }}
+                                            </p>
                                         </A>
                                     </li>
                                 }
