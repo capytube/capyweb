@@ -56,7 +56,15 @@ extern "C" {
 const REFRESH_KEY: &str = "capyweb.auth.refresh";
 /// sessionStorage: one redirect's PKCE verifier, state, return path and pending action.
 const FLOW_KEY: &str = "capyweb.auth.flow";
+/// sessionStorage: the name prompt stood aside for another dialog; a new sign-in may ask again.
 const NAME_PROMPT_KEY: &str = "capyweb.auth.name-prompt-dismissed";
+/// localStorage, per account (`<key>.<sub>`): "Later" on the name prompt, so no sign-in on this
+/// device asks again (the profile page still sets a name).
+const NAME_LATER_KEY: &str = "capyweb.auth.name-later";
+/// localStorage, per account: the passkey offer was answered here (added, or "Not now").
+const PASSKEY_OFFERED_KEY: &str = "capyweb.auth.passkey-offered";
+/// sessionStorage: a sign-in just finished that should offer a passkey on the next page.
+const PASSKEY_OFFER_KEY: &str = "capyweb.auth.passkey-offer";
 /// sessionStorage: where to go once managed login's add-a-passkey page comes back.
 const PASSKEY_KEY: &str = "capyweb.auth.passkey-return";
 /// The pending action that sends a new account on to add a passkey after its first sign-in.
@@ -65,12 +73,19 @@ const PASSKEY_KIND: &str = "passkey";
 const SESSION: bool = true;
 const LOCAL: bool = false;
 
-pub fn name_prompt_dismissed() -> bool {
-    store_get(SESSION, NAME_PROMPT_KEY).is_some()
+pub fn name_prompt_dismissed(auth: Auth) -> bool {
+    store_get(SESSION, NAME_PROMPT_KEY).is_some() || auth.remembered(NAME_LATER_KEY)
 }
 
-pub fn dismiss_name_prompt() {
+/// The prompt stood aside for another dialog: not again in this tab until a new sign-in.
+pub fn skip_name_prompt() {
     store_set(SESSION, NAME_PROMPT_KEY, "1");
+}
+
+/// "Later" (or Escape): this account is not asked again on this device.
+pub fn dismiss_name_prompt(auth: Auth) {
+    skip_name_prompt();
+    auth.remember(NAME_LATER_KEY);
 }
 
 /// The signed-in user, from the ID token. For display only: the API trusts the JWT, not this.
@@ -242,9 +257,51 @@ impl Auth {
         self.start(&to, Some(passkey), email);
     }
 
+    /// A per-account flag kept on this device (`key.<sub>`), in localStorage, or for this tab
+    /// when localStorage is blocked.
+    fn remembered(&self, key: &str) -> bool {
+        self.user_key(key)
+            .is_some_and(|k| store_get(LOCAL, &k).is_some() || store_get(SESSION, &k).is_some())
+    }
+
+    fn remember(&self, key: &str) {
+        if let Some(k) = self.user_key(key) {
+            if !store_set(LOCAL, &k, "1") {
+                store_set(SESSION, &k, "1");
+            }
+        }
+    }
+
+    fn user_key(&self, key: &str) -> Option<String> {
+        self.inner
+            .with_value(|i| i.user.as_ref().map(|u| format!("{key}.{}", u.sub)))
+    }
+
+    /// Signed in now, without tracking.
+    pub fn signed_in_now(&self) -> bool {
+        self.signed_in_untracked()
+    }
+
+    /// A sign-in just finished and this account has not answered the passkey offer on this
+    /// device: true once (the flag is taken).
+    pub fn take_passkey_offer(&self) -> bool {
+        let pending = store_get(SESSION, PASSKEY_OFFER_KEY).is_some();
+        store_del(SESSION, PASSKEY_OFFER_KEY);
+        pending
+            && self.signed_in_untracked()
+            && self.can_sign_up()
+            && !self.remembered(PASSKEY_OFFERED_KEY)
+    }
+
+    /// "Not now" on the passkey offer: not offered again on this device.
+    pub fn decline_passkey(&self) {
+        self.remember(PASSKEY_OFFERED_KEY);
+    }
+
     /// Managed login's page to add a passkey (or another one), then back to `return_to`.
     pub fn add_passkey(&self, return_to: &str) {
         let Some(cfg) = self.config() else { return };
+        self.remember(PASSKEY_OFFERED_KEY);
         if store_set(SESSION, PASSKEY_KEY, &oauth::safe_return_path(return_to)) {
             go(&oauth::passkey_add_url(&cfg, &redirect_uri()));
         }
@@ -583,13 +640,17 @@ pub fn AuthCallback() -> impl IntoView {
         {
             // A new account's first sign-in goes on to add a passkey.
             Ok(path) if auth.take_pending(PASSKEY_KIND).is_some() => auth.add_passkey(&path),
-            Ok(path) => navigate(
-                &path,
-                NavigateOptions {
-                    replace: true,
-                    ..Default::default()
-                },
-            ),
+            Ok(path) => {
+                // Any other sign-in offers a passkey once per account and device (PasskeyOffer).
+                store_set(SESSION, PASSKEY_OFFER_KEY, "1");
+                navigate(
+                    &path,
+                    NavigateOptions {
+                        replace: true,
+                        ..Default::default()
+                    },
+                );
+            }
             Err(e) => failed.set(Some(e.message())),
         }
     });

@@ -58,19 +58,53 @@ export async function check({ browser, BASE }) {
       throw new Error(`unexpected action ${action}`);
     }));
     const page = await context.newPage();
+    const authorizeBefore = cognito.log.authorize.length;
 
     // -- "Sign in" opens the chooser; its "Sign in" is plain managed login, no hint ----------------
     await page.goto(`${BASE}/shop`);
     await page.click('[data-testid=sign-in]');
     await page.locator('[data-testid=signin-choose]').waitFor();
-    assert.equal(cognito.log.authorize.length, width === 390 ? 0 : 1, 'the chooser opens before any redirect');
+    assert.equal(cognito.log.authorize.length, authorizeBefore, 'the chooser opens before any redirect');
     if (width === 390) {
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'no horizontal scroll with the chooser at 390px');
       await page.click('[data-testid=choose-sign-in]');
       await page.waitForURL(`${BASE}/shop`);
       await page.locator('[data-testid=sign-out]').waitFor();
       assert.equal(cognito.log.authorize.at(-1).login_hint, undefined);
-      assert.equal(passkeys.length, 0, 'a plain sign-in does not ask for a passkey');
+      assert.equal(passkeys.length, 0, 'a plain sign-in does not go to the add-a-passkey page by itself');
+      // ...it offers one, once per account and device: "Add a passkey" goes there and back here.
+      const offer = page.locator('#passkey-offer[open]');
+      await offer.waitFor();
+      assert.equal(await offer.getByRole('heading').innerText(), 'Sign in faster next time');
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'the offer fits a phone');
+      await offer.locator('[data-testid=passkey-offer-add]').click();
+      for (let t = 0; passkeys.length === 0; t += 1) {
+        assert.ok(t < 300, 'the add-a-passkey page within 30 s');
+        await page.waitForTimeout(100);
+      }
+      await page.waitForURL(`${BASE}/shop`);
+      await page.locator('[data-testid=sign-out]').waitFor();
+      assert.deepEqual(passkeys, [{ client_id: CLIENT, redirect_uri: `${BASE}/auth/callback` }]);
+      const plainSignIn = async () => {
+        await page.click('[data-testid=sign-out]');
+        await page.locator('[data-testid=sign-in]').waitFor();
+        await page.click('[data-testid=sign-in]');
+        await page.click('[data-testid=choose-sign-in]');
+        await page.locator('[data-testid=sign-out]').waitFor();
+        await page.waitForTimeout(500);
+      };
+      await plainSignIn();
+      assert.equal(await offer.count(), 0, 'not offered again once a passkey was added here');
+      // Another account on this device (its flag cleared): "Not now" is remembered too.
+      await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('capyweb.auth.passkey-offered.')).forEach((k) => localStorage.removeItem(k)));
+      await plainSignIn();
+      await offer.waitFor();
+      await offer.getByRole('button', { name: 'Not now', exact: true }).click();
+      await offer.waitFor({ state: 'detached' });
+      await plainSignIn();
+      assert.equal(await offer.count(), 0, '"Not now": not offered again on this device');
+      assert.equal(passkeys.length, 1, '"Not now" opens no passkey page');
+      passkeys.length = 0;
       await context.close();
       assert.deepEqual(errors, []);
       continue;
@@ -116,6 +150,8 @@ export async function check({ browser, BASE }) {
     assert.deepEqual(passkeys, [{ client_id: CLIENT, redirect_uri: `${BASE}/auth/callback` }], 'then the add-a-passkey page, once');
     assert.equal(await page.evaluate(() => location.search), '');
     assert.deepEqual(idp.map((c) => c.action.split('.')[1]), ['SignUp', 'ResendConfirmationCode', 'ConfirmSignUp', 'ConfirmSignUp']);
+    await page.waitForTimeout(500);
+    assert.equal(await page.locator('#passkey-offer[open]').count(), 0, 'after sign-up and its passkey page, no offer on top');
 
     // -- signed in: the profile page offers another passkey and comes back to itself --------------
     await page.goto(`${BASE}/profile`);

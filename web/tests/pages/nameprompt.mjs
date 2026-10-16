@@ -107,7 +107,7 @@ export async function check({ browser, BASE, settle, SHOTS }) {
     await finish();
   }
 
-  // Either dismissal survives a reload, and a fresh sign-in gets another chance to ask.
+  // Either dismissal survives a reload and a new sign-in on this device (hm-nuhjd: it kept coming back).
   for (const close of ['Later', 'Escape']) {
     const { page, api, finish } = await setup(browser, BASE, null);
     await page.goto(`${BASE}/`);
@@ -126,7 +126,11 @@ export async function check({ browser, BASE, settle, SHOTS }) {
     await page.locator('[data-testid=sign-in]').waitFor();
     assert.equal(await prompt(page).count(), 0, 'sign-out clears the prompt');
     await signIn(page, BASE);
-    await prompt(page).waitFor();
+    await page.waitForFunction(() => document.querySelector('.coin-pill')?.textContent.includes('50'));
+    await settle();
+    assert.equal(await prompt(page).count(), 0, `${close}: a new sign-in on this device does not ask again`);
+    await page.locator('.coin-pill').click();
+    await page.getByText('Pick a name others will see.', { exact: true }).waitFor();
     await finish();
   }
 

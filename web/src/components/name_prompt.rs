@@ -1,4 +1,5 @@
-//! Ask once per sign-in, leaving an existing dialog in charge of the page.
+//! Ask once per sign-in, leaving an existing dialog in charge of the page (the passkey offer is
+//! waited for). "Later" or Escape is remembered for the account on this device.
 
 use std::time::Duration;
 
@@ -8,8 +9,8 @@ use leptos_router::hooks::use_location;
 
 use crate::{
     api,
-    auth::{dismiss_name_prompt, name_prompt_dismissed, use_auth},
-    components::modal::Modal,
+    auth::{dismiss_name_prompt, name_prompt_dismissed, skip_name_prompt, use_auth},
+    components::modal::{after_open_dialog, Modal},
     display_name::{name_error, validate_name},
     oauth::CALLBACK_PATH,
     state::{use_session, use_toasts},
@@ -39,7 +40,7 @@ pub fn NamePrompt() -> impl IntoView {
         }
         if location.pathname.get().starts_with(CALLBACK_PATH)
             || attempted.get_value()
-            || name_prompt_dismissed()
+            || name_prompt_dismissed(auth)
         {
             return;
         }
@@ -53,18 +54,22 @@ pub fn NamePrompt() -> impl IntoView {
                 {
                     return;
                 }
-                if document()
-                    .query_selector("dialog[open]")
-                    .ok()
-                    .flatten()
-                    .is_some()
-                {
-                    dismiss_name_prompt();
-                    return;
+                let shown = document().query_selector("dialog[open]").ok().flatten();
+                let show = move || {
+                    typed.set(String::new());
+                    note.set("");
+                    open.set(true);
+                };
+                match shown.map(|d| d.id()) {
+                    // The passkey offer is quick: ask for the name once it is answered.
+                    Some(id) if id == "passkey-offer" => after_open_dialog(move || {
+                        if session.signed_in.get_untracked() && session.needs_name.get_untracked() {
+                            show();
+                        }
+                    }),
+                    Some(_) => skip_name_prompt(),
+                    None => show(),
                 }
-                typed.set(String::new());
-                note.set("");
-                open.set(true);
             },
             Duration::ZERO,
         );
@@ -73,7 +78,7 @@ pub fn NamePrompt() -> impl IntoView {
     Effect::new(move |was_open: Option<bool>| {
         let is_open = open.get();
         if was_open == Some(true) && !is_open && session.signed_in.get_untracked() {
-            dismiss_name_prompt();
+            dismiss_name_prompt(auth);
         }
         is_open
     });

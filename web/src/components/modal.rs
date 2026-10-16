@@ -55,3 +55,22 @@ pub fn Modal(
         </dialog>
     }
 }
+
+/// Runs `f` now if no dialog is open, else once the open one closes (and any opened after it):
+/// one modal at a time, without dropping the later one.
+pub fn after_open_dialog(f: impl FnOnce() + 'static) {
+    use wasm_bindgen::{closure::Closure, JsCast};
+    let Some(open) = document().query_selector("dialog[open]").ok().flatten() else {
+        f();
+        return;
+    };
+    let mut f = Some(f);
+    let on_close = Closure::<dyn FnMut()>::new(move || {
+        if let Some(f) = f.take() {
+            // The close event runs before the next dialog's showModal; check on the next turn.
+            set_timeout(move || after_open_dialog(f), std::time::Duration::ZERO);
+        }
+    });
+    let _ = open.add_event_listener_with_callback("close", on_close.as_ref().unchecked_ref());
+    on_close.forget();
+}
