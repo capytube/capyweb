@@ -343,6 +343,11 @@ impl Auth {
     }
 
     /// The action saved by `sign_in_then`, if it is of this kind. Taken once.
+    /// A page action waits to resume after this sign-in (a vote, a bid).
+    fn has_pending(&self) -> bool {
+        self.inner.with_value(|i| i.pending.is_some())
+    }
+
     pub fn take_pending(&self, kind: &str) -> Option<String> {
         self.inner
             .try_update_value(|i| i.pending.take_if(|p| p.kind == kind).map(|p| p.data))
@@ -641,8 +646,11 @@ pub fn AuthCallback() -> impl IntoView {
             // A new account's first sign-in goes on to add a passkey.
             Ok(path) if auth.take_pending(PASSKEY_KIND).is_some() => auth.add_passkey(&path),
             Ok(path) => {
-                // Any other sign-in offers a passkey once per account and device (PasskeyOffer).
-                store_set(SESSION, PASSKEY_OFFER_KEY, "1");
+                // Any other sign-in offers a passkey once per account and device (PasskeyOffer),
+                // unless it resumes something (a vote's confirmation): that keeps the page alone.
+                if !auth.has_pending() {
+                    store_set(SESSION, PASSKEY_OFFER_KEY, "1");
+                }
                 navigate(
                     &path,
                     NavigateOptions {

@@ -77,7 +77,12 @@ pub fn NamePrompt() -> impl IntoView {
     // Modal reports both Later and Escape through its open signal.
     Effect::new(move |was_open: Option<bool>| {
         let is_open = open.get();
-        if was_open == Some(true) && !is_open && session.signed_in.get_untracked() {
+        // A saved name clears needs_name first: only Later or Escape count.
+        if was_open == Some(true)
+            && !is_open
+            && session.signed_in.get_untracked()
+            && session.needs_name.get_untracked()
+        {
             dismiss_name_prompt(auth);
         }
         is_open

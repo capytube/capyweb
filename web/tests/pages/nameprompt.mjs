@@ -167,6 +167,32 @@ export async function check({ browser, BASE, settle, SHOTS }) {
     await finish();
   }
 
+  // With passkeys on (our own sign-up configured), a sign-in that resumes a vote offers no passkey:
+  // the confirmation stays the only dialog (rv-1792131272-94130).
+  {
+    const { page, context, api, finish } = await setup(browser, BASE);
+    let release;
+    api.gate = new Promise((r) => { release = r; });
+    const cfg = { auth: { domain: 'https://capyapp-test.auth.example.com', client_id: 'testclient123', idp: 'https://cognito-idp.ap-southeast-1.amazonaws.com' } };
+    await context.route('**/config.json', (route) => json(route, 200, cfg));
+    await page.goto(`${BASE}/play?capy=magnus`);
+    const card = page.locator('[data-testid=vote-card]');
+    await card.getByText('Watermelon').click();
+    await card.locator('[data-testid=vote]').click();
+    await page.click('[data-testid=choose-sign-in]');
+    const confirm = page.locator('#play-confirm[open]');
+    await confirm.waitFor();
+    release();
+    await page.waitForFunction(() => document.querySelector('[data-testid=confirm-sum]')?.innerText.includes('After'));
+    await settle();
+    assert.equal(await page.locator('#passkey-offer[open]').count(), 0, 'no passkey offer over a resumed vote');
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('dialog[open]')].map((d) => d.id || d.querySelector('h2')?.textContent)), ['play-confirm']);
+    await confirm.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await settle();
+    assert.equal(await page.locator('dialog[open]').count(), 0, 'nothing opens after the confirmation closes');
+    await finish();
+  }
+
   // Refresh uses localStorage, so a returning account can still load with sessionStorage blocked.
   {
     const { page, context, finish } = await setup(browser, BASE);
