@@ -2,11 +2,12 @@
 # Sign-in on our own name (hm-nuhjd): turn the backend stack's custom managed-login domain
 # (auth.<site domain>, infra/site/stages.json "auth") on or off. Cognito puts a custom domain on a
 # CloudFront distribution of its own, so this needs cloudfront:UpdateDistribution, which the
-# capyweb deploy user does not have: an admin runs it with an admin profile.
+# capyweb deploy users do not hold: for prod it runs as the deploy user with a temporary inline
+# grant (capyweb-auth-prod, attached by nic just before and removed right after; never nic_cli).
 #
-#   AWS_PROFILE=<admin> CAPYWEB_AUTH_GO=1 infra/backend/auth-domain.sh <stage> on    the way there
-#   AWS_PROFILE=<admin> CAPYWEB_AUTH_GO=1 infra/backend/auth-domain.sh <stage> off   the way back
-#   AWS_PROFILE=<admin> infra/backend/auth-domain.sh <stage> plan-on|plan-off         show only
+#   AWS_PROFILE=<deploy user + grant> CAPYWEB_AUTH_GO=1 infra/backend/auth-domain.sh <stage> on    the way there
+#   AWS_PROFILE=<deploy user + grant> CAPYWEB_AUTH_GO=1 infra/backend/auth-domain.sh <stage> off   the way back
+#   AWS_PROFILE=<deploy user + grant> infra/backend/auth-domain.sh <stage> plan-on|plan-off         show only
 #
 # It changes only the parameters AuthDomain and AuthCertArn, on the template already deployed
 # (every other parameter keeps its value), and runs the change set only if it is exactly the
@@ -19,7 +20,7 @@ cd "$(dirname "$0")/../.."
 STAGE=${1:?usage: auth-domain.sh <stage> on|off|plan-on|plan-off}; MODE=${2:?mode}
 export AWS_DEFAULT_REGION=ap-southeast-1 AWS_PAGER=""
 die() { echo "auth-domain.sh: $*" >&2; exit 1; }
-[ -n "${AWS_PROFILE:-}" ] || die "set AWS_PROFILE to an admin profile (cloudfront:UpdateDistribution)"
+[ -n "${AWS_PROFILE:-}" ] || die "set AWS_PROFILE to a profile holding cloudfront:UpdateDistribution (the deploy user with the temporary grant)"
 case $MODE in on|off) [ "${CAPYWEB_AUTH_GO:-}" = 1 ] || die "$MODE changes the live sign-in: set CAPYWEB_AUTH_GO=1 after the go" ;;
               plan-on|plan-off) ;; *) die "mode is on, off, plan-on or plan-off" ;; esac
 [ "$STAGE" != prod ] || [ "${CAPYWEB_PROD_GO:-}" = 1 ] || die "production also needs CAPYWEB_PROD_GO=1"
