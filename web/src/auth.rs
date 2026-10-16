@@ -342,12 +342,12 @@ impl Auth {
             .await
     }
 
-    /// The action saved by `sign_in_then`, if it is of this kind. Taken once.
     /// A page action waits to resume after this sign-in (a vote, a bid).
     fn has_pending(&self) -> bool {
         self.inner.with_value(|i| i.pending.is_some())
     }
 
+    /// The action saved by `sign_in_then`, if it is of this kind. Taken once.
     pub fn take_pending(&self, kind: &str) -> Option<String> {
         self.inner
             .try_update_value(|i| i.pending.take_if(|p| p.kind == kind).map(|p| p.data))
