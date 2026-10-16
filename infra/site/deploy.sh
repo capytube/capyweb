@@ -20,7 +20,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 STAGE=${1:?usage: infra/site/deploy.sh <stage> <command> ...}; CMD=${2:?command}; shift 2
-export AWS_PROFILE=capy AWS_DEFAULT_REGION=ap-southeast-1 AWS_PAGER=""
+# CAPYWEB_AWS_PROFILE names a scoped role profile (e.g. the dev web deploy role); default capy.
+export AWS_PROFILE=${CAPYWEB_AWS_PROFILE:-capy} AWS_DEFAULT_REGION=ap-southeast-1 AWS_PAGER=""
 die() { echo "deploy.sh: $*" >&2; exit 1; }
 cfg() { python3 -c 'import json, sys; print(json.load(open("infra/site/stages.json"))[sys.argv[1]][sys.argv[2]])' "$STAGE" "$1" 2>/dev/null ||
         die "no '$1' for stage '$STAGE' in infra/site/stages.json"; }
