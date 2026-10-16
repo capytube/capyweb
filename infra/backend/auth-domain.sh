@@ -27,7 +27,7 @@ ST=capyapp-capyweb-backend-$STAGE
 NAME=$(python3 -c 'import json, sys; print(json.load(open("infra/site/stages.json"))[sys.argv[1]]["auth"])' "$STAGE")
 
 if [ "${MODE#plan-}" = on ]; then
-  CERT=$(aws acm list-certificates --region us-east-1 \
+  CERT=$(aws acm list-certificates --region us-east-1 --certificate-statuses ISSUED \
          --query "CertificateSummaryList[?DomainName=='$NAME'].CertificateArn | [0]" --output text)
   [[ $CERT == arn:aws:acm:us-east-1:* ]] || die "no issued certificate for $NAME: run infra/site/deploy.sh $STAGE cert auth"
   SET=(ParameterKey=AuthDomain,ParameterValue=$NAME ParameterKey=AuthCertArn,ParameterValue=$CERT)
